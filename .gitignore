@@ -1,6 +1,7 @@
 node_modules/
 build/
 .react-router/
+.vercel/
 .DS_Store
 
 # Local environment files (keep .env.example in the repository)
