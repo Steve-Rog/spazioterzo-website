@@ -25,7 +25,7 @@ function projectToLegacy(project: ProjectContent): Project {
 }
 
 function teamToLegacy(member: TeamMemberContent): TeamMember {
-  return { name: member.name, role: member.role, image: member.image, imagePosition: member.imagePosition, bio: member.bio.map(plainText), quote: plainText(member.quote), quoteAuthor: member.quoteAuthor };
+  return { name: member.name, role: member.role, image: member.image, imagePosition: member.imagePosition, imageCrop: member.imageCrop, bio: member.bio.map(plainText), quote: plainText(member.quote), quoteAuthor: member.quoteAuthor };
 }
 
 async function read<T>(path: string): Promise<T | null> {

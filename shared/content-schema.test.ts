@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asRichText, validateProject, validateSiteSettings, validateTeamMember } from "./content-schema";
+import { asRichText, contentLimits, validateProject, validateSiteSettings, validateTeamMember } from "./content-schema";
 
 describe("content schema", () => {
   it("accepts a complete project payload", () => {
@@ -21,5 +21,13 @@ describe("content schema", () => {
 
   it("rejects unapproved rich text marks", () => {
     expect(validateProject({ slug: "progetto", title: "Titolo", subtitle: "Sottotitolo", statusLabel: "In corso", dateRange: "2026", location: "Catania", audience: "Persone", themes: ["Cura"], cover: "/cover.jpg", coverAlt: "Copertina", intro: [{ text: "Intro", marks: ["script"] }], objective: asRichText("Obiettivo"), blocks: [], outcomes: [], links: [], partners: [], funders: [], relatedSlugs: [] })).toBe(false);
+  });
+
+  it("rejects copy that exceeds the editorial limits", () => {
+    const base = { slug: "progetto", title: "Titolo", subtitle: "Sottotitolo", statusLabel: "In corso" as const, dateRange: "2026", location: "Catania", audience: "Persone", themes: ["Cura"], cover: "/cover.jpg", coverAlt: "Copertina", intro: asRichText("Intro"), objective: asRichText("Obiettivo"), blocks: [], outcomes: [], links: [], partners: [], funders: [], relatedSlugs: [] };
+    expect(validateProject({ ...base, title: "a".repeat(contentLimits.project.title) })).toBe(true);
+    expect(validateProject({ ...base, title: "a".repeat(contentLimits.project.title + 1) })).toBe(false);
+    expect(validateProject({ ...base, intro: asRichText("a".repeat(contentLimits.project.intro + 1)) })).toBe(false);
+    expect(validateProject({ ...base, blocks: [{ id: "quote-1", type: "quote", text: asRichText("a".repeat(contentLimits.project.quote + 1)) }] })).toBe(false);
   });
 });

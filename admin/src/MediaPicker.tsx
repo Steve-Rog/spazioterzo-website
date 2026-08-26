@@ -6,7 +6,7 @@ import { adminApi, type MediaAsset } from "./api";
 
 type MediaValue = { url: string; alt: string; assetId?: string };
 
-export function MediaPicker({ label, value, onChange, required = false }: { label: string; value: MediaValue; onChange: (next: MediaValue) => void; required?: boolean }) {
+export function MediaPicker({ label, value, onChange, required = false, showPreview = true }: { label: string; value: MediaValue; onChange: (next: MediaValue) => void; required?: boolean; showPreview?: boolean }) {
   const [opened, setOpened] = useState(false);
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [search, setSearch] = useState("");
@@ -43,8 +43,8 @@ export function MediaPicker({ label, value, onChange, required = false }: { labe
 
   return <section className="media-field">
     <div className="field-intro"><div><Text fw={700} size="sm">{label}{required ? " *" : ""}</Text><Text c="dimmed" size="xs">Scegli dall’archivio o carica un file.</Text></div><Button variant="default" size="xs" onClick={() => setOpened(true)}>Scegli immagine</Button></div>
-    <TextInput label="Testo alternativo" value={value.alt} required={required} onChange={(event) => onChange({ ...value, alt: event.currentTarget.value })} />
-    {value.url ? <AspectRatio ratio={16 / 8} className="media-current"><Image src={value.url} alt={value.alt} fit="cover" /></AspectRatio> : <div className="media-placeholder">Nessuna immagine selezionata</div>}
+    <TextInput label="Testo alternativo" maxLength={180} value={value.alt} required={required} onChange={(event) => onChange({ ...value, alt: event.currentTarget.value })} />
+    {showPreview && (value.url ? <AspectRatio ratio={16 / 8} className="media-current"><Image src={value.url} alt={value.alt} fit="cover" /></AspectRatio> : <div className="media-placeholder">Nessuna immagine selezionata</div>)}
     <Modal opened={opened} onClose={() => setOpened(false)} title="Archivio media" size="xl" centered>
       <Stack gap="md">
         <TextInput placeholder="Cerca nel testo alternativo…" value={search} onChange={(event) => setSearch(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === "Enter") void load(); }} rightSection={<Button variant="subtle" size="compact-xs" onClick={() => void load()}>Cerca</Button>} />

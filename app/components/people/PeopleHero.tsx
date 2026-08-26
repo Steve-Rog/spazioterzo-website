@@ -4,6 +4,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import { SiteHeader } from "../layout/SiteHeader";
 import { type TeamMember } from "./content";
 import { TeamProfileModal } from "./TeamProfileModal";
+import { portraitCropStyle } from "./image-crop";
 import type { SiteSettingsContent } from "../../../shared/content-schema";
 
 export function PeopleHero({ teamMembers, site }: { teamMembers: TeamMember[]; site: SiteSettingsContent }) {
@@ -105,7 +106,7 @@ export function PeopleHero({ teamMembers, site }: { teamMembers: TeamMember[]; s
             }}
             transition={{ duration: reduceMotion ? 0 : 0.48, ease: [0.22, 1, 0.36, 1] }}
           >
-            <img src={member.image} alt={`Ritratto di ${member.name}`} />
+            <img src={member.image} alt={`Ritratto di ${member.name}`} style={portraitCropStyle(member)} />
             <span className="people-hero-portrait-caption">
               <strong>{member.name}</strong>
               <small>Apri il profilo ↗</small>

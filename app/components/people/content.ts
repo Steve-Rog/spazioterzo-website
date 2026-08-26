@@ -3,6 +3,7 @@ export type TeamMember = {
   role: string;
   image: string;
   imagePosition?: string;
+  imageCrop?: { x: number; y: number; width: number; height: number };
   bio: string[];
   quote: string;
   quoteAuthor?: string;

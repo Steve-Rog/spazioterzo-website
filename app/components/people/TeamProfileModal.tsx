@@ -1,6 +1,7 @@
 import { Modal } from "@mantine/core";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { TeamMember } from "./content";
+import { portraitCropStyle } from "./image-crop";
 
 type TeamProfileModalProps = {
   teamMembers: TeamMember[];
@@ -43,7 +44,7 @@ export function TeamProfileModal({ teamMembers, activeMemberIndex, onClose, onAc
                 exit={reduceMotion ? undefined : { opacity: 0, clipPath: "inset(0 100% 0 0)", scale: .99 }}
                 transition={{ duration: reduceMotion ? 0 : 0.55, ease: [0.77, 0, 0.18, 1] }}
               >
-                <img src={activeMember.image} alt={`Ritratto di ${activeMember.name}`} />
+                <img src={activeMember.image} alt={`Ritratto di ${activeMember.name}`} style={portraitCropStyle(activeMember)} />
                 <figcaption>{String(selectedIndex + 1).padStart(2, "0")} / {String(teamMembers.length).padStart(2, "0")}</figcaption>
               </motion.figure>
             </AnimatePresence>
