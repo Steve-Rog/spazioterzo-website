@@ -1,0 +1,112 @@
+import { useState } from "react";
+import { Link } from "react-router";
+import { motion, useReducedMotion } from "framer-motion";
+import { SiteHeader } from "../layout/SiteHeader";
+import { Arrow } from "../ui/Arrow";
+import { Reveal } from "../ui/Reveal";
+import { getRelatedProjects, type Project, type ProjectBlock } from "./content";
+
+function ProjectBlockView({ block }: { block: ProjectBlock }) {
+  if (block.type === "paragraph") return <p className="project-detail-paragraph">{block.text}</p>;
+  if (block.type === "quote") {
+    return <blockquote className="project-detail-quote"><p>{block.text}</p>{block.source && <cite>{block.source}</cite>}</blockquote>;
+  }
+  if (block.type === "list") {
+    return <section className="project-detail-list"><h3>{block.title}</h3><ul>{block.items.map((item) => <li key={item}>{item}</li>)}</ul></section>;
+  }
+  if (block.type === "image") {
+    return <figure className="project-detail-image"><img src={block.src} alt={block.alt} loading="lazy" />{block.caption && <figcaption>{block.caption}</figcaption>}</figure>;
+  }
+  return <p className="project-detail-stat"><strong>{block.value}</strong><span>{block.label}</span></p>;
+}
+
+function ProjectVideo({ project }: { project: Project }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const video = project.video;
+  if (!video) return null;
+
+  const source = video.provider === "youtube"
+    ? `https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1`
+    : `https://player.vimeo.com/video/${video.id}?autoplay=1`;
+
+  return (
+    <section className="project-video" aria-label="Video del progetto">
+      {isPlaying ? (
+        <iframe src={source} title={`Video: ${project.title}`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+      ) : (
+        <button type="button" onClick={() => setIsPlaying(true)}>
+          <img src={video.thumbnail} alt={video.alt} loading="lazy" />
+          <span><b>▶</b> Guarda il video</span>
+        </button>
+      )}
+      {video.caption && <p>{video.caption}</p>}
+    </section>
+  );
+}
+
+export function ProjectDetail({ project }: { project: Project }) {
+  const reduceMotion = useReducedMotion();
+  const relatedProjects = getRelatedProjects(project);
+
+  return (
+    <main className="project-detail-page">
+      <section className="project-detail-hero">
+        <SiteHeader currentPage="projects" />
+        <motion.img
+          className="project-detail-hero-image"
+          src={project.cover}
+          alt={project.coverAlt}
+          initial={reduceMotion ? false : { opacity: 0, scale: 1.07 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: reduceMotion ? 0 : 1.1, ease: [0.22, 1, 0.36, 1] }}
+        />
+        <div className="project-detail-hero-shade" />
+        <div className="project-detail-hero-content">
+          <Link className="project-back" to="/progetti">← Tutti i progetti</Link>
+          <motion.p className="section-label" initial={reduceMotion ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.55, delay: reduceMotion ? 0 : 0.12 }}>
+            {project.status} <span>—</span> {project.themes[0]}
+          </motion.p>
+          <motion.h1 initial={reduceMotion ? false : { opacity: 0, y: 38 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.8, delay: reduceMotion ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}>
+            {project.title}
+          </motion.h1>
+          <motion.p className="project-detail-subtitle" initial={reduceMotion ? false : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.7, delay: reduceMotion ? 0 : 0.34, ease: [0.22, 1, 0.36, 1] }}>
+            {project.subtitle}
+          </motion.p>
+        </div>
+      </section>
+
+      <section className="project-detail-overview">
+        <Reveal className="project-detail-intro"><p className="section-label">Il progetto</p><h2>{project.intro}</h2></Reveal>
+        <Reveal className="project-detail-facts" delay={0.1}>
+          <p><span>Periodo</span>{project.dateRange}</p>
+          <p><span>Luogo</span>{project.location}</p>
+          <p><span>Per chi</span>{project.audience}</p>
+          <p><span>Area</span>{project.themes.join(", ")}</p>
+        </Reveal>
+      </section>
+
+      <section className="project-detail-story">
+        <Reveal className="project-detail-objective"><p className="section-label">L’intenzione</p><p>{project.objective}</p></Reveal>
+        <div className="project-detail-blocks">{project.blocks.map((block, index) => <Reveal key={`${block.type}-${index}`} delay={index * 0.04}><ProjectBlockView block={block} /></Reveal>)}</div>
+      </section>
+
+      <ProjectVideo project={project} />
+
+      <section className="project-outcomes">
+        <Reveal><p className="section-label">Cosa abbiamo attivato</p><h2>Piccoli movimenti, <em>possibilità concrete.</em></h2></Reveal>
+        <Reveal className="project-outcomes-list" delay={0.1}><ol>{project.outcomes.map((outcome, index) => <li key={outcome}><span>0{index + 1}</span>{outcome}</li>)}</ol></Reveal>
+      </section>
+
+      {(project.links || project.partners || project.funders || project.visibilityNote) && (
+        <section className="project-detail-notes">
+          {project.links && <div><p className="section-label">Nel diario del progetto</p>{project.links.map((link) => <a key={link.href} href={link.href} target="_blank" rel="noreferrer">{link.label} <Arrow /></a>)}</div>}
+          {(project.partners || project.funders || project.visibilityNote) && <div><p className="section-label">Reti e trasparenza</p>{project.partners && <p>Con {project.partners.join(", ")}.</p>}{project.funders && <p>Sostenuto da {project.funders.join(", ")}.</p>}{project.visibilityNote && <p>{project.visibilityNote}</p>}</div>}
+        </section>
+      )}
+
+      {project.cta && <section className="project-detail-cta"><p>Questo progetto può diventare anche uno spazio per te.</p><Link to={project.cta.href}>{project.cta.label} <Arrow /></Link></section>}
+
+      {relatedProjects.length > 0 && <section className="project-related"><p className="section-label">Altri progetti</p><div>{relatedProjects.map((related) => <Link key={related.slug} to={`/progetti/${related.slug}`}><img src={related.cover} alt="" loading="lazy" /><span>{related.themes[0]}</span><h2>{related.title}</h2><p>{related.subtitle}</p><b>Scopri <Arrow /></b></Link>)}</div></section>}
+    </main>
+  );
+}

@@ -3,12 +3,13 @@ import { Arrow } from "../ui/Arrow";
 import { BrandLogo } from "../ui/BrandLogo";
 
 type SiteHeaderProps = {
-  currentPage?: "home" | "people";
+  currentPage?: "home" | "people" | "projects";
 };
 
 const navigation = [
   { href: "/#chi-siamo", label: "Associazione", page: "home" },
   { href: "/#percorsi", label: "Cosa facciamo", page: "home" },
+  { href: "/progetti", label: "Progetti", page: "projects" },
   { href: "/persone", label: "Le persone", page: "people" },
   { href: "/#territorio", label: "Sul territorio", page: "home" },
 ];
@@ -33,7 +34,7 @@ export function SiteHeader({ currentPage = "home" }: SiteHeaderProps) {
         {navigation.map((item) => (
           <a
             key={item.href}
-            aria-current={currentPage === "people" && item.page === "people" ? "page" : undefined}
+            aria-current={currentPage === item.page ? "page" : undefined}
             href={item.href}
             onClick={closeMenu}
           >

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1024" fill="none">
+  <defs>
+    <linearGradient id="a" x1="0" y1="0" x2="1536" y2="1024" gradientUnits="userSpaceOnUse"><stop stop-color="#10262F"/><stop offset="1" stop-color="#224650"/></linearGradient>
+    <radialGradient id="b" cx="0" cy="0" r="1" gradientTransform="matrix(252 0 0 252 445 316)" gradientUnits="userSpaceOnUse"><stop stop-color="#E4573D"/><stop offset="1" stop-color="#E4573D" stop-opacity="0"/></radialGradient>
+    <filter id="c" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency=".68" numOctaves="3" stitchTiles="stitch"/><feColorMatrix values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 .14 0"/></filter>
+  </defs>
+  <rect width="1536" height="1024" fill="url(#a)"/><rect width="1536" height="1024" fill="url(#b)"/>
+  <g stroke="#F4F1E9" stroke-width="3" stroke-opacity=".75"><path d="M-19 789C260 504 372 469 608 587c185 92 304 12 431-135 111-128 257-153 524-16"/><path d="M49 900c259-82 420-23 550 17 192 59 329-86 407-219 97-164 240-195 494-89"/></g>
+  <g stroke="#EC930A" stroke-width="21" stroke-linecap="round"><path d="m304 710 136-130 119 113 145-156 129 123 151-167"/></g>
+  <g fill="#F4F1E9"><rect x="188" y="255" width="192" height="192" rx="96"/><rect x="604" y="167" width="260" height="260" rx="130"/><rect x="1088" y="311" width="145" height="145" rx="72.5"/></g>
+  <g fill="#EC930A"><circle cx="951" cy="644" r="26"/><circle cx="1287" cy="579" r="18"/></g>
+  <rect width="1536" height="1024" filter="url(#c)" opacity=".44"/>
+</svg>
