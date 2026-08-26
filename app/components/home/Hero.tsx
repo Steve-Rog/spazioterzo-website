@@ -7,7 +7,7 @@ export function Hero({ content }: { content: SiteSettingsContent }) {
   const imageStyle = content.home.hero.heroImage ? { "--hero-image": `url(${content.home.hero.heroImage})` } as React.CSSProperties : undefined;
   return (
     <section className="hero" id="top" style={imageStyle}>
-      <SiteHeader />
+      <SiteHeader identity={content.identity} />
 
       <div className="hero-copy">
         <h1 className="entrance delay-1"><RichText value={content.home.hero.headline} /></h1>

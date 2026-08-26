@@ -4,8 +4,9 @@ import { useMediaQuery } from "@mantine/hooks";
 import { SiteHeader } from "../layout/SiteHeader";
 import { type TeamMember } from "./content";
 import { TeamProfileModal } from "./TeamProfileModal";
+import type { SiteSettingsContent } from "../../../shared/content-schema";
 
-export function PeopleHero({ teamMembers }: { teamMembers: TeamMember[] }) {
+export function PeopleHero({ teamMembers, site }: { teamMembers: TeamMember[]; site: SiteSettingsContent }) {
   const reduceMotion = useReducedMotion();
   const isMobile = useMediaQuery("(max-width: 760px)");
   const canHover = useMediaQuery("(hover: hover) and (pointer: fine)");
@@ -50,7 +51,7 @@ export function PeopleHero({ teamMembers }: { teamMembers: TeamMember[] }) {
 
   return (
     <section className="people-hero" id="top">
-      <SiteHeader currentPage="people" />
+      <SiteHeader currentPage="people" identity={site.identity} />
       <div className="people-hero-content">
         <motion.p
           className="section-label"

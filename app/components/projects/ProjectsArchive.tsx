@@ -4,6 +4,7 @@ import { SiteHeader } from "../layout/SiteHeader";
 import { Arrow } from "../ui/Arrow";
 import { Reveal } from "../ui/Reveal";
 import { type Project } from "./content";
+import type { SiteSettingsContent } from "../../../shared/content-schema";
 
 function ProjectRow({ project, index, featured = false }: { project: Project; index: number; featured?: boolean }) {
   const reduceMotion = useReducedMotion();
@@ -31,14 +32,14 @@ function ProjectRow({ project, index, featured = false }: { project: Project; in
   );
 }
 
-export function ProjectsArchive({ projects }: { projects: Project[] }) {
+export function ProjectsArchive({ projects, site }: { projects: Project[]; site: SiteSettingsContent }) {
   const reduceMotion = useReducedMotion();
   const [featured, ...remainingProjects] = projects;
 
   return (
     <main className="projects-page">
       <section className="projects-hero" id="top">
-        <SiteHeader currentPage="projects" />
+        <SiteHeader currentPage="projects" identity={site.identity} />
         <div className="projects-hero-visual" aria-hidden="true" />
         <div className="projects-hero-content">
           <motion.p

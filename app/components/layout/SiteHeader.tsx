@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Arrow } from "../ui/Arrow";
 import { BrandLogo } from "../ui/BrandLogo";
+import type { SiteSettingsContent } from "../../../shared/content-schema";
 
 type SiteHeaderProps = {
   currentPage?: "home" | "people" | "projects";
+  identity?: SiteSettingsContent["identity"];
 };
 
 const navigation = [
@@ -14,13 +16,13 @@ const navigation = [
   { href: "/#territorio", label: "Sul territorio", page: "home" },
 ];
 
-export function SiteHeader({ currentPage = "home" }: SiteHeaderProps) {
+export function SiteHeader({ currentPage = "home", identity }: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = () => setMenuOpen(false);
 
   return (
     <header className="site-header">
-      <BrandLogo href="/#top" />
+      <BrandLogo href="/#top" identity={identity} />
       <button
         type="button"
         className="menu-button"

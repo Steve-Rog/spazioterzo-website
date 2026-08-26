@@ -17,8 +17,9 @@ export function Contact({ content }: { content: SiteSettingsContent }) {
         </div>
       </Reveal>
       <footer>
-        <BrandLogo className="footer-brand" />
-        <p>{content.identity.legalForm}<br />{content.identity.city}, {content.identity.country}</p>
+        <BrandLogo className="footer-brand" identity={content.identity} />
+        <p>{content.identity.legalForm}<br />{content.identity.address && <>{content.identity.address}<br /></>}{content.identity.city}, {content.identity.country}{content.identity.phone && <><br /><a href={`tel:${content.identity.phone.replace(/\s/g, "")}`}>{content.identity.phone}</a></>}</p>
+        {content.identity.socialLinks.length > 0 && <p className="footer-socials">{content.identity.socialLinks.map((link) => <a key={link.href} href={link.href} target="_blank" rel="noreferrer">{link.label}</a>)}</p>}
         <p>© {new Date().getFullYear()} {content.identity.organizationName}</p>
       </footer>
     </section>

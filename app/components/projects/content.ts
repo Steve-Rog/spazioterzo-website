@@ -43,6 +43,8 @@ export type Project = {
   funders?: string[];
   visibilityNote?: string;
   relatedSlugs: string[];
+  seoTitle?: string;
+  seoDescription?: string;
 };
 
 export const projects: Project[] = [

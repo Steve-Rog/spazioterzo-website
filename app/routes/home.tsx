@@ -14,14 +14,20 @@ export async function loader() {
 }
 
 export function meta({ data }: { data?: { site?: Awaited<ReturnType<typeof getPublicSite>> } }) {
+  const site = data?.site;
   return [
-    { title: `${data?.site?.identity.organizationName ?? "Spazio Terzo"} — Psicologia, psicoterapia, comunità` },
+    { title: `${site?.identity.organizationName ?? "Spazio Terzo"} — Psicologia, psicoterapia, comunità` },
     {
       name: "description",
       content:
-        data?.site?.seo.defaultDescription ?? "Spazio Terzo è un'associazione che mette in relazione psicologia, psicoterapia e territorio.",
+        site?.seo.defaultDescription ?? "Spazio Terzo è un'associazione che mette in relazione psicologia, psicoterapia e territorio.",
     },
+    ...(site?.seo.shareImage ? [{ property: "og:image", content: site.seo.shareImage }] : []),
   ];
+}
+
+export function links({ data }: { data?: { site?: Awaited<ReturnType<typeof getPublicSite>> } } = {}) {
+  return data?.site?.identity.favicon ? [{ rel: "icon", href: data.site.identity.favicon }] : [];
 }
 
 export default function Home() {

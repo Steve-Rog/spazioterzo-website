@@ -22,7 +22,8 @@
       "name": "spazioterzo-api",
       "vars": {
         "ENVIRONMENT": "production",
-        "PUBLIC_MEDIA_BASE_URL": "https://media.example.org"
+        "PUBLIC_MEDIA_BASE_URL": "https://media.example.org",
+        "PUBLIC_API_BASE_URL": "https://api.example.org"
       },
       "d1_databases": [
         {

@@ -22,6 +22,8 @@ curl -X POST http://127.0.0.1:8787/v1/development/seed -H 'x-spazioterzo-seed: l
 - Configurare Cloudflare Access con OTP e allow-list di email.
 - Inserire `ACCESS_TEAM_DOMAIN` e `ACCESS_AUDIENCE` come secrets del Worker.
 - Configurare `PUBLIC_MEDIA_BASE_URL` sul dominio `media` dell'associazione.
+- Configurare `PUBLIC_API_BASE_URL` con il dominio API definitivo e creare una Cache Rule che memorizzi `/v1/public/*` per cinque minuti.
+- Salvare `CF_ZONE_ID` e `CF_CACHE_PURGE_TOKEN` come secrets: il token deve poter purgare soltanto la zona dell'associazione. A ogni pubblicazione il Worker invalida gli URL pubblici interessati; se il purge fallisce, registra l'errore e la cache scade comunque entro cinque minuti.
 - Sostituire tutti gli ID e nomi placeholder nell'ambiente `production` di `wrangler.jsonc`; creare D1 e R2 separati dall'ambiente dev.
 - Inserire il primo amministratore nel D1 di produzione con `INSERT INTO admin_users (email, role) VALUES ('email@associazione.it', 'admin')`; l'email deve essere anche nella allow-list Access.
 - Applicare le migrazioni solo con `--remote` nell'ambiente corretto.

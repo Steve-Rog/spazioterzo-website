@@ -1,4 +1,4 @@
-import { ACCEPTED_MEDIA_TYPES, MAX_MEDIA_BYTES, MAX_TEAM_MEMBERS, type ContentEntity, type ContentState, type EntityType, type ProjectContent, type SiteSettingsContent, type TeamMemberContent, validateContent } from "../../shared/content-schema";
+import { ACCEPTED_MEDIA_TYPES, MAX_MEDIA_BYTES, MAX_TEAM_MEMBERS, contentValidationError, type ContentEntity, type ContentState, type EntityType, type ProjectContent, type SiteSettingsContent, type TeamMemberContent } from "../../shared/content-schema";
 import { authenticateAdmin, requireAdmin, type AdminIdentity } from "./auth";
 import { seedDevelopmentDatabase } from "./seed";
 
@@ -13,7 +13,10 @@ type EntityRow = {
   updated_at: string;
 };
 
-type RevisionRow = { id: string; payload: string };
+type RevisionRow = { id: string; payload: string; revision_number?: number; created_by?: string; created_at?: string };
+type RevisionSummary = { id: string; revisionNumber: number; createdBy: string; createdAt: string; isDraft: boolean; isPublished: boolean };
+type AdminUserRow = { email: string; role: "admin" | "editor"; active: number; created_at: string };
+type AssetRow = { id: string; public_url: string; alt_text: string; content_type: string; byte_size: number; created_by: string; created_at: string };
 
 const json = (body: unknown, init: ResponseInit = {}) => Response.json(body, init);
 const publicHeaders = { "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600", "Access-Control-Allow-Origin": "*" };
@@ -68,11 +71,18 @@ async function audit(env: Env, actor: string, action: string, entityId?: string,
     .bind(uuid(), actor, action, entityId ?? null, metadata ? JSON.stringify(metadata) : null).run();
 }
 
-async function saveDraft(env: Env, actor: AdminIdentity, type: EntityType, id: string | undefined, payload: unknown, displayOrder = 0) {
-  if (!validateContent(type, payload)) return json({ error: "Contenuto non valido" }, { status: 422 });
+async function nextDisplayOrder(env: Env, type: EntityType) {
+  const row = await env.DB.prepare("SELECT MAX(display_order) AS value FROM content_entities WHERE entity_type = ?").bind(type).first<{ value: number | null }>();
+  return (row?.value ?? -1) + 1;
+}
+
+async function saveDraft(env: Env, actor: AdminIdentity, type: EntityType, id: string | undefined, payload: unknown, requestedOrder?: number) {
+  const validationError = contentValidationError(type, payload);
+  if (validationError) return json({ error: validationError }, { status: 422 });
   const typedPayload = payload as ProjectContent | TeamMemberContent | SiteSettingsContent;
   const slug = type === "project" ? (typedPayload as ProjectContent).slug : type === "site" ? "site" : slugify((typedPayload as TeamMemberContent).name);
-  let entity = id ? await findEntity(env, type, id) : null;
+  let entity = id ? await findEntity(env, type, id) : type === "site" ? await findEntity(env, type, "site") : null;
+  if (id && !entity) return json({ error: "Contenuto non trovato" }, { status: 404 });
 
   if (!entity) {
     if (type === "team_member") {
@@ -80,6 +90,7 @@ async function saveDraft(env: Env, actor: AdminIdentity, type: EntityType, id: s
       if ((count?.total ?? 0) >= MAX_TEAM_MEMBERS) return json({ error: `Il team può avere al massimo ${MAX_TEAM_MEMBERS} persone.` }, { status: 422 });
     }
     const entityId = id ?? uuid();
+    const displayOrder = typeof requestedOrder === "number" && actor.role === "admin" ? requestedOrder : await nextDisplayOrder(env, type);
     await env.DB.prepare("INSERT INTO content_entities (id, entity_type, slug, display_order) VALUES (?, ?, ?, ?)").bind(entityId, type, slug, displayOrder).run();
     entity = await findEntity(env, type, entityId);
   }
@@ -91,7 +102,7 @@ async function saveDraft(env: Env, actor: AdminIdentity, type: EntityType, id: s
     env.DB.prepare("INSERT INTO content_revisions (id, entity_id, revision_number, payload, created_by) VALUES (?, ?, ?, ?, ?)")
       .bind(revisionId, entity.id, (previous?.revision ?? 0) + 1, JSON.stringify(payload), actor.email),
     env.DB.prepare("UPDATE content_entities SET slug = ?, display_order = ?, draft_revision_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
-      .bind(slug, displayOrder, revisionId, entity.id),
+      .bind(slug, actor.role === "admin" && typeof requestedOrder === "number" ? requestedOrder : entity.displayOrder, revisionId, entity.id),
   ]);
   await audit(env, actor.email, "draft_saved", entity.id, { type });
   return json(await findEntity(env, type, entity.id));
@@ -104,7 +115,81 @@ async function publish(env: Env, actor: AdminIdentity, type: EntityType, id: str
   await env.DB.prepare("UPDATE content_entities SET state = 'published', published_revision_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
     .bind(row?.draft_revision_id, entity.id).run();
   await audit(env, actor.email, "published", entity.id, { type });
-  return json(await findEntity(env, type, entity.id));
+  const published = await findEntity(env, type, entity.id);
+  if (published) await purgePublicContent(env, actor.email, type, published, entity.slug);
+  return json(published);
+}
+
+async function listRevisions(env: Env, entity: ContentEntity<unknown>, row: EntityRow) {
+  const { results } = await env.DB.prepare("SELECT id, revision_number, created_by, created_at FROM content_revisions WHERE entity_id = ? ORDER BY revision_number DESC").bind(entity.id).all<RevisionRow>();
+  return results.map((revision): RevisionSummary => ({
+    id: revision.id,
+    revisionNumber: revision.revision_number ?? 0,
+    createdBy: revision.created_by ?? "",
+    createdAt: revision.created_at ?? "",
+    isDraft: revision.id === row.draft_revision_id,
+    isPublished: revision.id === row.published_revision_id,
+  }));
+}
+
+async function entityRow(env: Env, id: string) {
+  return env.DB.prepare("SELECT * FROM content_entities WHERE id = ?").bind(id).first<EntityRow>();
+}
+
+async function restoreRevision(env: Env, actor: AdminIdentity, type: EntityType, id: string, revisionId: string) {
+  const row = await entityRow(env, id);
+  if (!row || row.entity_type !== type) return json({ error: "Contenuto non trovato" }, { status: 404 });
+  const source = await env.DB.prepare("SELECT id, payload FROM content_revisions WHERE id = ? AND entity_id = ?").bind(revisionId, id).first<RevisionRow>();
+  if (!source) return json({ error: "Revisione non trovata" }, { status: 404 });
+  const previous = await env.DB.prepare("SELECT MAX(revision_number) AS revision FROM content_revisions WHERE entity_id = ?").bind(id).first<{ revision: number | null }>();
+  const newRevisionId = uuid();
+  await env.DB.batch([
+    env.DB.prepare("INSERT INTO content_revisions (id, entity_id, revision_number, payload, created_by) VALUES (?, ?, ?, ?, ?)").bind(newRevisionId, id, (previous?.revision ?? 0) + 1, source.payload, actor.email),
+    env.DB.prepare("UPDATE content_entities SET draft_revision_id = ?, state = CASE WHEN state = 'archived' THEN 'draft' ELSE state END, updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(newRevisionId, id),
+  ]);
+  await audit(env, actor.email, "revision_restored", id, { type, sourceRevisionId: revisionId, newRevisionId });
+  return json(await findEntity(env, type, id));
+}
+
+async function archiveEntity(env: Env, actor: AdminIdentity, type: EntityType, id: string) {
+  const entity = await findEntity(env, type, id);
+  if (!entity) return json({ error: "Contenuto non trovato" }, { status: 404 });
+  await env.DB.prepare("UPDATE content_entities SET state = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(id).run();
+  await audit(env, actor.email, "archived", id, { type });
+  if (entity.published) await purgePublicContent(env, actor.email, type, entity, entity.slug);
+  return json(await findEntity(env, type, id));
+}
+
+async function updateDisplayOrder(env: Env, actor: AdminIdentity, type: EntityType, id: string, displayOrder: unknown) {
+  if (typeof displayOrder !== "number" || !Number.isInteger(displayOrder) || displayOrder < 0 || displayOrder > 10_000) return json({ error: "Ordine non valido" }, { status: 422 });
+  const entity = await findEntity(env, type, id);
+  if (!entity) return json({ error: "Contenuto non trovato" }, { status: 404 });
+  await env.DB.prepare("UPDATE content_entities SET display_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(displayOrder, id).run();
+  await audit(env, actor.email, "display_order_updated", id, { type, displayOrder });
+  if (entity.published) await purgePublicContent(env, actor.email, type, entity, entity.slug);
+  return json(await findEntity(env, type, id));
+}
+
+async function purgePublicContent(env: Env, actor: string, type: EntityType, entity: ContentEntity<unknown>, previousSlug?: string) {
+  if (env.ENVIRONMENT !== "production" || !env.CF_ZONE_ID || !env.CF_CACHE_PURGE_TOKEN || !env.PUBLIC_API_BASE_URL) return;
+  const base = env.PUBLIC_API_BASE_URL.replace(/\/$/, "");
+  const urls = new Set<string>();
+  if (type === "site") urls.add(`${base}/v1/public/site`);
+  if (type === "team_member") urls.add(`${base}/v1/public/team`);
+  if (type === "project") {
+    urls.add(`${base}/v1/public/projects`);
+    [previousSlug, entity.slug, entity.draft && (entity.draft as ProjectContent).slug, entity.published && (entity.published as ProjectContent).slug]
+      .filter((slug): slug is string => Boolean(slug)).forEach((slug) => urls.add(`${base}/v1/public/projects/${encodeURIComponent(slug)}`));
+  }
+  try {
+    const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${env.CF_ZONE_ID}/purge_cache`, {
+      method: "POST", headers: { Authorization: `Bearer ${env.CF_CACHE_PURGE_TOKEN}`, "Content-Type": "application/json" }, body: JSON.stringify({ files: [...urls] }),
+    });
+    if (!response.ok) throw new Error(`Purge Cloudflare non riuscito (${response.status})`);
+    await audit(env, actor, "public_cache_purged", entity.id, { type, urls: [...urls] });
+  } catch (error) {
+    await audit(env, actor, "public_cache_purge_failed", entity.id, { type, message: error instanceof Error ? error.message : "Errore sconosciuto" });
+  }
 }
 
 function slugify(input: string) {
@@ -127,6 +212,50 @@ async function handleAsset(request: Request, env: Env, actor: AdminIdentity) {
     .bind(id, objectKey, publicUrl, alt.trim(), file.type, file.size, actor.email).run();
   await audit(env, actor.email, "asset_uploaded", id, { objectKey });
   return json({ id, url: publicUrl, alt: alt.trim() }, { status: 201 });
+}
+
+async function listAssets(env: Env, search: string, cursor: string | null) {
+  const offset = Math.max(0, Math.min(Number.parseInt(cursor ?? "0", 10) || 0, 10_000));
+  const query = search.trim().toLowerCase().slice(0, 100);
+  const like = `%${query.replace(/[\\%_]/g, "\\$&")}%`;
+  const limit = 24;
+  const { results } = await env.DB.prepare(
+    "SELECT id, public_url, alt_text, content_type, byte_size, created_by, created_at FROM assets WHERE lower(alt_text) LIKE ? ESCAPE '\\' ORDER BY created_at DESC LIMIT ? OFFSET ?",
+  ).bind(like, limit + 1, offset).all<AssetRow>();
+  const hasMore = results.length > limit;
+  return {
+    items: results.slice(0, limit).map((asset) => ({
+      id: asset.id,
+      url: asset.public_url,
+      alt: asset.alt_text,
+      contentType: asset.content_type,
+      byteSize: asset.byte_size,
+      createdBy: asset.created_by,
+      createdAt: asset.created_at,
+    })),
+    nextCursor: hasMore ? String(offset + limit) : null,
+  };
+}
+
+async function listAdminUsers(env: Env) {
+  const { results } = await env.DB.prepare("SELECT email, role, active, created_at FROM admin_users ORDER BY role, email").all<AdminUserRow>();
+  return results.map((user) => ({ email: user.email, role: user.role, active: Boolean(user.active), createdAt: user.created_at }));
+}
+
+async function saveAdminUser(request: Request, env: Env, actor: AdminIdentity, email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const body = await request.json<{ role?: unknown; active?: unknown }>();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || (body.role !== "admin" && body.role !== "editor") || typeof body.active !== "boolean") return json({ error: "Utente o ruolo non validi" }, { status: 422 });
+  const current = await env.DB.prepare("SELECT role, active FROM admin_users WHERE email = ?").bind(normalizedEmail).first<{ role: "admin" | "editor"; active: number }>();
+  const removesAdmin = current?.role === "admin" && current.active === 1 && (body.role !== "admin" || !body.active);
+  if (removesAdmin) {
+    const count = await env.DB.prepare("SELECT COUNT(*) AS total FROM admin_users WHERE role = 'admin' AND active = 1").first<{ total: number }>();
+    if ((count?.total ?? 0) <= 1) return json({ error: "Deve rimanere almeno un amministratore attivo" }, { status: 422 });
+  }
+  await env.DB.prepare("INSERT INTO admin_users (email, role, active) VALUES (?, ?, ?) ON CONFLICT(email) DO UPDATE SET role = excluded.role, active = excluded.active")
+    .bind(normalizedEmail, body.role, body.active ? 1 : 0).run();
+  await audit(env, actor.email, "admin_user_updated", undefined, { email: normalizedEmail, role: body.role, active: body.active });
+  return json(await listAdminUsers(env));
 }
 
 async function serveLocalMedia(pathname: string, env: Env) {
@@ -174,15 +303,34 @@ async function router(request: Request, env: Env): Promise<Response> {
   if (unauthorized) return unauthorized;
 
   if (pathname === "/v1/admin/me" && request.method === "GET") return json(identity);
+  if (pathname === "/v1/admin/assets" && request.method === "GET") return json(await listAssets(env, url.searchParams.get("q") ?? "", url.searchParams.get("cursor")));
   if (pathname === "/v1/admin/assets" && request.method === "POST") return handleAsset(request, env, identity!);
+  if (pathname === "/v1/admin/users" && request.method === "GET") {
+    const forbidden = requireAdmin(identity, "admin");
+    return forbidden ?? json(await listAdminUsers(env));
+  }
+  const userMatch = pathname.match(/^\/v1\/admin\/users\/([^/]+)$/);
+  if (userMatch && request.method === "PUT") {
+    const forbidden = requireAdmin(identity, "admin");
+    return forbidden ?? saveAdminUser(request, env, identity!, decodeURIComponent(userMatch[1]));
+  }
 
-  const match = pathname.match(/^\/v1\/admin\/(projects|team|site)(?:\/([^/]+))?(?:\/(publish))?$/);
+  const match = pathname.match(/^\/v1\/admin\/(projects|team|site)(?:\/([^/]+))?(?:\/(publish|archive|order|revisions))?(?:\/([^/]+))?(?:\/(restore))?$/);
   if (!match) return json({ error: "Non trovato" }, { status: 404 });
-  const [, resource, id, action] = match;
+  const [, resource, id, action, revisionId, restoreAction] = match;
   const type: EntityType = resource === "projects" ? "project" : resource === "team" ? "team_member" : "site";
+  const projectOnly = identity!.role === "editor" && type !== "project";
+  if (projectOnly) return json({ error: "Gli editor possono gestire solo le bozze dei progetti" }, { status: 403 });
 
   if (request.method === "GET" && !id) return json(await listEntities(env, type));
   if (request.method === "GET" && id) {
+    if (action === "revisions") {
+      const forbidden = requireAdmin(identity, "admin");
+      if (forbidden) return forbidden;
+      const entity = await findEntity(env, type, id);
+      const row = await entityRow(env, id);
+      return entity && row ? json(await listRevisions(env, entity, row)) : json({ error: "Contenuto non trovato" }, { status: 404 });
+    }
     const entity = await findEntity(env, type, id);
     return entity ? json(entity) : json({ error: "Non trovato" }, { status: 404 });
   }
@@ -190,9 +338,23 @@ async function router(request: Request, env: Env): Promise<Response> {
     const forbidden = requireAdmin(identity, "admin");
     return forbidden ?? publish(env, identity!, type, id);
   }
+  if (request.method === "POST" && action === "archive" && id) {
+    const forbidden = requireAdmin(identity, "admin");
+    return forbidden ?? archiveEntity(env, identity!, type, id);
+  }
+  if (request.method === "POST" && action === "order" && id) {
+    const forbidden = requireAdmin(identity, "admin");
+    if (forbidden) return forbidden;
+    const body = await request.json<{ displayOrder?: unknown }>();
+    return updateDisplayOrder(env, identity!, type, id, body.displayOrder);
+  }
+  if (request.method === "POST" && action === "revisions" && revisionId && restoreAction === "restore" && id) {
+    const forbidden = requireAdmin(identity, "admin");
+    return forbidden ?? restoreRevision(env, identity!, type, id, revisionId);
+  }
   if ((request.method === "POST" && !id) || (request.method === "PUT" && id)) {
     const body = await request.json<{ payload?: unknown; displayOrder?: number }>();
-    return saveDraft(env, identity!, type, id, body.payload, body.displayOrder ?? 0);
+    return saveDraft(env, identity!, type, id, body.payload, body.displayOrder);
   }
   return json({ error: "Metodo non consentito" }, { status: 405 });
 }

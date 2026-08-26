@@ -3,6 +3,17 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 export type AdminRole = "admin" | "editor";
 export type AdminIdentity = { email: string; role: AdminRole };
 
+const remoteKeySets = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
+
+function keySetFor(teamDomain: string) {
+  const existing = remoteKeySets.get(teamDomain);
+  if (existing) return existing;
+  const issuer = `https://${teamDomain}`;
+  const keySet = createRemoteJWKSet(new URL(`${issuer}/cdn-cgi/access/certs`));
+  remoteKeySets.set(teamDomain, keySet);
+  return keySet;
+}
+
 export async function authenticateAdmin(request: Request, env: Env): Promise<AdminIdentity | null> {
   let email: string | undefined;
 
@@ -14,7 +25,7 @@ export async function authenticateAdmin(request: Request, env: Env): Promise<Adm
     if (!token) return null;
     try {
       const issuer = `https://${env.ACCESS_TEAM_DOMAIN}`;
-      const keySet = createRemoteJWKSet(new URL(`${issuer}/cdn-cgi/access/certs`));
+      const keySet = keySetFor(env.ACCESS_TEAM_DOMAIN);
       const { payload } = await jwtVerify(token, keySet, { issuer, audience: env.ACCESS_AUDIENCE });
       email = typeof payload.email === "string" ? payload.email.toLowerCase() : undefined;
     } catch {

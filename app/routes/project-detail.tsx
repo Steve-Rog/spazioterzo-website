@@ -1,27 +1,29 @@
 import "../styles/projects.css";
 import { useParams, useLoaderData } from "react-router";
 import { ProjectDetail } from "../components/projects/ProjectDetail";
-import { getPublicProject } from "../content/public-api";
+import { getPublicProject, getPublicSite } from "../content/public-api";
 
 export async function loader({ params }: { params: { slug?: string } }) {
-  return { project: await getPublicProject(params.slug) };
+  const [project, site] = await Promise.all([getPublicProject(params.slug), getPublicSite()]);
+  return { project, site };
 }
 
-export function meta({ data }: { data?: { project?: Awaited<ReturnType<typeof getPublicProject>> } }) {
+export function meta({ data }: { data?: { project?: Awaited<ReturnType<typeof getPublicProject>>; site?: Awaited<ReturnType<typeof getPublicSite>> } }) {
   const project = data?.project;
-  if (!project) return [{ title: "Progetto non trovato — Spazio Terzo" }];
+  const suffix = data?.site?.seo.titleSuffix ?? data?.site?.identity.organizationName ?? "Spazio Terzo";
+  if (!project) return [{ title: `Progetto non trovato — ${suffix}` }];
   return [
-    { title: `${project.title} — Spazio Terzo` },
-    { name: "description", content: project.subtitle },
+    { title: `${project.seoTitle ?? project.title} — ${suffix}` },
+    { name: "description", content: project.seoDescription ?? project.subtitle },
     { property: "og:title", content: `${project.title} — Spazio Terzo` },
     { property: "og:description", content: project.subtitle },
-    { property: "og:image", content: project.cover },
+    { property: "og:image", content: data?.site?.seo.shareImage ?? project.cover },
   ];
 }
 
 export default function ProjectDetailRoute() {
   const { slug } = useParams();
-  const { project } = useLoaderData<typeof loader>();
+  const { project, site } = useLoaderData<typeof loader>();
 
   if (!project) {
     return (
@@ -33,5 +35,5 @@ export default function ProjectDetailRoute() {
     );
   }
 
-  return <ProjectDetail project={project} />;
+  return <ProjectDetail project={project} site={site} />;
 }

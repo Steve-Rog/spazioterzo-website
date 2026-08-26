@@ -5,6 +5,7 @@ import { SiteHeader } from "../layout/SiteHeader";
 import { Arrow } from "../ui/Arrow";
 import { Reveal } from "../ui/Reveal";
 import { getRelatedProjects, type Project, type ProjectBlock } from "./content";
+import type { SiteSettingsContent } from "../../../shared/content-schema";
 
 function ProjectBlockView({ block }: { block: ProjectBlock }) {
   if (block.type === "paragraph") return <p className="project-detail-paragraph">{block.text}</p>;
@@ -44,14 +45,14 @@ function ProjectVideo({ project }: { project: Project }) {
   );
 }
 
-export function ProjectDetail({ project }: { project: Project }) {
+export function ProjectDetail({ project, site }: { project: Project; site: SiteSettingsContent }) {
   const reduceMotion = useReducedMotion();
   const relatedProjects = getRelatedProjects(project);
 
   return (
     <main className="project-detail-page">
       <section className="project-detail-hero">
-        <SiteHeader currentPage="projects" />
+        <SiteHeader currentPage="projects" identity={site.identity} />
         <motion.img
           className="project-detail-hero-image"
           src={project.cover}
