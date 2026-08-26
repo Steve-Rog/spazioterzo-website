@@ -342,6 +342,10 @@ async function router(request: Request, env: Env): Promise<Response> {
     if (action === "revisions") {
       const forbidden = requireAdmin(identity, "admin");
       if (forbidden) return forbidden;
+      if (revisionId) {
+        const source = await env.DB.prepare("SELECT payload FROM content_revisions WHERE id = ? AND entity_id = ?").bind(revisionId, id).first<{ payload: string }>();
+        return source ? json(JSON.parse(source.payload)) : json({ error: "Revisione non trovata" }, { status: 404 });
+      }
       const entity = await findEntity(env, type, id);
       const row = await entityRow(env, id);
       return entity && row ? json(await listRevisions(env, entity, row)) : json({ error: "Contenuto non trovato" }, { status: 404 });

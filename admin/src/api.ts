@@ -28,6 +28,7 @@ export const adminApi = {
   unarchive: <T>(resource: AdminResource, id: string) => request<ContentEntity<T>>(`/v1/admin/${resource}/${id}/unarchive`, { method: "POST" }),
   order: <T>(resource: AdminResource, id: string, displayOrder: number) => request<ContentEntity<T>>(`/v1/admin/${resource}/${id}/order`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayOrder }) }),
   revisions: (resource: AdminResource, id: string) => request<RevisionSummary[]>(`/v1/admin/${resource}/${id}/revisions`),
+  revision: <T>(resource: AdminResource, id: string, revisionId: string) => request<T>(`/v1/admin/${resource}/${id}/revisions/${revisionId}`),
   restoreRevision: <T>(resource: AdminResource, id: string, revisionId: string) => request<ContentEntity<T>>(`/v1/admin/${resource}/${id}/revisions/${revisionId}/restore`, { method: "POST" }),
   users: () => request<AdminUser[]>("/v1/admin/users"),
   saveUser: (email: string, role: "admin" | "editor", active: boolean) => request<AdminUser[]>(`/v1/admin/users/${encodeURIComponent(email)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role, active }) }),

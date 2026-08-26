@@ -7,11 +7,12 @@ import "@mantine/dropzone/styles.css";
 import "@mantine/notifications/styles.css";
 import "@mantine/tiptap/styles.css";
 import { App } from "./App";
+import { adminTheme } from "./theme";
 import "./styles.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <MantineProvider theme={{ primaryColor: "orange", defaultRadius: "sm", fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}>
+    <MantineProvider theme={adminTheme}>
       <Notifications position="bottom-right" />
       <App />
     </MantineProvider>
