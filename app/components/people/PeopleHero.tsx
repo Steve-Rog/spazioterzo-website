@@ -8,6 +8,7 @@ import { TeamProfileModal } from "./TeamProfileModal";
 export function PeopleHero() {
   const reduceMotion = useReducedMotion();
   const isMobile = useMediaQuery("(max-width: 760px)");
+  const canHover = useMediaQuery("(hover: hover) and (pointer: fine)");
   const [activeMemberIndex, setActiveMemberIndex] = useState<number | null>(null);
   const [foregroundMemberIndex, setForegroundMemberIndex] = useState<number | null>(null);
   const openingTimer = useRef<number | null>(null);
@@ -24,21 +25,25 @@ export function PeopleHero() {
 
   const portraitRotation = [-4, 4, -2];
 
+  const clearScheduledOpen = () => {
+    if (openingTimer.current !== null) window.clearTimeout(openingTimer.current);
+    openingTimer.current = null;
+  };
+
   const openMember = (index: number) => {
+    clearScheduledOpen();
     setForegroundMemberIndex(index);
 
-    if (!isMobile || reduceMotion) {
+    if (canHover || !isMobile || reduceMotion) {
       setActiveMemberIndex(index);
       return;
     }
 
-    if (openingTimer.current !== null) window.clearTimeout(openingTimer.current);
     openingTimer.current = window.setTimeout(() => setActiveMemberIndex(index), 210);
   };
 
   const closeProfile = () => {
-    if (openingTimer.current !== null) window.clearTimeout(openingTimer.current);
-    openingTimer.current = null;
+    clearScheduledOpen();
     setActiveMemberIndex(null);
     setForegroundMemberIndex(null);
   };
@@ -76,7 +81,7 @@ export function PeopleHero() {
       <div
         className="people-hero-collage"
         aria-label="Jacopo Raniolo, Sonja Brunetto e Ylenia D’Agostino"
-        onPointerLeave={() => !isMobile && setForegroundMemberIndex(null)}
+        onPointerLeave={() => canHover && setForegroundMemberIndex(null)}
       >
         {teamMembers.map((member, index) => (
           <motion.button
@@ -85,9 +90,9 @@ export function PeopleHero() {
             key={member.name}
             onClick={() => openMember(index)}
             aria-label={`Apri il profilo di ${member.name}`}
-            onPointerEnter={() => !isMobile && setForegroundMemberIndex(index)}
-            onFocus={() => !isMobile && setForegroundMemberIndex(index)}
-            onBlur={() => !isMobile && setForegroundMemberIndex(null)}
+            onPointerEnter={(event) => canHover && event.pointerType === "mouse" && setForegroundMemberIndex(index)}
+            onFocus={() => setForegroundMemberIndex(index)}
+            onBlur={() => setForegroundMemberIndex(null)}
             initial={reduceMotion ? false : { opacity: 0, y: 56, rotate: index === 0 ? -8 : index === 1 ? 7 : -5 }}
             animate={{
               opacity: foregroundMemberIndex === null || foregroundMemberIndex === index ? 1 : 0.62,
