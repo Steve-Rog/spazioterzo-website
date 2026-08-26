@@ -2,10 +2,10 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "@mantine/hooks";
 import { SiteHeader } from "../layout/SiteHeader";
-import { teamMembers } from "./content";
+import { type TeamMember } from "./content";
 import { TeamProfileModal } from "./TeamProfileModal";
 
-export function PeopleHero() {
+export function PeopleHero({ teamMembers }: { teamMembers: TeamMember[] }) {
   const reduceMotion = useReducedMotion();
   const isMobile = useMediaQuery("(max-width: 760px)");
   const canHover = useMediaQuery("(hover: hover) and (pointer: fine)");
@@ -80,7 +80,7 @@ export function PeopleHero() {
 
       <div
         className="people-hero-collage"
-        aria-label="Jacopo Raniolo, Sonja Brunetto e Ylenia D’Agostino"
+        aria-label={teamMembers.map((member) => member.name).join(", ")}
         onPointerLeave={() => canHover && setForegroundMemberIndex(null)}
       >
         {teamMembers.map((member, index) => (
@@ -116,6 +116,7 @@ export function PeopleHero() {
       <p className="people-scroll-cue">Scegli un ritratto <span>↗</span></p>
       <div className="people-hero-grain" />
       <TeamProfileModal
+        teamMembers={teamMembers}
         activeMemberIndex={activeMemberIndex}
         onClose={closeProfile}
         onActiveMemberChange={setActiveMemberIndex}

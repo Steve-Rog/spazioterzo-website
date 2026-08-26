@@ -1,5 +1,11 @@
 import "../styles/projects.css";
 import { ProjectsArchive } from "../components/projects/ProjectsArchive";
+import { getPublicProjects } from "../content/public-api";
+import { useLoaderData } from "react-router";
+
+export async function loader() {
+  return { projects: await getPublicProjects() };
+}
 
 export function meta() {
   return [
@@ -10,5 +16,6 @@ export function meta() {
 }
 
 export default function Projects() {
-  return <ProjectsArchive />;
+  const { projects } = useLoaderData<typeof loader>();
+  return <ProjectsArchive projects={projects} />;
 }

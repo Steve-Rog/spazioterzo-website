@@ -1,10 +1,14 @@
 import "../styles/projects.css";
-import { useParams } from "react-router";
+import { useParams, useLoaderData } from "react-router";
 import { ProjectDetail } from "../components/projects/ProjectDetail";
-import { getProject } from "../components/projects/content";
+import { getPublicProject } from "../content/public-api";
 
-export function meta({ params }: { params: { slug?: string } }) {
-  const project = getProject(params.slug);
+export async function loader({ params }: { params: { slug?: string } }) {
+  return { project: await getPublicProject(params.slug) };
+}
+
+export function meta({ data }: { data?: { project?: Awaited<ReturnType<typeof getPublicProject>> } }) {
+  const project = data?.project;
   if (!project) return [{ title: "Progetto non trovato — Spazio Terzo" }];
   return [
     { title: `${project.title} — Spazio Terzo` },
@@ -17,7 +21,7 @@ export function meta({ params }: { params: { slug?: string } }) {
 
 export default function ProjectDetailRoute() {
   const { slug } = useParams();
-  const project = getProject(slug);
+  const { project } = useLoaderData<typeof loader>();
 
   if (!project) {
     return (

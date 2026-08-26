@@ -1,14 +1,15 @@
 import { Modal } from "@mantine/core";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { teamMembers } from "./content";
+import type { TeamMember } from "./content";
 
 type TeamProfileModalProps = {
+  teamMembers: TeamMember[];
   activeMemberIndex: number | null;
   onClose: () => void;
   onActiveMemberChange: (index: number) => void;
 };
 
-export function TeamProfileModal({ activeMemberIndex, onClose, onActiveMemberChange }: TeamProfileModalProps) {
+export function TeamProfileModal({ teamMembers, activeMemberIndex, onClose, onActiveMemberChange }: TeamProfileModalProps) {
   const reduceMotion = useReducedMotion();
   const selectedIndex = activeMemberIndex ?? 0;
   const activeMember = activeMemberIndex === null ? null : teamMembers[selectedIndex];
@@ -43,7 +44,7 @@ export function TeamProfileModal({ activeMemberIndex, onClose, onActiveMemberCha
                 transition={{ duration: reduceMotion ? 0 : 0.55, ease: [0.77, 0, 0.18, 1] }}
               >
                 <img src={activeMember.image} alt={`Ritratto di ${activeMember.name}`} />
-                <figcaption>0{selectedIndex + 1} / 03</figcaption>
+                <figcaption>{String(selectedIndex + 1).padStart(2, "0")} / {String(teamMembers.length).padStart(2, "0")}</figcaption>
               </motion.figure>
             </AnimatePresence>
 

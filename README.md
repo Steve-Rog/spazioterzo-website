@@ -41,3 +41,34 @@ export default [
 
 Ogni route module può esportare `meta`, `loader`, `action` e `headers` quando sarà
 necessario aggiungere contenuti dinamici, form o regole di caching.
+
+## Back office e contenuti
+
+Il back office è sviluppato separatamente dal sito pubblico: Vercel continua a
+servire l'interfaccia esistente, mentre API, database e media usano Cloudflare.
+Senza `VITE_CONTENT_API_URL` il sito mantiene i contenuti presenti nel repository;
+quando l'API è configurata legge esclusivamente le revisioni pubblicate.
+
+### Avvio locale
+
+In tre terminali distinti:
+
+```bash
+npm run db:migrate:local
+npm run dev:worker
+npm run dev:admin
+```
+
+Una volta avviato il Worker, importa i contenuti attuali nel database locale:
+
+```bash
+curl -X POST http://127.0.0.1:8787/v1/development/seed -H 'x-spazioterzo-seed: local-only'
+```
+
+Apri l'admin all'indirizzo indicato da Vite. L'utente locale iniziale è
+`editor@spazioterzo.test`; in produzione questo accesso viene sostituito da
+Cloudflare Access con codice monouso e JWT validato dal Worker.
+
+Prima del deploy l'associazione deve creare le risorse D1/R2, configurare le
+variabili Access indicate in [cloudflare/README.md](cloudflare/README.md) e
+impostare `VITE_CONTENT_API_URL` nel progetto Vercel.

@@ -1,0 +1,4 @@
+# Solo sviluppo locale. Non aggiungere mai questo file con valori reali al repository.
+ENVIRONMENT=development
+PUBLIC_MEDIA_BASE_URL=http://localhost:8787/media
+# Gli account locali sono creati con l'header x-spazioterzo-dev-email.

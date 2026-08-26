@@ -1,5 +1,11 @@
 import "../styles/people.css";
 import { PeopleHero } from "../components/people/PeopleHero";
+import { getPublicTeam } from "../content/public-api";
+import { useLoaderData } from "react-router";
+
+export async function loader() {
+  return { teamMembers: await getPublicTeam() };
+}
 
 export function meta() {
   return [
@@ -12,9 +18,10 @@ export function meta() {
 }
 
 export default function People() {
+  const { teamMembers } = useLoaderData<typeof loader>();
   return (
     <main className="people-page">
-      <PeopleHero />
+      <PeopleHero teamMembers={teamMembers} />
     </main>
   );
 }
