@@ -19,6 +19,15 @@ describe("content schema", () => {
     expect(validateProject({ ...base, blocks: [{ id: "image-1", type: "image", src: "/image.jpg", alt: "" }] })).toBe(false);
   });
 
+  it("accepts local media URLs in development, but not other plain http hosts", () => {
+    const base = { slug: "progetto", title: "Titolo", subtitle: "Sottotitolo", statusLabel: "In corso" as const, dateRange: "2026", location: "Catania", audience: "Persone", themes: ["Cura"], cover: "/cover.jpg", coverAlt: "Copertina", intro: asRichText("Intro"), objective: asRichText("Obiettivo"), blocks: [], outcomes: [], links: [], partners: [], funders: [], relatedSlugs: [] };
+    expect(validateProject({ ...base, cover: "http://localhost:8787/media/2026-08/foto.png" })).toBe(true);
+    expect(validateProject({ ...base, cover: "http://127.0.0.1:8787/media/2026-08/foto.png" })).toBe(true);
+    expect(validateProject({ ...base, cover: "https://media.spazioterzo.org/foto.png" })).toBe(true);
+    expect(validateProject({ ...base, cover: "http://esempio.org/foto.png" })).toBe(false);
+    expect(validateProject({ ...base, cover: "http://localhost.attaccante.org/foto.png" })).toBe(false);
+  });
+
   it("rejects unapproved rich text marks", () => {
     expect(validateProject({ slug: "progetto", title: "Titolo", subtitle: "Sottotitolo", statusLabel: "In corso", dateRange: "2026", location: "Catania", audience: "Persone", themes: ["Cura"], cover: "/cover.jpg", coverAlt: "Copertina", intro: [{ text: "Intro", marks: ["script"] }], objective: asRichText("Obiettivo"), blocks: [], outcomes: [], links: [], partners: [], funders: [], relatedSlugs: [] })).toBe(false);
   });

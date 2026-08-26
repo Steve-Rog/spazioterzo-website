@@ -67,7 +67,8 @@ const safeUrl = (value: unknown) => {
 const safeImageUrl = (value: unknown) => {
   if (typeof value !== "string" || !string(value, 2_000)) return false;
   const href = value.trim();
-  return href.startsWith("/") || /^https:\/\//i.test(href);
+  // In sviluppo i media stanno sul worker locale (http://localhost:8787/media/…): senza questa eccezione le immagini caricate non si possono salvare.
+  return href.startsWith("/") || /^https:\/\//i.test(href) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(href);
 };
 const safeEmail = (value: unknown) => typeof value === "string" && string(value, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 const safeId = (value: unknown) => typeof value === "string" && string(value, 128) && /^[A-Za-z0-9_-]+$/.test(value);

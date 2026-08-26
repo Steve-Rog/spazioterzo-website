@@ -30,7 +30,7 @@ function withCors(response: Response, request: Request, env: Env, isAdmin = fals
     headers.set("Vary", "Origin");
   } else headers.set("Access-Control-Allow-Origin", "*");
   headers.set("Access-Control-Allow-Headers", "Content-Type, Cf-Access-Jwt-Assertion, x-spazioterzo-dev-email");
-  headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS");
+  headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
@@ -227,6 +227,41 @@ async function handleAsset(request: Request, env: Env, actor: AdminIdentity) {
   return json({ id, url: publicUrl, alt: alt.trim() }, { status: 201 });
 }
 
+async function updateAsset(request: Request, env: Env, actor: AdminIdentity, id: string) {
+  const body = await request.json<{ alt?: unknown }>();
+  const alt = typeof body.alt === "string" ? body.alt.trim() : "";
+  if (!alt || alt.length > 180) return json({ error: "Il testo alternativo è obbligatorio (max 180 caratteri)" }, { status: 422 });
+  const asset = await env.DB.prepare("SELECT id FROM assets WHERE id = ?").bind(id).first<{ id: string }>();
+  if (!asset) return json({ error: "Immagine non trovata" }, { status: 404 });
+  await env.DB.prepare("UPDATE assets SET alt_text = ? WHERE id = ?").bind(alt, id).run();
+  await audit(env, actor.email, "asset_updated", id, { alt });
+  return json({ id, alt });
+}
+
+/**
+ * Un'immagine ancora citata da una bozza o da una versione online non va cancellata: sparirebbe dal sito.
+ * Il confronto avviene qui e non con LIKE perché D1 rifiuta i pattern lunghi quanto un URL ("pattern too complex").
+ */
+async function assetUsage(env: Env, publicUrl: string) {
+  const { results } = await env.DB.prepare(
+    `SELECT DISTINCT e.slug, r.payload FROM content_entities e
+     JOIN content_revisions r ON r.id = e.draft_revision_id OR r.id = e.published_revision_id
+     WHERE e.state != 'archived'`,
+  ).all<{ slug: string; payload: string }>();
+  return results.filter((row) => row.payload.includes(publicUrl)).map((row) => row.slug);
+}
+
+async function deleteAsset(env: Env, actor: AdminIdentity, id: string) {
+  const asset = await env.DB.prepare("SELECT id, object_key, public_url FROM assets WHERE id = ?").bind(id).first<{ id: string; object_key: string; public_url: string }>();
+  if (!asset) return json({ error: "Immagine non trovata" }, { status: 404 });
+  const usage = await assetUsage(env, asset.public_url);
+  if (usage.length) return json({ error: `Immagine ancora usata in: ${usage.slice(0, 5).join(", ")}. Sostituiscila lì prima di eliminarla.` }, { status: 409 });
+  await env.MEDIA.delete(asset.object_key);
+  await env.DB.prepare("DELETE FROM assets WHERE id = ?").bind(id).run();
+  await audit(env, actor.email, "asset_deleted", id, { objectKey: asset.object_key });
+  return json({ id });
+}
+
 async function listAssets(env: Env, search: string, cursor: string | null) {
   const offset = Math.max(0, Math.min(Number.parseInt(cursor ?? "0", 10) || 0, 10_000));
   const query = search.trim().toLowerCase().slice(0, 100);
@@ -320,6 +355,12 @@ async function router(request: Request, env: Env): Promise<Response> {
   if (pathname === "/v1/admin/me" && request.method === "GET") return json(identity);
   if (pathname === "/v1/admin/assets" && request.method === "GET") return json(await listAssets(env, url.searchParams.get("q") ?? "", url.searchParams.get("cursor")));
   if (pathname === "/v1/admin/assets" && request.method === "POST") return handleAsset(request, env, identity!);
+  const assetMatch = pathname.match(/^\/v1\/admin\/assets\/([^/]+)$/);
+  if (assetMatch && request.method === "PUT") return updateAsset(request, env, identity!, decodeURIComponent(assetMatch[1]));
+  if (assetMatch && request.method === "DELETE") {
+    const forbidden = requireAdmin(identity, "admin");
+    return forbidden ?? deleteAsset(env, identity!, decodeURIComponent(assetMatch[1]));
+  }
   if (pathname === "/v1/admin/users" && request.method === "GET") {
     const forbidden = requireAdmin(identity, "admin");
     return forbidden ?? json(await listAdminUsers(env));

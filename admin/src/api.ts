@@ -33,6 +33,8 @@ export const adminApi = {
   users: () => request<AdminUser[]>("/v1/admin/users"),
   saveUser: (email: string, role: "admin" | "editor", active: boolean) => request<AdminUser[]>(`/v1/admin/users/${encodeURIComponent(email)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role, active }) }),
   assets: (search = "", cursor?: string) => request<MediaAssetPage>(`/v1/admin/assets?${new URLSearchParams({ ...(search ? { q: search } : {}), ...(cursor ? { cursor } : {}) })}`),
+  updateAsset: (id: string, alt: string) => request<{ id: string; alt: string }>(`/v1/admin/assets/${encodeURIComponent(id)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ alt }) }),
+  deleteAsset: (id: string) => request<{ id: string }>(`/v1/admin/assets/${encodeURIComponent(id)}`, { method: "DELETE" }),
   upload: async (file: File, alt: string) => {
     const data = new FormData(); data.set("file", file); data.set("alt", alt);
     return request<{ id: string; url: string; alt: string }>("/v1/admin/assets", { method: "POST", body: data });
