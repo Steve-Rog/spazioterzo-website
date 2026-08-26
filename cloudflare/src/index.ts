@@ -160,6 +160,19 @@ async function archiveEntity(env: Env, actor: AdminIdentity, type: EntityType, i
   return json(await findEntity(env, type, id));
 }
 
+async function unarchiveEntity(env: Env, actor: AdminIdentity, type: EntityType, id: string) {
+  const row = await entityRow(env, id);
+  if (!row || row.entity_type !== type) return json({ error: "Contenuto non trovato" }, { status: 404 });
+  if (row.state !== "archived") return json({ error: "Il contenuto non è archiviato" }, { status: 422 });
+  if (type === "team_member") {
+    const count = await env.DB.prepare("SELECT COUNT(*) AS total FROM content_entities WHERE entity_type = 'team_member' AND state != 'archived'").first<{ total: number }>();
+    if ((count?.total ?? 0) >= MAX_TEAM_MEMBERS) return json({ error: `Il team può avere al massimo ${MAX_TEAM_MEMBERS} persone. Archiviane una prima di ripristinare.` }, { status: 422 });
+  }
+  await env.DB.prepare("UPDATE content_entities SET state = 'draft', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(id).run();
+  await audit(env, actor.email, "unarchived", id, { type });
+  return json(await findEntity(env, type, id));
+}
+
 async function updateDisplayOrder(env: Env, actor: AdminIdentity, type: EntityType, id: string, displayOrder: unknown) {
   if (typeof displayOrder !== "number" || !Number.isInteger(displayOrder) || displayOrder < 0 || displayOrder > 10_000) return json({ error: "Ordine non valido" }, { status: 422 });
   const entity = await findEntity(env, type, id);
@@ -247,6 +260,8 @@ async function saveAdminUser(request: Request, env: Env, actor: AdminIdentity, e
   const body = await request.json<{ role?: unknown; active?: unknown }>();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || (body.role !== "admin" && body.role !== "editor") || typeof body.active !== "boolean") return json({ error: "Utente o ruolo non validi" }, { status: 422 });
   const current = await env.DB.prepare("SELECT role, active FROM admin_users WHERE email = ?").bind(normalizedEmail).first<{ role: "admin" | "editor"; active: number }>();
+  const isSelf = normalizedEmail === actor.email.trim().toLowerCase();
+  if (isSelf && (body.role !== actor.role || !body.active)) return json({ error: "Non puoi modificare o disattivare il tuo accesso: chiedilo a un altro amministratore." }, { status: 422 });
   const removesAdmin = current?.role === "admin" && current.active === 1 && (body.role !== "admin" || !body.active);
   if (removesAdmin) {
     const count = await env.DB.prepare("SELECT COUNT(*) AS total FROM admin_users WHERE role = 'admin' AND active = 1").first<{ total: number }>();
@@ -315,7 +330,7 @@ async function router(request: Request, env: Env): Promise<Response> {
     return forbidden ?? saveAdminUser(request, env, identity!, decodeURIComponent(userMatch[1]));
   }
 
-  const match = pathname.match(/^\/v1\/admin\/(projects|team|site)(?:\/([^/]+))?(?:\/(publish|archive|order|revisions))?(?:\/([^/]+))?(?:\/(restore))?$/);
+  const match = pathname.match(/^\/v1\/admin\/(projects|team|site)(?:\/([^/]+))?(?:\/(publish|archive|unarchive|order|revisions))?(?:\/([^/]+))?(?:\/(restore))?$/);
   if (!match) return json({ error: "Non trovato" }, { status: 404 });
   const [, resource, id, action, revisionId, restoreAction] = match;
   const type: EntityType = resource === "projects" ? "project" : resource === "team" ? "team_member" : "site";
@@ -341,6 +356,10 @@ async function router(request: Request, env: Env): Promise<Response> {
   if (request.method === "POST" && action === "archive" && id) {
     const forbidden = requireAdmin(identity, "admin");
     return forbidden ?? archiveEntity(env, identity!, type, id);
+  }
+  if (request.method === "POST" && action === "unarchive" && id) {
+    const forbidden = requireAdmin(identity, "admin");
+    return forbidden ?? unarchiveEntity(env, identity!, type, id);
   }
   if (request.method === "POST" && action === "order" && id) {
     const forbidden = requireAdmin(identity, "admin");

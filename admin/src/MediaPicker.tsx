@@ -6,7 +6,7 @@ import { adminApi, type MediaAsset } from "./api";
 
 type MediaValue = { url: string; alt: string; assetId?: string };
 
-export function MediaPicker({ label, value, onChange, required = false, showPreview = true }: { label: string; value: MediaValue; onChange: (next: MediaValue) => void; required?: boolean; showPreview?: boolean }) {
+export function MediaPicker({ label, value, onChange, required = false, showPreview = true, altEditable = true, altHint }: { label: string; value: MediaValue; onChange: (next: MediaValue) => void; required?: boolean; showPreview?: boolean; altEditable?: boolean; altHint?: string }) {
   const [opened, setOpened] = useState(false);
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [search, setSearch] = useState("");
@@ -43,7 +43,9 @@ export function MediaPicker({ label, value, onChange, required = false, showPrev
 
   return <section className="media-field">
     <div className="field-intro"><div><Text fw={700} size="sm">{label}{required ? " *" : ""}</Text><Text c="dimmed" size="xs">Scegli dall’archivio o carica un file.</Text></div><Button variant="default" size="xs" onClick={() => setOpened(true)}>Scegli immagine</Button></div>
-    <TextInput label="Testo alternativo" maxLength={180} value={value.alt} required={required} onChange={(event) => onChange({ ...value, alt: event.currentTarget.value })} />
+    {altEditable
+      ? <TextInput label="Testo alternativo" maxLength={180} value={value.alt} required={required} onChange={(event) => onChange({ ...value, alt: event.currentTarget.value })} />
+      : <div className="media-alt-readonly"><Text fw={600} size="sm">Testo alternativo</Text><Text size="sm">{value.alt}</Text><Text c="dimmed" size="xs">{altHint ?? "Generato automaticamente: non serve compilarlo."}</Text></div>}
     {showPreview && (value.url ? <AspectRatio ratio={16 / 8} className="media-current"><Image src={value.url} alt={value.alt} fit="cover" /></AspectRatio> : <div className="media-placeholder">Nessuna immagine selezionata</div>)}
     <Modal opened={opened} onClose={() => setOpened(false)} title="Archivio media" size="xl" centered>
       <Stack gap="md">

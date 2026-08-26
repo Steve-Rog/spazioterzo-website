@@ -25,6 +25,7 @@ export const adminApi = {
   save: <T>(resource: AdminResource, id: string | undefined, payload: T, displayOrder?: number) => request<ContentEntity<T>>(`/v1/admin/${resource}${id ? `/${id}` : ""}`, { method: id ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payload, ...(displayOrder === undefined ? {} : { displayOrder }) }) }),
   publish: <T>(resource: AdminResource, id: string) => request<ContentEntity<T>>(`/v1/admin/${resource}/${id}/publish`, { method: "POST" }),
   archive: <T>(resource: AdminResource, id: string) => request<ContentEntity<T>>(`/v1/admin/${resource}/${id}/archive`, { method: "POST" }),
+  unarchive: <T>(resource: AdminResource, id: string) => request<ContentEntity<T>>(`/v1/admin/${resource}/${id}/unarchive`, { method: "POST" }),
   order: <T>(resource: AdminResource, id: string, displayOrder: number) => request<ContentEntity<T>>(`/v1/admin/${resource}/${id}/order`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayOrder }) }),
   revisions: (resource: AdminResource, id: string) => request<RevisionSummary[]>(`/v1/admin/${resource}/${id}/revisions`),
   restoreRevision: <T>(resource: AdminResource, id: string, revisionId: string) => request<ContentEntity<T>>(`/v1/admin/${resource}/${id}/revisions/${revisionId}/restore`, { method: "POST" }),
