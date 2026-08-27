@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pageMeta, siteDescription, withSiteSuffix } from "./site-meta";
+import { homeTitle, pageMeta, siteDescription, withSiteSuffix } from "./site-meta";
 import { defaultSiteSettings } from "../../shared/default-site-settings";
 
 describe("site metadata", () => {
@@ -17,5 +17,12 @@ describe("site metadata", () => {
       { property: "og:description", content: "Descrizione" },
       { property: "og:image", content: "https://media.spazioterzo.org/share.jpg" },
     ]));
+  });
+
+  it("opens the home title with the name of the association", () => {
+    // nella linguetta del browser si leggono poche lettere: il nome non può stare in coda
+    expect(homeTitle(defaultSiteSettings)).toBe("Spazio Terzo — psicologia, psicoterapia, comunità");
+    expect(homeTitle(defaultSiteSettings).startsWith(defaultSiteSettings.seo.titleSuffix)).toBe(true);
+    expect(homeTitle(undefined)).toBe("Spazio Terzo — psicologia, psicoterapia, comunità");
   });
 });

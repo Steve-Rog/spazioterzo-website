@@ -7,6 +7,16 @@ export function withSiteSuffix(title: string, site?: SiteSettingsContent) {
   return suffix && title !== suffix ? `${title} — ${suffix}` : title;
 }
 
+/**
+ * Titolo della home: il nome dell'associazione va davanti, non in coda.
+ * Nella linguetta del browser si leggono poche lettere, e «Psicologia, psicotera…»
+ * non dice a nessuno di chi è il sito.
+ */
+export function homeTitle(site?: SiteSettingsContent, claim = "psicologia, psicoterapia, comunità") {
+  const nome = site?.seo.titleSuffix.trim() || site?.identity.organizationName.trim() || "Spazio Terzo";
+  return `${nome} — ${claim}`;
+}
+
 export function siteDescription(site: SiteSettingsContent | undefined, fallback: string) {
   return site?.seo.defaultDescription.trim() || fallback;
 }
