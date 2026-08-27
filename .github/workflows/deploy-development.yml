@@ -5,6 +5,11 @@ on:
     branches: [development]
     paths:
       - "cloudflare/**"
+      # il Worker serve anche il back office: viene compilato da admin/, che importa app/ e shared/
+      - "admin/**"
+      - "app/**"
+      - "shared/**"
+      - "public/**"
       - ".github/workflows/deploy-development.yml"
       - package.json
       - package-lock.json
