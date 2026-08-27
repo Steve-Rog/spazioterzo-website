@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatRoute, homeRoute, parseRoute, sameRoute, type Route } from "./routing";
+import { formatRoute, homeRoute, parseRoute, routeKey, sameRoute, type Route } from "./routing";
 
 const roundTrip = (route: Route) => parseRoute(formatRoute(route));
 
@@ -24,6 +24,22 @@ describe("parseRoute", () => {
     expect(parseRoute("#/sito/home")).toEqual({ section: "site", editingId: "site", sitePanel: "home" });
     expect(parseRoute("#/sito/seo").sitePanel).toBe("seo");
     expect(parseRoute("#/sito/inventato").sitePanel).toBe("identity");
+  });
+
+  it("riconosce la sezione della home a cui siamo arrivati", () => {
+    expect(parseRoute("#/sito/home/attivita")).toEqual({ section: "site", editingId: "site", sitePanel: "home", anchor: "attivita" });
+    expect(formatRoute({ section: "site", editingId: "site", sitePanel: "home", anchor: "attivita" })).toBe("#/sito/home/attivita");
+  });
+
+  it("l'ancora vale solo per la home", () => {
+    expect(parseRoute("#/sito/seo/qualcosa").anchor).toBeUndefined();
+    expect(formatRoute({ section: "site", editingId: "site", sitePanel: "seo", anchor: "attivita" })).toBe("#/sito/seo");
+  });
+
+  it("scorrere dentro la home non conta come cambio di schermata", () => {
+    const base: Route = { section: "site", editingId: "site", sitePanel: "home" };
+    expect(sameRoute(base, { ...base, anchor: "contatti" })).toBe(true);
+    expect(routeKey({ ...base, anchor: "contatti" })).toBe("#/sito/home");
   });
 
   it("ignora le parti in eccesso invece di rompersi", () => {

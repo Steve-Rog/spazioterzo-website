@@ -13,8 +13,21 @@ function headers(extra: HeadersInit = {}) {
   return { ...extra, ...(localEmail ? { "x-spazioterzo-dev-email": localEmail } : {}) };
 }
 
+/** Distingue «il server ha risposto male» da «il server non risponde»: le due cose si raccontano in modo diverso. */
+export class ConnessioneAssente extends Error {
+  constructor(message = "Non riesco a contattare il server dei contenuti.") { super(message); this.name = "ConnessioneAssente"; }
+}
+
+const TIMEOUT_MS = 12_000;
+
 async function request<T>(path: string, init: RequestInit = {}) {
-  const response = await fetch(`${baseUrl}${path}`, { ...init, headers: headers(init.headers) });
+  let response: Response;
+  try {
+    // senza scadenza una richiesta lasciata a metà tiene la schermata in caricamento per sempre
+    response = await fetch(`${baseUrl}${path}`, { ...init, headers: headers(init.headers), signal: AbortSignal.timeout(TIMEOUT_MS) });
+  } catch {
+    throw new ConnessioneAssente();
+  }
   if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "Operazione non riuscita");
   return response.json() as Promise<T>;
 }

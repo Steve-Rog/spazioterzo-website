@@ -8,7 +8,7 @@ import Highlight from "@tiptap/extension-highlight";
 import { plainText, type RichText } from "../../shared/content-schema";
 import { sameContent, toDocument, toRichText, truncate } from "./rich-text";
 
-export function RichTextField({ label, value, onChange, maxLength = 600 }: { label: string; value: RichText; onChange: (value: RichText) => void; maxLength?: number }) {
+export function RichTextField({ label, hint, value, onChange, maxLength = 600 }: { label: string; hint?: string; value: RichText; onChange: (value: RichText) => void; maxLength?: number }) {
   const total = plainText(value).length;
   const emitted = useRef<RichText>(value);
 
@@ -56,8 +56,8 @@ export function RichTextField({ label, value, onChange, maxLength = 600 }: { lab
   }, [editor, value]);
 
   return <section className="rich-field">
-    <Group justify="space-between">
-      <Text fw={700} size="sm">{label}</Text>
+    <Group justify="space-between" align="start">
+      <div><Text fw={700} size="sm">{label}</Text>{hint && <Text size="xs" c="dimmed">{hint}</Text>}</div>
       <Text size="xs" c={total > maxLength * .9 ? "orange" : "dimmed"} aria-live="polite">{total}/{maxLength}</Text>
     </Group>
     <RichTextEditor editor={editor} className="rich-editor">

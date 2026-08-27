@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Cropper, { type Area } from "react-easy-crop";
+import { IconMinus, IconPlus } from "@tabler/icons-react";
 import { ActionIcon, Button, Group, Slider, Stack, Text, Tooltip } from "@mantine/core";
 import type { ImageCrop } from "../../shared/content-schema";
 
@@ -47,7 +48,7 @@ export function ImageCropper({ image, value, onChange, title = "Inquadratura", d
   return <section className="image-cropper">
     <div className="crop-heading">
       <div><Text fw={700} size="sm">{title}</Text><Text c="dimmed" size="xs">{description}</Text></div>
-      {value && <Button variant="subtle" color="dark" size="compact-sm" onClick={reset}>Ripristina</Button>}
+      {value && <Button variant="subtle" color="dark" size="xs" onClick={reset}>Ripristina</Button>}
     </div>
     <div className="crop-stage" style={{ "--crop-aspect": String(aspect) } as CSSProperties}>
       <Cropper image={image} crop={crop} zoom={zoom} aspect={aspect} cropShape={cropShape} showGrid={false} initialCroppedAreaPercentages={initialArea} onCropChange={setCrop} onZoomChange={adjustZoom} onCropComplete={(percentages) => { areaRef.current = normalise(percentages); }} onInteractionEnd={() => onChange(areaRef.current)} />
@@ -55,7 +56,7 @@ export function ImageCropper({ image, value, onChange, title = "Inquadratura", d
     </div>
     <Stack gap={7} className="crop-controls">
       <div className="crop-steps"><span><b>1</b> Trascina per centrare</span><span><b>2</b> Regola lo zoom</span></div>
-      <Group gap="sm" wrap="nowrap"><Tooltip label="Riduci zoom"><ActionIcon aria-label="Riduci zoom" variant="default" onClick={() => adjustZoom(zoom - .1)}>−</ActionIcon></Tooltip><Slider aria-label="Zoom dell’immagine" min={1} max={maxZoom} step={0.01} value={zoom} onChange={adjustZoom} onChangeEnd={() => onChange(areaRef.current)} style={{ flex: 1 }} /><Tooltip label="Aumenta zoom"><ActionIcon aria-label="Aumenta zoom" variant="default" onClick={() => adjustZoom(zoom + .1)}>+</ActionIcon></Tooltip></Group>
+      <Group gap="sm" wrap="nowrap"><Tooltip label="Riduci zoom"><ActionIcon aria-label="Riduci zoom" variant="default" onClick={() => adjustZoom(zoom - .1)}><IconMinus size={16} stroke={1.8} /></ActionIcon></Tooltip><Slider aria-label="Zoom dell’immagine" min={1} max={maxZoom} step={0.01} value={zoom} onChange={adjustZoom} onChangeEnd={() => onChange(areaRef.current)} style={{ flex: 1 }} /><Tooltip label="Aumenta zoom"><ActionIcon aria-label="Aumenta zoom" variant="default" onClick={() => adjustZoom(zoom + .1)}><IconPlus size={16} stroke={1.8} /></ActionIcon></Tooltip></Group>
       <Text size="xs" c="dimmed">Le modifiche dell’inquadratura si salvano nella bozza.</Text>
     </Stack>
   </section>;

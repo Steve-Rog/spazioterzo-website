@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AspectRatio, Button, Group, Image, Modal, SimpleGrid, Skeleton, Stack, Text, TextInput } from "@mantine/core";
 import { Dropzone, IMAGE_MIME_TYPE } from "@mantine/dropzone";
 import { notifications } from "@mantine/notifications";
+import { IconPencil, IconPhotoPlus, IconTrash } from "@tabler/icons-react";
 import { adminApi, type MediaAsset } from "./api";
 
 type MediaValue = { url: string; alt: string; assetId?: string };
@@ -38,13 +39,13 @@ function MediaTile({ asset, onSelect, onRenamed, onDeleted }: { asset: MediaAsse
       <Text size="xs" c="dimmed">{fileSize(asset.byteSize)} · {uploadDate(asset.createdAt)}</Text>
       <Text size="xs" c="dimmed" lineClamp={1} title={asset.createdBy}>{asset.createdBy}</Text>
       {renaming
-        ? <Group gap={6} wrap="nowrap"><TextInput aria-label={`Testo alternativo di ${asset.alt}`} size="xs" maxLength={180} value={alt} disabled={busy} onChange={(event) => setAlt(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === "Enter") void rename(); if (event.key === "Escape") { setRenaming(false); setAlt(asset.alt); } }} /><Button size="compact-xs" variant="default" loading={busy} onClick={() => void rename()}>Salva</Button></Group>
-        : <Group gap={6}><Button size="compact-xs" variant="subtle" color="dark" disabled={busy} onClick={() => setRenaming(true)}>Rinomina</Button><Button size="compact-xs" variant="subtle" color="red" loading={busy} onClick={() => void remove()}>Elimina</Button></Group>}
+        ? <Group gap={6} wrap="nowrap"><TextInput aria-label={`Testo alternativo di ${asset.alt}`} size="xs" maxLength={180} value={alt} disabled={busy} onChange={(event) => setAlt(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === "Enter") void rename(); if (event.key === "Escape") { setRenaming(false); setAlt(asset.alt); } }} /><Button size="xs" variant="default" loading={busy} onClick={() => void rename()}>Salva</Button></Group>
+        : <Group gap={6}><Button size="xs" variant="subtle" color="dark" disabled={busy} leftSection={<IconPencil size={14} stroke={1.8} />} onClick={() => setRenaming(true)}>Rinomina</Button><Button size="xs" variant="subtle" color="red" loading={busy} leftSection={<IconTrash size={14} stroke={1.8} />} onClick={() => void remove()}>Elimina</Button></Group>}
     </figcaption>
   </figure>;
 }
 
-export function MediaPicker({ label, value, onChange, required = false, showPreview = true, altEditable = true, altHint }: { label: string; value: MediaValue; onChange: (next: MediaValue) => void; required?: boolean; showPreview?: boolean; altEditable?: boolean; altHint?: string }) {
+export function MediaPicker({ label, description, value, onChange, required = false, showPreview = true, altEditable = true, altHint, previewRatio = 16 / 8, previewFit = "cover", previewTone = "light" }: { label: string; description?: string; value: MediaValue; onChange: (next: MediaValue) => void; required?: boolean; showPreview?: boolean; altEditable?: boolean; altHint?: string; previewRatio?: number; previewFit?: "cover" | "contain"; previewTone?: "light" | "dark" }) {
   const [opened, setOpened] = useState(false);
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [search, setSearch] = useState("");
@@ -80,14 +81,14 @@ export function MediaPicker({ label, value, onChange, required = false, showPrev
   };
 
   return <section className="media-field">
-    <div className="field-intro"><div><Text fw={700} size="sm">{label}{required ? " *" : ""}</Text><Text c="dimmed" size="xs">Scegli dall’archivio o carica un file.</Text></div><Button variant="default" size="xs" onClick={() => setOpened(true)}>Scegli immagine</Button></div>
+    <div className="field-intro"><div><Text fw={700} size="sm">{label}{required ? " *" : ""}</Text><Text c="dimmed" size="xs">{description ?? "Scegli dall’archivio o carica un file."}</Text></div><Button variant="default" size="xs" leftSection={<IconPhotoPlus size={15} stroke={1.7} />} onClick={() => setOpened(true)}>Scegli immagine</Button></div>
     {altEditable
       ? <TextInput label="Testo alternativo" maxLength={180} value={value.alt} required={required} onChange={(event) => onChange({ ...value, alt: event.currentTarget.value })} />
       : <div className="media-alt-readonly"><Text fw={600} size="sm">Testo alternativo</Text><Text size="sm">{value.alt}</Text><Text c="dimmed" size="xs">{altHint ?? "Generato automaticamente: non serve compilarlo."}</Text></div>}
-    {showPreview && (value.url ? <AspectRatio ratio={16 / 8} className="media-current"><Image src={value.url} alt={value.alt} fit="cover" /></AspectRatio> : <div className="media-placeholder">Nessuna immagine selezionata</div>)}
+    {showPreview && (value.url ? <AspectRatio ratio={previewRatio} className="media-current" data-tone={previewTone}><Image src={value.url} alt={value.alt} fit={previewFit} /></AspectRatio> : <div className="media-placeholder">Nessuna immagine selezionata</div>)}
     <Modal opened={opened} onClose={() => setOpened(false)} title="Archivio media" size="xl" centered>
       <Stack gap="md">
-        <TextInput aria-label="Cerca nell’archivio media" placeholder="Cerca nel testo alternativo…" value={search} onChange={(event) => setSearch(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === "Enter") void load(); }} rightSectionWidth={78} rightSection={<Button variant="subtle" size="compact-xs" onClick={() => void load()}>Cerca</Button>} />
+        <TextInput aria-label="Cerca nell’archivio media" placeholder="Cerca nel testo alternativo…" value={search} onChange={(event) => setSearch(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === "Enter") void load(); }} rightSectionWidth={78} rightSection={<Button variant="subtle" size="xs" onClick={() => void load()}>Cerca</Button>} />
         {altEditable && <TextInput label="Testo alternativo" description="Descrivi l’immagine: serve prima di caricarne una nuova." maxLength={180} value={value.alt} onChange={(event) => onChange({ ...value, alt: event.currentTarget.value })} />}
         <Dropzone onDrop={upload} onReject={() => notifications.show({ color: "red", message: "Sono ammessi JPEG, PNG e WebP fino a 10 MB." })} accept={IMAGE_MIME_TYPE} maxSize={10 * 1024 * 1024} multiple={false} loading={uploading} className="media-dropzone">
           <Text ta="center" fw={600}>Trascina qui un’immagine oppure clicca per caricarla</Text><Text ta="center" c="dimmed" size="xs">JPEG, PNG o WebP · massimo 10 MB{altEditable ? " · compila prima il testo alternativo" : ""}</Text>

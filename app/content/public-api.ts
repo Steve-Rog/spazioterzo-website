@@ -7,7 +7,7 @@ const apiUrl = () => import.meta.env.VITE_CONTENT_API_URL?.replace(/\/$/, "");
 
 export { defaultSiteSettings } from "../../shared/default-site-settings";
 
-function projectToLegacy(project: ProjectContent): Project {
+export function projectToLegacy(project: ProjectContent): Project {
   return {
     slug: project.slug, title: project.title, subtitle: project.subtitle, status: project.statusLabel, dateRange: project.dateRange,
     location: project.location, audience: project.audience, themes: project.themes, cover: project.cover, coverAlt: project.coverAlt,
@@ -24,7 +24,7 @@ function projectToLegacy(project: ProjectContent): Project {
   };
 }
 
-function teamToLegacy(member: TeamMemberContent): TeamMember {
+export function teamToLegacy(member: TeamMemberContent): TeamMember {
   return { name: member.name, role: member.role, image: member.image, imagePosition: member.imagePosition, imageCrop: member.imageCrop, bio: member.bio.map(plainText), quote: plainText(member.quote), quoteAuthor: member.quoteAuthor };
 }
 
