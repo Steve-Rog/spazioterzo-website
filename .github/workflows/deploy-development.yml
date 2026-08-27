@@ -47,3 +47,5 @@ jobs:
       - run: npm test
       - run: npm run db:migrate:dev
       - run: npm run deploy:worker:dev
+      # il sito pubblico è un Worker a parte: legge i contenuti dall'API appena pubblicata
+      - run: npm run deploy:site:dev

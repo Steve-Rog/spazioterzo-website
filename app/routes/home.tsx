@@ -8,8 +8,8 @@ export async function loader() {
   return { site: await getPublicSite() };
 }
 
-export function meta({ data }: { data?: { site?: Awaited<ReturnType<typeof getPublicSite>> } }) {
-  const site = data?.site;
+export function meta({ loaderData }: { loaderData?: { site?: Awaited<ReturnType<typeof getPublicSite>> } }) {
+  const site = loaderData?.site;
   return pageMeta({
     title: withSiteSuffix("Psicologia, psicoterapia, comunità", site),
     description: siteDescription(site, "Spazio Terzo è un'associazione che mette in relazione psicologia, psicoterapia e territorio."),

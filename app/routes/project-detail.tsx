@@ -11,10 +11,10 @@ export async function loader({ params }: { params: { slug?: string } }) {
   return { project, site, related: project ? getRelatedProjects(project, catalog) : [] };
 }
 
-export function meta({ data }: { data?: { project?: Awaited<ReturnType<typeof getPublicProject>>; site?: Awaited<ReturnType<typeof getPublicSite>> } }) {
-  const project = data?.project;
-  if (!project) return pageMeta({ title: withSiteSuffix("Progetto non trovato", data?.site), description: "Il progetto richiesto non è disponibile." });
-  return pageMeta({ title: withSiteSuffix(project.seoTitle ?? project.title, data?.site), description: project.seoDescription ?? project.subtitle, image: data?.site?.seo.shareImage ?? project.cover });
+export function meta({ loaderData }: { loaderData?: { project?: Awaited<ReturnType<typeof getPublicProject>>; site?: Awaited<ReturnType<typeof getPublicSite>> } }) {
+  const project = loaderData?.project;
+  if (!project) return pageMeta({ title: withSiteSuffix("Progetto non trovato", loaderData?.site), description: "Il progetto richiesto non è disponibile." });
+  return pageMeta({ title: withSiteSuffix(project.seoTitle ?? project.title, loaderData?.site), description: project.seoDescription ?? project.subtitle, image: loaderData?.site?.seo.shareImage ?? project.cover });
 }
 
 export default function ProjectDetailRoute() {

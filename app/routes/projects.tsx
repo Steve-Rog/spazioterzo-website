@@ -9,9 +9,9 @@ export async function loader() {
   return { projects, site };
 }
 
-export function meta({ data }: { data?: { site?: Awaited<ReturnType<typeof getPublicSite>> } }) {
-  const name = data?.site?.identity.organizationName ?? "Spazio Terzo";
-  return pageMeta({ title: withSiteSuffix("Progetti", data?.site), description: siteDescription(data?.site, `Progetti, percorsi e pratiche di ${name}.`), image: data?.site?.seo.shareImage });
+export function meta({ loaderData }: { loaderData?: { site?: Awaited<ReturnType<typeof getPublicSite>> } }) {
+  const name = loaderData?.site?.identity.organizationName ?? "Spazio Terzo";
+  return pageMeta({ title: withSiteSuffix("Progetti", loaderData?.site), description: siteDescription(loaderData?.site, `Progetti, percorsi e pratiche di ${name}.`), image: loaderData?.site?.seo.shareImage });
 }
 
 export default function Projects() {

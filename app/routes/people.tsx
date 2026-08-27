@@ -9,9 +9,9 @@ export async function loader() {
   return { teamMembers, site };
 }
 
-export function meta({ data }: { data?: { site?: Awaited<ReturnType<typeof getPublicSite>> } }) {
-  const name = data?.site?.identity.organizationName ?? "Spazio Terzo";
-  return pageMeta({ title: withSiteSuffix("Le persone", data?.site), description: siteDescription(data?.site, `Le persone di ${name}: percorsi, pratiche e sguardi che danno vita all'associazione.`), image: data?.site?.seo.shareImage });
+export function meta({ loaderData }: { loaderData?: { site?: Awaited<ReturnType<typeof getPublicSite>> } }) {
+  const name = loaderData?.site?.identity.organizationName ?? "Spazio Terzo";
+  return pageMeta({ title: withSiteSuffix("Le persone", loaderData?.site), description: siteDescription(loaderData?.site, `Le persone di ${name}: percorsi, pratiche e sguardi che danno vita all'associazione.`), image: loaderData?.site?.seo.shareImage });
 }
 
 export default function People() {
