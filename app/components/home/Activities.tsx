@@ -21,7 +21,7 @@ export function Activities({ content }: { content: SiteSettingsContent }) {
           const contentId = `activity-${index}`;
 
           return (
-            <div className={`service-row ${isActive ? "active" : ""}`} key={activity.title}>
+            <div className={`service-row ${isActive ? "active" : ""}`} key={activity.id}>
               <button
                 type="button"
                 className="service-trigger"

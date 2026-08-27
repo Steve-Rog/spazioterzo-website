@@ -7,6 +7,13 @@ import { TeamProfileModal } from "./TeamProfileModal";
 import { portraitCropStyle } from "./image-crop";
 import type { SiteSettingsContent } from "../../../shared/content-schema";
 
+function teamHeroCopy(count: number) {
+  if (count === 0) return { heading: "Le persone.", intro: "I profili del team saranno disponibili a breve." };
+  if (count === 1) return { heading: "Uno sguardo.", intro: "Una persona, un lavoro costruito nella relazione." };
+  if (count === 2) return { heading: "Due sguardi.", intro: "Due persone, un lavoro costruito nella relazione." };
+  return { heading: "Tre sguardi.", intro: "Tre persone, un lavoro costruito nella relazione." };
+}
+
 export function PeopleHero({ teamMembers, site }: { teamMembers: TeamMember[]; site: SiteSettingsContent }) {
   const reduceMotion = useReducedMotion();
   const isMobile = useMediaQuery("(max-width: 760px)");
@@ -14,6 +21,7 @@ export function PeopleHero({ teamMembers, site }: { teamMembers: TeamMember[]; s
   const [activeMemberIndex, setActiveMemberIndex] = useState<number | null>(null);
   const [foregroundMemberIndex, setForegroundMemberIndex] = useState<number | null>(null);
   const openingTimer = useRef<number | null>(null);
+  const copy = teamHeroCopy(teamMembers.length);
 
   useEffect(() => () => {
     if (openingTimer.current !== null) window.clearTimeout(openingTimer.current);
@@ -67,7 +75,7 @@ export function PeopleHero({ teamMembers, site }: { teamMembers: TeamMember[]; s
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: reduceMotion ? 0 : 0.8, delay: reduceMotion ? 0 : 0.12, ease: [0.22, 1, 0.36, 1] }}
         >
-          Tre sguardi.<br />
+          {copy.heading}<br />
           <em>Uno spazio.</em>
         </motion.h1>
         <motion.p
@@ -76,11 +84,11 @@ export function PeopleHero({ teamMembers, site }: { teamMembers: TeamMember[]; s
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: reduceMotion ? 0 : 0.7, delay: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
         >
-          Tre professioniste e professionisti, un lavoro costruito nella relazione.
+          {copy.intro}
         </motion.p>
       </div>
 
-      <div
+      {teamMembers.length > 0 && <div
         className="people-hero-collage"
         aria-label={teamMembers.map((member) => member.name).join(", ")}
         onPointerLeave={() => canHover && setForegroundMemberIndex(null)}
@@ -113,9 +121,9 @@ export function PeopleHero({ teamMembers, site }: { teamMembers: TeamMember[]; s
             </span>
           </motion.button>
         ))}
-      </div>
+      </div>}
 
-      <p className="people-scroll-cue">Scegli un ritratto <span>↗</span></p>
+      {teamMembers.length > 0 && <p className="people-scroll-cue">Scegli un ritratto <span>↗</span></p>}
       <div className="people-hero-grain" />
       <TeamProfileModal
         teamMembers={teamMembers}
