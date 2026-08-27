@@ -1,4 +1,4 @@
-import { ACCEPTED_MEDIA_TYPES, MAX_MEDIA_BYTES, MAX_TEAM_MEMBERS, contentValidationError, type ContentEntity, type ContentState, type EntityType, type ProjectContent, type SiteSettingsContent, type TeamMemberContent } from "../../shared/content-schema";
+import { ACCEPTED_MEDIA_TYPES, MAX_MEDIA_BYTES, MAX_TEAM_MEMBERS, contentValidationError, publicationReadinessError, type ContentEntity, type ContentState, type EntityType, type ProjectContent, type SiteSettingsContent, type TeamMemberContent } from "../../shared/content-schema";
 import { authenticateAdmin, requireAdmin, type AdminIdentity } from "./auth";
 import { seedDevelopmentDatabase } from "./seed";
 
@@ -111,6 +111,8 @@ async function saveDraft(env: Env, actor: AdminIdentity, type: EntityType, id: s
 async function publish(env: Env, actor: AdminIdentity, type: EntityType, id: string) {
   const entity = await findEntity(env, type, id);
   if (!entity?.draft) return json({ error: "Bozza non trovata" }, { status: 404 });
+  const readinessError = publicationReadinessError(type, entity.draft);
+  if (readinessError) return json({ error: readinessError }, { status: 422 });
   const row = await env.DB.prepare("SELECT draft_revision_id FROM content_entities WHERE id = ?").bind(entity.id).first<{ draft_revision_id: string }>();
   await env.DB.prepare("UPDATE content_entities SET state = 'published', published_revision_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
     .bind(row?.draft_revision_id, entity.id).run();

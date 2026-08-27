@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { motion, useReducedMotion } from "framer-motion";
-import { SiteHeader } from "../layout/SiteHeader";
 import { Arrow } from "../ui/Arrow";
 import { Reveal } from "../ui/Reveal";
 import { type Project, type ProjectBlock } from "./content";
-import type { SiteSettingsContent } from "../../../shared/content-schema";
 
 function ProjectBlockView({ block }: { block: ProjectBlock }) {
   if (block.type === "paragraph") return <p className="project-detail-paragraph">{block.text}</p>;
@@ -51,13 +49,13 @@ function ProjectVideo({ project }: { project: Project }) {
   );
 }
 
-export function ProjectDetail({ project, site, related = [] }: { project: Project; site: SiteSettingsContent; related?: Project[] }) {
+export function ProjectDetail({ project, related = [] }: { project: Project; related?: Project[] }) {
   const reduceMotion = useReducedMotion();
 
   return (
     <main className="project-detail-page">
-      <section className="project-detail-hero">
-        <SiteHeader currentPage="projects" identity={site.identity} />
+      <section className="project-detail-hero" data-site-hero>
+        <div className="site-header-slot" aria-hidden="true" />
         <motion.img
           className="project-detail-hero-image"
           src={project.cover}

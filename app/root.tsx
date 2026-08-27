@@ -2,7 +2,7 @@ import "@mantine/core/styles.css";
 import "./styles/global.css";
 
 import { MantineProvider } from "@mantine/core";
-import { useLoaderData } from "react-router";
+import { useLoaderData, useLocation } from "react-router";
 import {
   Links,
   Meta,
@@ -12,6 +12,7 @@ import {
 } from "react-router";
 import { getPublicSite } from "./content/public-api";
 import { SiteFooter } from "./components/layout/SiteFooter";
+import { SiteHeader } from "./components/layout/SiteHeader";
 
 export async function loader() {
   return { site: await getPublicSite() };
@@ -41,8 +42,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const { site } = useLoaderData<typeof loader>();
+  const { pathname } = useLocation();
+  const currentPage = pathname.startsWith("/progetti")
+    ? "projects"
+    : pathname.startsWith("/persone")
+      ? "people"
+      : "home";
+
   return (
     <MantineProvider defaultColorScheme="auto">
+      <SiteHeader identity={site.identity} currentPage={currentPage} />
       <Outlet />
       <SiteFooter identity={site.identity} />
     </MantineProvider>

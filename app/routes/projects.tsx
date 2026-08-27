@@ -16,5 +16,5 @@ export function meta({ data }: { data?: { site?: Awaited<ReturnType<typeof getPu
 
 export default function Projects() {
   const { projects, site } = useLoaderData<typeof loader>();
-  return <ProjectsArchive projects={projects} site={site} />;
+  return <ProjectsArchive projects={projects} />;
 }

@@ -9,6 +9,7 @@ import "@mantine/tiptap/styles.css";
 import { App } from "./App";
 import { adminTheme } from "./theme";
 import "./styles.css";
+import "./public-preview.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

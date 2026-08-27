@@ -9,9 +9,11 @@ h1, h2, h3, p { margin-top: 0; }
 h1, h2, h3 { letter-spacing: -.055em; font-weight: 500; }
 h1 em, h2 em { font-family: 'Playfair Display', Georgia, serif; font-weight: 500; }
 
-.site-header { width: 100%; height: 92px; display: flex; align-items: center; justify-content: space-between; padding: 18px clamp(24px, 5vw, 76px); position: relative; z-index: 5; }
+.site-header-slot { height: 92px; }
+.site-header { width: 100%; height: 92px; display: flex; align-items: center; justify-content: space-between; padding: 18px clamp(24px, 5vw, 76px); position: fixed; top: 0; right: 0; left: 0; z-index: 100; }
 .brand { display: inline-flex; align-items: center; width: 114px; }
 .brand img { display: block; width: 100%; height: auto; }
+.site-header-logo { display: inline-flex; align-items: center; }
 .site-footer { padding: 100px clamp(24px, 9vw, 150px) 31px; color: var(--paper); background: var(--ink); }
 .site-footer-inner { display: grid; grid-template-columns: 1fr 1fr auto; align-items: start; gap: 20px; padding-top: 23px; border-top: 1px solid rgba(244,241,233,.27); color: #bbcbc9; font-size: 11px; line-height: 1.45; }
 .site-footer-inner p { margin: 0; }
@@ -25,6 +27,7 @@ h1 em, h2 em { font-family: 'Playfair Display', Georgia, serif; font-weight: 500
 .menu-button { display: none; border: 0; color: inherit; background: none; font: 500 11px 'DM Mono', monospace; text-transform: uppercase; }
 
 @media (max-width: 720px) {
+  .site-header-slot { height: 76px; }
   .site-header { height: 76px; padding: 14px 22px; }
   .brand { width: 97px; }
   .site-footer { padding: 72px 24px 28px; }

@@ -848,7 +848,7 @@ function ProjectPreview({ project, site, catalogo, height, focus }: { project: P
   const legacy = projectToLegacy(project);
   // «Altri progetti» mostra i progetti veri del back office, come farà la pagina pubblicata
   const correlati = getRelatedProjects(legacy, catalogo.map(projectToLegacy));
-  return <PreviewFrame height={height} focus={focus}><ProjectDetail project={legacy} site={site} related={correlati} /></PreviewFrame>;
+  return <PreviewFrame height={height} focus={focus}><ProjectDetail project={legacy} related={correlati} /></PreviewFrame>;
 }
 
 function TeamPreview({ member, height, index, total }: { member: TeamMemberContent; height?: number; index: number; total: number }) {

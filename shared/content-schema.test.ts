@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { asRichText, contentLimits, validateProject, validateSiteSettings, validateTeamMember } from "./content-schema";
+import { asRichText, contentLimits, publicationReadinessError, validateProject, validateSiteSettings, validateTeamMember } from "./content-schema";
+import { defaultSiteSettings } from "./default-site-settings";
 
 describe("content schema", () => {
   it("accepts a complete project payload", () => {
@@ -38,5 +39,15 @@ describe("content schema", () => {
     expect(validateProject({ ...base, title: "a".repeat(contentLimits.project.title + 1) })).toBe(false);
     expect(validateProject({ ...base, intro: asRichText("a".repeat(contentLimits.project.intro + 1)) })).toBe(false);
     expect(validateProject({ ...base, blocks: [{ id: "quote-1", type: "quote", text: asRichText("a".repeat(contentLimits.project.quote + 1)) }] })).toBe(false);
+  });
+
+  it("allows incomplete Home content in draft but blocks its publication", () => {
+    const draft = JSON.parse(JSON.stringify(defaultSiteSettings));
+    draft.home.activities.items = [];
+    draft.home.origin.statement = asRichText("");
+    expect(validateSiteSettings(draft)).toBe(true);
+    expect(publicationReadinessError("site", draft)).toContain("Attività — almeno un’attività");
+    expect(publicationReadinessError("site", draft)).toContain("Perché Spazio Terzo — testo sinistro");
+    expect(publicationReadinessError("site", defaultSiteSettings)).toBeNull();
   });
 });

@@ -1,11 +1,9 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "@mantine/hooks";
-import { SiteHeader } from "../layout/SiteHeader";
 import { type TeamMember } from "./content";
 import { TeamProfileModal } from "./TeamProfileModal";
 import { portraitCropStyle } from "./image-crop";
-import type { SiteSettingsContent } from "../../../shared/content-schema";
 
 function teamHeroCopy(count: number) {
   if (count === 0) return { heading: "Le persone.", intro: "I profili del team saranno disponibili a breve." };
@@ -14,7 +12,7 @@ function teamHeroCopy(count: number) {
   return { heading: "Tre sguardi.", intro: "Tre persone, un lavoro costruito nella relazione." };
 }
 
-export function PeopleHero({ teamMembers, site }: { teamMembers: TeamMember[]; site: SiteSettingsContent }) {
+export function PeopleHero({ teamMembers }: { teamMembers: TeamMember[] }) {
   const reduceMotion = useReducedMotion();
   const isMobile = useMediaQuery("(max-width: 760px)");
   const canHover = useMediaQuery("(hover: hover) and (pointer: fine)");
@@ -59,8 +57,8 @@ export function PeopleHero({ teamMembers, site }: { teamMembers: TeamMember[]; s
   };
 
   return (
-    <section className="people-hero" id="top">
-      <SiteHeader currentPage="people" identity={site.identity} />
+    <section className="people-hero" id="top" data-site-hero>
+      <div className="site-header-slot" aria-hidden="true" />
       <div className="people-hero-content">
         <motion.p
           className="section-label"

@@ -23,7 +23,8 @@ export default function ProjectDetailRoute() {
 
   if (!project) {
     return (
-      <main className="project-not-found">
+      <main className="project-not-found" data-site-hero>
+        <div className="site-header-slot" aria-hidden="true" />
         <p className="section-label">404 — Progetti</p>
         <h1>Questo progetto non è qui.</h1>
         <a href="/progetti">Torna ai progetti ↗</a>
@@ -31,5 +32,5 @@ export default function ProjectDetailRoute() {
     );
   }
 
-  return <ProjectDetail project={project} site={site} related={related} />;
+  return <ProjectDetail project={project} related={related} />;
 }

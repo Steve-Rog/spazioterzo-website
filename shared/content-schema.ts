@@ -151,3 +151,31 @@ export function validateContent(type: EntityType, value: unknown): boolean {
 export function contentValidationError(type: EntityType, value: unknown): string | null {
   return validateContent(type, value) ? null : `Contenuto ${type === "project" ? "progetto" : type === "team_member" ? "persona" : "sito"} non valido: controlla campi obbligatori, URL, media e formattazione.`;
 }
+
+/** Le bozze possono essere incomplete; questi requisiti scattano soltanto quando diventano pubblici. */
+export function publicationReadinessError(type: EntityType, value: unknown): string | null {
+  const invalid = contentValidationError(type, value);
+  if (invalid || type !== "site") return invalid;
+
+  const site = value as SiteSettingsContent;
+  const { home } = site;
+  const missing: string[] = [];
+  const requiredText = (label: string, richText: RichText) => { if (!plainText(richText).trim()) missing.push(label); };
+
+  requiredText("Apertura — titolo", home.hero.headline);
+  requiredText("Associazione — titolo", home.association.heading);
+  requiredText("Associazione — testo", home.association.body);
+  requiredText("Perché Spazio Terzo — preludio", home.origin.prelude);
+  requiredText("Perché Spazio Terzo — titolo", home.origin.heading);
+  requiredText("Perché Spazio Terzo — testo sinistro", home.origin.statement);
+  requiredText("Perché Spazio Terzo — testo destro", home.origin.identity);
+  requiredText("Attività — titolo sezione", home.activities.heading);
+  if (!home.activities.items.length) missing.push("Attività — almeno un’attività");
+  home.activities.items.forEach((activity, index) => requiredText(`Attività ${index + 1} — descrizione`, activity.description));
+  requiredText("Territorio — titolo", home.territory.heading);
+  requiredText("Territorio — testo", home.territory.body);
+  requiredText("Contatti — titolo", home.contact.heading);
+  requiredText("Contatti — testo", home.contact.body);
+
+  return missing.length ? `Completa prima di pubblicare: ${missing.join("; ")}.` : null;
+}

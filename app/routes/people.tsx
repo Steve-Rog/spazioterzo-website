@@ -18,7 +18,7 @@ export default function People() {
   const { teamMembers, site } = useLoaderData<typeof loader>();
   return (
     <main className="people-page">
-      <PeopleHero teamMembers={teamMembers} site={site} />
+      <PeopleHero teamMembers={teamMembers} />
     </main>
   );
 }
