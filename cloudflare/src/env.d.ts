@@ -1,6 +1,7 @@
 interface Env {
   DB: D1Database;
   MEDIA: R2Bucket;
+  ASSETS: Fetcher;
   ENVIRONMENT: "local" | "development" | "production";
   PUBLIC_MEDIA_BASE_URL: string;
   ADMIN_ORIGIN?: string;

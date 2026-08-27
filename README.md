@@ -89,7 +89,7 @@ Il sito pubblico su Vercel resta indipendente da queste automazioni: nessun push
 invia il frontend pubblico a Cloudflare.
 
 - Pull request e push su `main`: verifiche automatiche (tipi, test, build sito e build admin).
-- Push sul branch `development`: applica le migrazioni al D1 di sviluppo e pubblica solo il Worker di sviluppo.
+- Push sul branch `development`: applica le migrazioni al D1 di sviluppo e pubblica il Worker di sviluppo, che serve anche il back office su `admin.dev.spazioterzo.it`.
 - Produzione: non parte mai da un push. Si avvia manualmente da GitHub Actions, richiede la parola `DEPLOY` e va protetta con approvazione GitHub Environment.
 
 Prima di attivare il deploy di sviluppo, in GitHub apri **Settings → Secrets and

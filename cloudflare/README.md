@@ -23,14 +23,16 @@ curl -X POST http://127.0.0.1:8787/v1/development/seed -H 'x-spazioterzo-seed: l
 
 Le risorse sono già separate:
 
-| Ambiente | Worker | D1 | R2 |
+| Ambiente | Worker + back office | D1 | R2 |
 | --- | --- | --- | --- |
 | sviluppo | `spazioterzo-api-dev` | `spazioterzo-dev` | `spazioterzo-media-dev` |
 | produzione | `spazioterzo-api` | `spazioterzo-production` | `spazioterzo-media-production` |
 
-L’ambiente di sviluppo vivrà sui sottodomini `api.dev.spazioterzo.it`,
-`admin.dev.spazioterzo.it` e `media.dev.spazioterzo.it`; la produzione usa gli
-equivalenti senza `.dev`. Configurali solo dopo che la zona Cloudflare è **Active**.
+L’admin è un asset statico nello stesso Worker, ma viene servito solo da
+`admin.dev.spazioterzo.it` / `admin.spazioterzo.it`. Le API pubbliche stanno su
+`api…`, i media su `media…/media/`: questo rende l’admin same-origin con le sue API
+e lascia l’API pubblica accessibile al sito Vercel. I domini vengono creati dal deploy
+come Custom Domains; configurali solo dopo che la zona Cloudflare è **Active**.
 
 ## CI/CD GitHub
 
@@ -45,6 +47,7 @@ Per ogni token Cloudflare, seleziona l’account dell’associazione e assegna s
 
 - **Account → Workers Scripts → Edit**
 - **Account → D1 → Edit**
+- **Zone → Workers Routes → Edit** (solo sulla zona `spazioterzo.it`)
 
 Non servono permessi DNS, Zone o accesso al sito Vercel per i workflow attuali.
 Il token di produzione va conservato esclusivamente nell’Environment `production`.

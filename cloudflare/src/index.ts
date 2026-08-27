@@ -310,8 +310,7 @@ async function saveAdminUser(request: Request, env: Env, actor: AdminIdentity, e
   return json(await listAdminUsers(env));
 }
 
-async function serveLocalMedia(pathname: string, env: Env) {
-  if (env.ENVIRONMENT !== "local") return null;
+async function serveMedia(pathname: string, env: Env) {
   const key = pathname.replace(/^\/media\//, "");
   const object = await env.MEDIA.get(key);
   if (!object) return json({ error: "Media non trovato" }, { status: 404 });
@@ -320,11 +319,17 @@ async function serveLocalMedia(pathname: string, env: Env) {
   return new Response(object.body, { headers });
 }
 
+function isAdminHost(url: URL, env: Env) {
+  if (env.ENVIRONMENT === "local") return true;
+  if (!env.ADMIN_ORIGIN) return false;
+  return url.host === new URL(env.ADMIN_ORIGIN).host;
+}
+
 async function router(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const { pathname } = url;
   if (request.method === "OPTIONS") return new Response(null, { status: 204 });
-  if (pathname.startsWith("/media/")) return (await serveLocalMedia(pathname, env)) ?? json({ error: "Non trovato" }, { status: 404 });
+  if (pathname.startsWith("/media/")) return serveMedia(pathname, env);
   if (pathname === "/health") return json({ status: "ok", environment: env.ENVIRONMENT });
   if (pathname === "/v1/development/seed" && request.method === "POST") {
     if (env.ENVIRONMENT !== "local" || request.headers.get("x-spazioterzo-seed") !== "local-only") return json({ error: "Non trovato" }, { status: 404 });
@@ -349,7 +354,10 @@ async function router(request: Request, env: Env): Promise<Response> {
     return json(team.map((member) => ({ id: member.id, displayOrder: member.displayOrder, ...member.published })), { headers: publicHeaders });
   }
 
-  if (!pathname.startsWith("/v1/admin/")) return json({ error: "Non trovato" }, { status: 404 });
+  if (!pathname.startsWith("/v1/admin/")) {
+    if (isAdminHost(url, env)) return env.ASSETS.fetch(request);
+    return json({ error: "Non trovato" }, { status: 404 });
+  }
   const identity = await authenticateAdmin(request, env);
   const unauthorized = requireAdmin(identity);
   if (unauthorized) return unauthorized;

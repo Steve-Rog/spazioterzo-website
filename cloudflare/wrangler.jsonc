@@ -5,6 +5,12 @@
   "compatibility_date": "2026-08-26",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
+  "assets": {
+    "directory": "../admin/dist",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "not_found_handling": "single-page-application"
+  },
   "observability": {
     "enabled": true,
     "logs": {
@@ -31,9 +37,20 @@
   "env": {
     "development": {
       "name": "spazioterzo-api-dev",
+      "assets": {
+        "directory": "../admin/dist",
+        "binding": "ASSETS",
+        "run_worker_first": true,
+        "not_found_handling": "single-page-application"
+      },
+      "routes": [
+        { "pattern": "admin.dev.spazioterzo.it", "custom_domain": true },
+        { "pattern": "api.dev.spazioterzo.it", "custom_domain": true },
+        { "pattern": "media.dev.spazioterzo.it", "custom_domain": true }
+      ],
       "vars": {
         "ENVIRONMENT": "development",
-        "PUBLIC_MEDIA_BASE_URL": "https://media.dev.spazioterzo.it",
+        "PUBLIC_MEDIA_BASE_URL": "https://media.dev.spazioterzo.it/media",
         "PUBLIC_API_BASE_URL": "https://api.dev.spazioterzo.it",
         "ADMIN_ORIGIN": "https://admin.dev.spazioterzo.it"
       },
@@ -49,9 +66,20 @@
     },
     "production": {
       "name": "spazioterzo-api",
+      "assets": {
+        "directory": "../admin/dist",
+        "binding": "ASSETS",
+        "run_worker_first": true,
+        "not_found_handling": "single-page-application"
+      },
+      "routes": [
+        { "pattern": "admin.spazioterzo.it", "custom_domain": true },
+        { "pattern": "api.spazioterzo.it", "custom_domain": true },
+        { "pattern": "media.spazioterzo.it", "custom_domain": true }
+      ],
       "vars": {
         "ENVIRONMENT": "production",
-        "PUBLIC_MEDIA_BASE_URL": "https://media.spazioterzo.it",
+        "PUBLIC_MEDIA_BASE_URL": "https://media.spazioterzo.it/media",
         "PUBLIC_API_BASE_URL": "https://api.spazioterzo.it",
         "ADMIN_ORIGIN": "https://admin.spazioterzo.it"
       },

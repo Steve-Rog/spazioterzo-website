@@ -6,7 +6,9 @@ export type AdminUser = { email: string; role: "admin" | "editor"; active: boole
 export type MediaAsset = { id: string; url: string; alt: string; contentType: string; byteSize: number; createdBy: string; createdAt: string };
 export type MediaAssetPage = { items: MediaAsset[]; nextCursor: string | null };
 
-const baseUrl = (import.meta.env.VITE_ADMIN_API_URL ?? "http://127.0.0.1:8787").replace(/\/$/, "");
+// In produzione l'admin e le API condividono admin.spazioterzo.it: niente CORS o
+// cookie tra sottodomini. Durante lo sviluppo Vite continua invece a usare il Worker locale.
+const baseUrl = (import.meta.env.VITE_ADMIN_API_URL ?? (import.meta.env.DEV ? "http://127.0.0.1:8787" : window.location.origin)).replace(/\/$/, "");
 
 function headers(extra: HeadersInit = {}) {
   const localEmail = window.localStorage.getItem("spazioterzo-dev-email");
