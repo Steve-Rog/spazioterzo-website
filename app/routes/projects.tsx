@@ -1,6 +1,7 @@
 import "../styles/projects.css";
 import { ProjectsArchive } from "../components/projects/ProjectsArchive";
 import { getPublicProjects, getPublicSite } from "../content/public-api";
+import { pageMeta, siteDescription, withSiteSuffix } from "../content/site-meta";
 import { useLoaderData } from "react-router";
 
 export async function loader() {
@@ -10,11 +11,7 @@ export async function loader() {
 
 export function meta({ data }: { data?: { site?: Awaited<ReturnType<typeof getPublicSite>> } }) {
   const name = data?.site?.identity.organizationName ?? "Spazio Terzo";
-  return [
-    { title: `Progetti — ${data?.site?.seo.titleSuffix ?? name}` },
-    { name: "description", content: data?.site?.seo.defaultDescription ?? `Progetti, percorsi e pratiche di ${name}.` },
-    { property: "og:title", content: `Progetti — ${name}` },
-  ];
+  return pageMeta({ title: withSiteSuffix("Progetti", data?.site), description: siteDescription(data?.site, `Progetti, percorsi e pratiche di ${name}.`), image: data?.site?.seo.shareImage });
 }
 
 export default function Projects() {

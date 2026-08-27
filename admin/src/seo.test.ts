@@ -41,7 +41,7 @@ describe("projectSnippet", () => {
 describe("siteSnippet", () => {
   it("usa suffisso e descrizione predefinita", () => {
     expect(siteSnippet({ suffix: "Spazio Terzo", description: "Associazione di promozione sociale" })).toMatchObject({
-      title: "Spazio Terzo",
+      title: "Psicologia, psicoterapia, comunità — Spazio Terzo",
       description: "Associazione di promozione sociale",
       url: "spazioterzo.org",
       usesFallbackTitle: false,

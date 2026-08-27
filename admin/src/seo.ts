@@ -21,8 +21,9 @@ export function projectSnippet({ slug, title, subtitle, seoTitle, seoDescription
 }
 
 export function siteSnippet({ suffix, description, origin = "spazioterzo.org" }: { suffix: string; description: string; origin?: string }): SeoSnippet {
+  const pageTitle = "Psicologia, psicoterapia, comunità";
   return {
-    title: clampSnippet(suffix.trim() || "Spazio Terzo", GOOGLE_TITLE_CHARS),
+    title: clampSnippet(suffix.trim() ? `${pageTitle} — ${suffix.trim()}` : pageTitle, GOOGLE_TITLE_CHARS),
     description: clampSnippet(description.trim() || "Aggiungi la descrizione predefinita del sito.", GOOGLE_DESCRIPTION_CHARS),
     url: origin,
     usesFallbackTitle: !suffix.trim(),

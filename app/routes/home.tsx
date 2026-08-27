@@ -1,6 +1,7 @@
 import "../styles/home.css";
 import { HomePage } from "../components/home/HomePage";
 import { getPublicSite } from "../content/public-api";
+import { pageMeta, siteDescription, withSiteSuffix } from "../content/site-meta";
 import { useLoaderData } from "react-router";
 
 export async function loader() {
@@ -9,19 +10,11 @@ export async function loader() {
 
 export function meta({ data }: { data?: { site?: Awaited<ReturnType<typeof getPublicSite>> } }) {
   const site = data?.site;
-  return [
-    { title: `${site?.identity.organizationName ?? "Spazio Terzo"} — Psicologia, psicoterapia, comunità` },
-    {
-      name: "description",
-      content:
-        site?.seo.defaultDescription ?? "Spazio Terzo è un'associazione che mette in relazione psicologia, psicoterapia e territorio.",
-    },
-    ...(site?.seo.shareImage ? [{ property: "og:image", content: site.seo.shareImage }] : []),
-  ];
-}
-
-export function links({ data }: { data?: { site?: Awaited<ReturnType<typeof getPublicSite>> } } = {}) {
-  return data?.site?.identity.favicon ? [{ rel: "icon", href: data.site.identity.favicon }] : [];
+  return pageMeta({
+    title: withSiteSuffix("Psicologia, psicoterapia, comunità", site),
+    description: siteDescription(site, "Spazio Terzo è un'associazione che mette in relazione psicologia, psicoterapia e territorio."),
+    image: site?.seo.shareImage,
+  });
 }
 
 export default function Home() {

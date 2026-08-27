@@ -77,16 +77,13 @@ h2 { font-size: clamp(42px, 5.5vw, 79px); line-height: .98; margin: 0; }
 .territory-orbit span:nth-child(4) { left: 40%; bottom: 12%; }
 @keyframes drift { to { transform: translateY(-53%) rotate(10deg); } }
 
-.contact { padding: 132px clamp(24px, 9vw, 150px) 31px; background: var(--ink); color: var(--paper); }
+.contact { padding: 132px clamp(24px, 9vw, 150px) 0; background: var(--ink); color: var(--paper); }
 .contact .section-label { color: #a3b7b7; }
 .contact-content { display: flex; justify-content: space-between; align-items: end; gap: 40px; min-height: 380px; }
 .contact h2 { font-size: clamp(70px, 9.2vw, 140px); line-height: .8; }
 .contact-content > div { font-size: 17px; line-height: 1.5; padding-bottom: 17px; }
 .contact-mail { display: inline-flex; gap: 22px; margin-top: 32px; padding-bottom: 7px; border-bottom: 1px solid currentColor; font: 500 11px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .05em; }
 .contact-mail span { font-size: 18px; }
-footer { border-top: 1px solid rgba(244,241,233,.27); margin-top: 100px; padding-top: 23px; display: grid; grid-template-columns: 1fr 1fr auto; align-items: start; gap: 20px; font-size: 11px; line-height: 1.45; color: #bbcbc9; }
-footer .footer-brand { width: 120px; }
-footer p { margin: 0; }
 
 @media (max-width: 720px) {
   .hero-copy { padding: 60px 24px 38px; }
@@ -118,10 +115,8 @@ footer p { margin: 0; }
   .service-detail a { display: none; }
   .territory { min-height: 670px; padding: 90px 24px; }
   .territory-orbit { width: 115vw; right: -53vw; top: 59%; }
-  .contact { padding: 91px 24px 28px; }
+  .contact { padding: 91px 24px 0; }
   .contact-content { display: block; min-height: 375px; }
   .contact h2 { margin-bottom: 72px; }
   .contact-content > div { padding-bottom: 0; }
-  footer { grid-template-columns: 1fr 1fr; margin-top: 72px; }
-  footer p:last-child { grid-column: 1 / -1; }
 }

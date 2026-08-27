@@ -1,6 +1,7 @@
 import "../styles/people.css";
 import { PeopleHero } from "../components/people/PeopleHero";
 import { getPublicSite, getPublicTeam } from "../content/public-api";
+import { pageMeta, siteDescription, withSiteSuffix } from "../content/site-meta";
 import { useLoaderData } from "react-router";
 
 export async function loader() {
@@ -10,13 +11,7 @@ export async function loader() {
 
 export function meta({ data }: { data?: { site?: Awaited<ReturnType<typeof getPublicSite>> } }) {
   const name = data?.site?.identity.organizationName ?? "Spazio Terzo";
-  return [
-    { title: `Le persone — ${data?.site?.seo.titleSuffix ?? name}` },
-    {
-      name: "description",
-      content: data?.site?.seo.defaultDescription ?? `Le persone di ${name}: percorsi, pratiche e sguardi che danno vita all'associazione.`,
-    },
-  ];
+  return pageMeta({ title: withSiteSuffix("Le persone", data?.site), description: siteDescription(data?.site, `Le persone di ${name}: percorsi, pratiche e sguardi che danno vita all'associazione.`), image: data?.site?.seo.shareImage });
 }
 
 export default function People() {
