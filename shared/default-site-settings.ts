@@ -8,7 +8,24 @@ const activities = [
 ] as const;
 
 export const defaultSiteSettings: SiteSettingsContent = {
-  identity: { organizationName: "Spazio Terzo", legalForm: "Associazione di promozione sociale", city: "Catania", country: "Italia", email: "info@spazioterzo.it", logoLight: "/assets/logo_spazioterzo_negative.svg", logoDark: "/assets/logo_spazioterzo.svg", socialLinks: [] },
+  identity: {
+    organizationName: "Spazio Terzo",
+    legalForm: "Spazio Terzo APS",
+    taxId: "93257190871",
+    footerTagline: "Lo spazio condiviso diventa cura.",
+    address: "Via del Bosco n. 55 · 95125",
+    city: "Catania (CT)",
+    country: "Italia",
+    mapUrl: "https://www.google.com/maps/search/?api=1&query=Via%20del%20Bosco%2055%2C%2095125%20Catania",
+    email: "spazioterzo@gmail.com",
+    phones: ["348 893 2971", "340 261 4563", "352 020 0694"],
+    logoLight: "/assets/logo_spazioterzo_negative.svg",
+    logoDark: "/assets/logo_spazioterzo.svg",
+    socialLinks: [
+      { label: "Instagram", href: "https://www.instagram.com/spazio.terzo/" },
+      { label: "Facebook", href: "https://www.facebook.com/profile.php?id=61575980708598" },
+    ],
+  },
   seo: { titleSuffix: "Spazio Terzo", defaultDescription: "Spazio Terzo è un'associazione che mette in relazione psicologia, psicoterapia e territorio." },
   home: {
     hero: { headline: [{ text: "Lo spazio condiviso diventa" }, { text: " cura.", marks: ["italic"] }], meta: "Catania · dal 2014", ctaLabel: "Scrivici" },

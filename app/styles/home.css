@@ -77,13 +77,22 @@ h2 { font-size: clamp(42px, 5.5vw, 79px); line-height: .98; margin: 0; }
 .territory-orbit span:nth-child(4) { left: 40%; bottom: 12%; }
 @keyframes drift { to { transform: translateY(-53%) rotate(10deg); } }
 
-.contact { padding: 132px clamp(24px, 9vw, 150px) 0; background: var(--ink); color: var(--paper); }
-.contact .section-label { color: #a3b7b7; }
-.contact-content { display: flex; justify-content: space-between; align-items: end; gap: 40px; min-height: 380px; }
-.contact h2 { font-size: clamp(70px, 9.2vw, 140px); line-height: .8; }
-.contact-content > div { font-size: 17px; line-height: 1.5; padding-bottom: 17px; }
-.contact-mail { display: inline-flex; gap: 22px; margin-top: 32px; padding-bottom: 7px; border-bottom: 1px solid currentColor; font: 500 11px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .05em; }
-.contact-mail span { font-size: 18px; }
+.contact { position: relative; isolation: isolate; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(330px, .95fr); gap: clamp(54px, 9vw, 170px); min-height: 650px; padding: clamp(108px, 12vw, 188px) clamp(24px, 9vw, 150px) clamp(92px, 9vw, 138px); background: var(--paper); color: var(--ink); }
+.contact:before { content: ''; position: absolute; z-index: -1; width: min(48vw, 710px); aspect-ratio: 1; right: -16vw; bottom: -31vw; border: 1px solid rgba(19,43,53,.3); border-radius: 50%; }
+.contact:after { content: ''; position: absolute; z-index: -1; width: min(29vw, 435px); aspect-ratio: 1; right: -5vw; bottom: -20vw; border: 1px solid rgba(19,43,53,.3); border-radius: 50%; }
+.contact-orbit { position: absolute; z-index: -1; right: 12vw; bottom: 16%; width: clamp(18px, 2vw, 30px); aspect-ratio: 1; border-radius: 50%; background: var(--sun); box-shadow: 0 0 0 clamp(18px, 2.6vw, 42px) rgba(236,147,10,.12); }
+.contact-heading { align-self: start; }
+.contact .section-label { margin-bottom: clamp(55px, 7vw, 110px); }
+.contact h2 { max-width: 730px; margin: 0; font-size: clamp(73px, 9.2vw, 142px); line-height: .79; }
+.contact-action { align-self: end; max-width: 530px; padding-bottom: 9px; }
+.contact-action > p { max-width: 370px; margin: 0 0 clamp(43px, 5vw, 72px); font-size: clamp(17px, 1.35vw, 21px); line-height: 1.42; letter-spacing: -.025em; }
+.contact-mail { position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 14px; padding: 0 0 13px; border-bottom: 1px solid rgba(19,43,53,.72); transition: color .25s, border-color .25s; }
+.contact-mail:after { content: ''; position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--sun); transform: scaleX(0); transform-origin: right; transition: transform .32s cubic-bezier(.22,1,.36,1); }
+.contact-mail > span { padding-bottom: 5px; color: #587078; font: 500 9px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .1em; }
+.contact-mail strong { min-width: 0; font-size: clamp(22px, 2.55vw, 39px); font-weight: 500; line-height: .95; letter-spacing: -.055em; overflow-wrap: anywhere; }
+.contact-mail > span:last-child { padding: 0; color: var(--sun); font: 500 clamp(22px, 2.55vw, 39px)/.8 'DM Sans', sans-serif; }
+.contact-mail:hover { color: var(--orange); border-color: transparent; }
+.contact-mail:hover:after { transform: scaleX(1); transform-origin: left; }
 
 @media (max-width: 720px) {
   .hero-copy { padding: 60px 24px 38px; }
@@ -115,8 +124,16 @@ h2 { font-size: clamp(42px, 5.5vw, 79px); line-height: .98; margin: 0; }
   .service-detail a { display: none; }
   .territory { min-height: 670px; padding: 90px 24px; }
   .territory-orbit { width: 115vw; right: -53vw; top: 59%; }
-  .contact { padding: 91px 24px 0; }
-  .contact-content { display: block; min-height: 375px; }
-  .contact h2 { margin-bottom: 72px; }
-  .contact-content > div { padding-bottom: 0; }
+  .contact { display: block; min-height: 620px; padding: 91px 24px 102px; }
+  .contact:before { width: 110vw; right: -62vw; bottom: -43vw; }
+  .contact:after { width: 65vw; right: -41vw; bottom: -29vw; }
+  .contact-orbit { right: 23vw; bottom: 18%; }
+  .contact .section-label { margin-bottom: 61px; }
+  .contact h2 { max-width: 520px; font-size: clamp(65px, 18.2vw, 91px); }
+  .contact-action { max-width: none; margin-top: 82px; padding-bottom: 0; }
+  .contact-action > p { max-width: 300px; margin-bottom: 42px; font-size: 17px; }
+  .contact-mail { grid-template-columns: 1fr auto; gap: 9px; }
+  .contact-mail > span:first-child { grid-column: 1 / -1; padding-bottom: 5px; }
+  .contact-mail strong { font-size: clamp(21px, 7vw, 29px); }
+  .contact-mail > span:last-child { font-size: 28px; }
 }
