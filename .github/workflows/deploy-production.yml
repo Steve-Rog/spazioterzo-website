@@ -37,5 +37,7 @@ jobs:
 
       - run: npm ci
       - run: npm run typecheck:worker
+      # i test girano anche in verify.yml, ma in parallelo: senza questo passo un push rosso verrebbe pubblicato lo stesso
+      - run: npm test
       - run: npm run db:migrate:production
-      - run: npm run deploy:worker:production -- --yes
+      - run: npm run deploy:worker:production
