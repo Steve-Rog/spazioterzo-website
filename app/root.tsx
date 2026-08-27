@@ -2,7 +2,7 @@ import "@mantine/core/styles.css";
 import "./styles/global.css";
 
 import { MantineProvider } from "@mantine/core";
-import { useLoaderData, useLocation } from "react-router";
+import { useLoaderData, useLocation, useRouteLoaderData } from "react-router";
 import {
   Links,
   Meta,
@@ -18,11 +18,11 @@ export async function loader() {
   return { site: await getPublicSite() };
 }
 
-export function links({ data }: { data?: Awaited<ReturnType<typeof loader>> } = {}) {
-  return data?.site.identity.favicon ? [{ rel: "icon", href: data.site.identity.favicon }] : [];
-}
-
 export function Layout({ children }: { children: React.ReactNode }) {
+  // la favicon arriva dal back office: links() non riceve i dati del loader, quindi si legge qui
+  const dati = useRouteLoaderData<typeof loader>("root");
+  const favicon = dati?.site.identity.favicon;
+
   return (
     <html lang="it">
       <head>
@@ -30,6 +30,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+        {favicon && <link rel="icon" href={favicon} />}
       </head>
       <body>
         {children}
