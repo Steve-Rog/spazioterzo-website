@@ -26,7 +26,7 @@ export function PreviewFrame({ children, width = 1280, height = 820, className =
     doc.write('<!doctype html><html lang="it"><head><meta charset="utf-8"></head><body><div id="anteprima"></div></body></html>');
     doc.close();
     const stile = doc.createElement("style");
-    stile.textContent = `${fogliDelSito}\nbody { margin: 0; width: ${width}px; overflow-x: hidden; }`;
+    stile.textContent = `${fogliDelSito}\nbody { margin: 0; width: ${width}px; overflow-x: hidden; }\n.profile-modal-shell { background: var(--ink, #132b35); min-height: 100%; }`;
     doc.head.append(stile);
     setDocumento(doc);
   }, [width]);

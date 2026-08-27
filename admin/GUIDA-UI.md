@@ -194,6 +194,12 @@ Playfair grande (39–64px) resta solo dove serve richiamare l'aspetto pubblico:
   Due accortezze: `MotionConfig reducedMotion="always"`, altrimenti le animazioni d'ingresso lasciano il
   contenuto invisibile in un riquadro piccolo; e **altezza fissa dell'iframe**, perché adattarla al contenuto
   crea un circolo vizioso con le sezioni alte `100svh` (la pagina arrivava a 14.586px).
+- **L'anteprima mostra quello che stai modificando.** Nell'editor di una persona serve la sua scheda, non il
+  collage con tutte: se per vedere il contenuto bisogna cliccare dentro l'anteprima, l'anteprima è sbagliata.
+- **Attenzione ai componenti che aprono finestre.** `Modal` e `Drawer` di Mantine montano il contenuto in un
+  portale sul documento principale, quindi dentro l'iframe non arrivano (e restano senza i CSS del sito). Se un
+  pezzo di pagina vive dentro una finestra, estrai il suo contenuto in un componente riusabile — come
+  `TeamProfileContent` — e usa quello sia nel sito sia nell'anteprima.
 - **Anteprima nel contesto reale.** Un logo per fondo scuro si guarda su fondo scuro; una favicon si guarda
   quadrata, non stirata in un banner 16:8.
 - **Anteprima del risultato pubblico** dove esiste una resa nota: lo snippet di ricerca per la SEO, con titolo e
