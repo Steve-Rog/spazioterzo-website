@@ -1,12 +1,18 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Cropper, { type Area } from "react-easy-crop";
-import { IconMinus, IconPlus } from "@tabler/icons-react";
-import { ActionIcon, Button, Group, Slider, Stack, Text, Tooltip } from "@mantine/core";
+import { IconPencil, IconRefresh } from "@tabler/icons-react";
+import { ActionIcon, Button, Group, Modal, Slider, Stack, Text, Tooltip } from "@mantine/core";
 import type { ImageCrop } from "../../shared/content-schema";
 
 const round = (value: number) => Math.round(value * 100) / 100;
 const normalise = (area: Area): ImageCrop => ({ x: round(area.x), y: round(area.y), width: round(area.width), height: round(area.height) });
 const zoomFor = (value?: ImageCrop) => value ? Math.max(1, Math.min(3, 100 / Math.min(value.width, value.height))) : 1;
+const cropStyle = (value?: ImageCrop): CSSProperties | undefined => {
+  if (!value) return undefined;
+  const focusX = value.x + value.width / 2;
+  const focusY = value.y + value.height / 2;
+  return { objectPosition: `${focusX}% ${focusY}%`, transform: `scale(${zoomFor(value)})`, transformOrigin: `${focusX}% ${focusY}%` };
+};
 
 type ImageCropperProps = {
   image: string;
@@ -19,45 +25,45 @@ type ImageCropperProps = {
   maxZoom?: number;
 };
 
-/** A reusable, editor-friendly crop control. Persist the returned percentage crop with the image content. */
-export function ImageCropper({ image, value, onChange, title = "Inquadratura", description = "Sposta la foto nell’area e regola lo zoom.", aspect = 1, cropShape = "rect", maxZoom = 3 }: ImageCropperProps) {
+/** Reusable social-style image cropper. Changes are only committed when the editor is confirmed. */
+export function ImageCropper({ image, value, onChange, title = "Ritaglio immagine", description = "Scegli la parte di foto che verrà mostrata sul sito.", aspect = 1, cropShape = "rect", maxZoom = 3 }: ImageCropperProps) {
+  const [opened, setOpened] = useState(false);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(zoomFor(value));
+  const [session, setSession] = useState(0);
   const areaRef = useRef<ImageCrop | undefined>(value);
-  const initialArea = useMemo(() => value, [image]);
 
-  useEffect(() => {
+  const resetDraft = (nextValue = value) => {
     setCrop({ x: 0, y: 0 });
-    setZoom(zoomFor(value));
-    areaRef.current = value;
-  }, [image]);
-
-  if (!image) return <div className="crop-empty">Scegli prima un’immagine: qui potrai decidere esattamente cosa sarà visibile sul sito.</div>;
-
-  const reset = () => {
-    setCrop({ x: 0, y: 0 });
-    setZoom(1);
-    areaRef.current = undefined;
-    onChange(undefined);
+    setZoom(zoomFor(nextValue));
+    areaRef.current = nextValue;
+    setSession((current) => current + 1);
   };
-  const adjustZoom = (next: number) => {
-    const bounded = Math.max(1, Math.min(maxZoom, Math.round(next * 100) / 100));
-    setZoom(bounded);
-  };
+
+  useEffect(() => { resetDraft(value); }, [image]);
+
+  if (!image) return <div className="crop-empty">Dopo aver scelto l’immagine, qui potrai sistemare l’inquadratura.</div>;
+
+  const openEditor = () => { resetDraft(value); setOpened(true); };
+  const cancel = () => { resetDraft(value); setOpened(false); };
+  const confirm = () => { onChange(areaRef.current); setOpened(false); };
+  const reset = () => { resetDraft(undefined); };
 
   return <section className="image-cropper">
-    <div className="crop-heading">
-      <div><Text fw={700} size="sm">{title}</Text><Text c="dimmed" size="xs">{description}</Text></div>
-      {value && <Button variant="subtle" color="dark" size="xs" onClick={reset}>Ripristina</Button>}
-    </div>
-    <div className="crop-stage" style={{ "--crop-aspect": String(aspect) } as CSSProperties}>
-      <Cropper image={image} crop={crop} zoom={zoom} aspect={aspect} cropShape={cropShape} showGrid={false} initialCroppedAreaPercentages={initialArea} onCropChange={setCrop} onZoomChange={adjustZoom} onCropComplete={(percentages) => { areaRef.current = normalise(percentages); }} onInteractionEnd={() => onChange(areaRef.current)} />
-      <div className="crop-stage-label">Area visibile sul sito</div>
-    </div>
-    <Stack gap={7} className="crop-controls">
-      <div className="crop-steps"><span><b>1</b> Trascina per centrare</span><span><b>2</b> Regola lo zoom</span></div>
-      <Group gap="sm" wrap="nowrap"><Tooltip label="Riduci zoom"><ActionIcon aria-label="Riduci zoom" variant="default" onClick={() => adjustZoom(zoom - .1)}><IconMinus size={16} stroke={1.8} /></ActionIcon></Tooltip><Slider aria-label="Zoom dell’immagine" min={1} max={maxZoom} step={0.01} value={zoom} onChange={adjustZoom} onChangeEnd={() => onChange(areaRef.current)} style={{ flex: 1 }} /><Tooltip label="Aumenta zoom"><ActionIcon aria-label="Aumenta zoom" variant="default" onClick={() => adjustZoom(zoom + .1)}><IconPlus size={16} stroke={1.8} /></ActionIcon></Tooltip></Group>
-      <Text size="xs" c="dimmed">Le modifiche dell’inquadratura si salvano nella bozza.</Text>
-    </Stack>
+    <div className="crop-heading"><div><Text fw={700} size="sm">{title}</Text><Text c="dimmed" size="xs">{description}</Text></div></div>
+    <button type="button" className="crop-result" aria-label="Modifica il ritaglio dell’immagine" onClick={openEditor} style={{ "--crop-aspect": String(aspect) } as CSSProperties}>
+      <img src={image} alt="Anteprima del ritaglio" style={cropStyle(value)} />
+      <span><IconPencil size={15} stroke={1.9} /> Modifica ritaglio</span>
+    </button>
+    <Modal opened={opened} onClose={cancel} title={title} size="lg" centered classNames={{ content: "crop-modal" }}>
+      <Stack gap="md">
+        <Text size="sm" c="dimmed">Trascina la foto per posizionarla. Usa lo zoom solo se vuoi avvicinarti.</Text>
+        <div className="crop-editor-stage" style={{ "--crop-aspect": String(aspect) } as CSSProperties}>
+          <Cropper key={`${image}-${session}`} image={image} crop={crop} zoom={zoom} minZoom={1} maxZoom={maxZoom} aspect={aspect} cropShape={cropShape} showGrid={false} initialCroppedAreaPercentages={areaRef.current} onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={(percentages) => { areaRef.current = normalise(percentages); }} />
+        </div>
+        <Group gap="sm" wrap="nowrap" className="crop-zoom"><Text size="xs" c="dimmed">Zoom</Text><Slider aria-label="Zoom dell’immagine" min={1} max={maxZoom} step={0.01} value={zoom} onChange={setZoom} style={{ flex: 1 }} /></Group>
+        <Group justify="space-between"><Tooltip label="Torna all’inquadratura iniziale"><ActionIcon type="button" aria-label="Ripristina ritaglio" variant="subtle" color="dark" onClick={reset}><IconRefresh size={18} stroke={1.8} /></ActionIcon></Tooltip><Group gap="xs"><Button type="button" variant="default" onClick={cancel}>Annulla</Button><Button type="button" color="orange" onClick={confirm}>Fatto</Button></Group></Group>
+      </Stack>
+    </Modal>
   </section>;
 }
