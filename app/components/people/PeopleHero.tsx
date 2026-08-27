@@ -19,17 +19,26 @@ export function PeopleHero({ teamMembers }: { teamMembers: TeamMember[] }) {
   const [activeMemberIndex, setActiveMemberIndex] = useState<number | null>(null);
   const [foregroundMemberIndex, setForegroundMemberIndex] = useState<number | null>(null);
   const openingTimer = useRef<number | null>(null);
+  const focusResetTimer = useRef<number | null>(null);
+  const ignoreRestoredFocus = useRef(false);
   const copy = teamHeroCopy(teamMembers.length);
 
   useEffect(() => () => {
     if (openingTimer.current !== null) window.clearTimeout(openingTimer.current);
+    if (focusResetTimer.current !== null) window.clearTimeout(focusResetTimer.current);
   }, []);
 
-  const foregroundOffsets = [
-    { x: "10vw", y: "-5vw" },
-    { x: "-11vw", y: "9vw" },
-    { x: "-5vw", y: "-8vw" },
-  ];
+  const foregroundOffsets = isMobile
+    ? [
+      { x: "3vw", y: "-2vw" },
+      { x: "0vw", y: "-3vw" },
+      { x: "-3vw", y: "-2vw" },
+    ]
+    : [
+      { x: "10vw", y: "-5vw" },
+      { x: "-11vw", y: "9vw" },
+      { x: "-5vw", y: "-8vw" },
+    ];
 
   const portraitRotation = [-4, 4, -2];
 
@@ -52,8 +61,18 @@ export function PeopleHero({ teamMembers }: { teamMembers: TeamMember[] }) {
 
   const closeProfile = () => {
     clearScheduledOpen();
+    // Mantine restituisce il focus al ritratto che ha aperto il modal: non deve
+    // essere interpretato come una nuova selezione visiva al rientro nella hero.
+    ignoreRestoredFocus.current = true;
+    if (focusResetTimer.current !== null) window.clearTimeout(focusResetTimer.current);
+    focusResetTimer.current = window.setTimeout(() => { ignoreRestoredFocus.current = false; }, 350);
     setActiveMemberIndex(null);
     setForegroundMemberIndex(null);
+  };
+
+  const foregroundFromFocus = (index: number) => {
+    if (ignoreRestoredFocus.current) return;
+    setForegroundMemberIndex(index);
   };
 
   return (
@@ -99,14 +118,14 @@ export function PeopleHero({ teamMembers }: { teamMembers: TeamMember[] }) {
             onClick={() => openMember(index)}
             aria-label={`Apri il profilo di ${member.name}`}
             onPointerEnter={(event) => canHover && event.pointerType === "mouse" && setForegroundMemberIndex(index)}
-            onFocus={() => setForegroundMemberIndex(index)}
+            onFocus={() => foregroundFromFocus(index)}
             onBlur={() => setForegroundMemberIndex(null)}
             initial={reduceMotion ? false : { opacity: 0, y: 56, rotate: index === 0 ? -8 : index === 1 ? 7 : -5 }}
             animate={{
               opacity: foregroundMemberIndex === null || foregroundMemberIndex === index ? 1 : 0.62,
               x: foregroundMemberIndex === index ? foregroundOffsets[index].x : "0vw",
               y: foregroundMemberIndex === index ? foregroundOffsets[index].y : "0vw",
-              scale: foregroundMemberIndex === index ? 1.3 : foregroundMemberIndex === null ? 1 : 0.86,
+              scale: foregroundMemberIndex === index ? (isMobile ? 1.08 : 1.3) : foregroundMemberIndex === null ? 1 : (isMobile ? 0.9 : 0.86),
               rotate: foregroundMemberIndex === index ? 0 : portraitRotation[index],
               zIndex: foregroundMemberIndex === index ? 7 : index + 1,
             }}

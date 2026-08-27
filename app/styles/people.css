@@ -66,12 +66,14 @@
   .people-hero .section-label { margin-bottom: 23px; }
   .people-hero h1 { font-size: clamp(59px, 17vw, 82px); line-height: .8; }
   .people-hero-intro { max-width: 275px; margin: 31px 0 0 3px; font-size: 16px; }
-  .people-hero-collage { right: 22px; bottom: 58px; width: 256px; height: 265px; }
+  .people-hero-collage { right: 24px; bottom: 34px; left: 24px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 0; width: auto; height: 222px; }
   .people-hero-portrait { border-width: 2px; }
-  .people-hero-portrait-caption { right: 8px; bottom: 7px; left: 8px; font-size: 7px; }
-  .people-hero-portrait-1 { width: 64%; height: 70%; }
-  .people-hero-portrait-2 { width: 56%; height: 62%; }
-  .people-hero-portrait-3 { width: 43%; height: 49%; }
+  .people-hero-portrait { position: relative; width: auto; height: 94%; inset: auto; min-width: 0; transform-origin: center bottom; }
+  .people-hero-portrait-caption { right: 7px; bottom: 8px; left: 7px; font-size: 7px; line-height: 1.15; }
+  .people-hero-portrait-caption small { margin-top: 4px; font-size: 6px; opacity: 1; transform: none; }
+  .people-hero-portrait-1 { width: calc(100% + 12px); height: 89%; margin-right: -12px; margin-bottom: 4px; }
+  .people-hero-portrait-2 { z-index: 4; width: calc(100% + 16px); height: 100%; margin: 0 -8px 14px; }
+  .people-hero-portrait-3 { width: calc(100% + 12px); height: 92%; margin-left: -12px; }
   .people-scroll-cue { display: none; }
   .profile-modal-body { height: 100dvh; }
   .profile-modal-close { top: 12px; right: 12px; padding: 10px; }
@@ -97,5 +99,5 @@
   .people-hero-content { padding-top: 148px; }
   .people-hero h1 { font-size: clamp(52px, 16vw, 62px); }
   .people-hero-intro { margin-top: 24px; font-size: 15px; }
-  .people-hero-collage { right: 18px; bottom: 27px; width: 220px; height: 228px; }
+  .people-hero-collage { right: 24px; bottom: 24px; left: 24px; width: auto; height: 184px; }
 }
