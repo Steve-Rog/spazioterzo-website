@@ -5,6 +5,7 @@ on:
     branches: [development]
     paths:
       - "cloudflare/**"
+      - ".github/workflows/deploy-development.yml"
       - package.json
       - package-lock.json
   workflow_dispatch:
