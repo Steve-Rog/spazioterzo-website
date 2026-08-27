@@ -45,7 +45,7 @@ function MediaTile({ asset, onSelect, onRenamed, onDeleted }: { asset: MediaAsse
   </figure>;
 }
 
-export function MediaPicker({ label, description, value, onChange, required = false, showPreview = true, altEditable = true, altHint, previewRatio = 16 / 8, previewFit = "cover", previewTone = "light" }: { label: string; description?: string; value: MediaValue; onChange: (next: MediaValue) => void; required?: boolean; showPreview?: boolean; altEditable?: boolean; altHint?: string; previewRatio?: number; previewFit?: "cover" | "contain"; previewTone?: "light" | "dark" }) {
+export function MediaPicker({ label, description, value, onChange, required = false, error, showPreview = true, altEditable = true, altHint, previewRatio = 16 / 8, previewFit = "cover", previewTone = "light" }: { label: string; description?: string; value: MediaValue; onChange: (next: MediaValue) => void; required?: boolean; error?: string; showPreview?: boolean; altEditable?: boolean; altHint?: string; previewRatio?: number; previewFit?: "cover" | "contain"; previewTone?: "light" | "dark" }) {
   const [opened, setOpened] = useState(false);
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [search, setSearch] = useState("");
@@ -80,12 +80,13 @@ export function MediaPicker({ label, description, value, onChange, required = fa
     } finally { setUploading(false); }
   };
 
-  return <section className="media-field">
+  return <section className="media-field" data-error={error ? "" : undefined}>
     <div className="field-intro"><div><Text fw={700} size="sm">{label}{required ? " *" : ""}</Text><Text c="dimmed" size="xs">{description ?? "Scegli dall’archivio o carica un file."}</Text></div><Button variant="default" size="xs" leftSection={<IconPhotoPlus size={15} stroke={1.7} />} onClick={() => setOpened(true)}>Scegli immagine</Button></div>
     {altEditable
       ? <TextInput label="Testo alternativo" maxLength={180} value={value.alt} required={required} onChange={(event) => onChange({ ...value, alt: event.currentTarget.value })} />
       : <div className="media-alt-readonly"><Text fw={600} size="sm">Testo alternativo</Text><Text size="sm">{value.alt}</Text><Text c="dimmed" size="xs">{altHint ?? "Generato automaticamente: non serve compilarlo."}</Text></div>}
     {showPreview && (value.url ? <AspectRatio ratio={previewRatio} className="media-current" data-tone={previewTone}><Image src={value.url} alt={value.alt} fit={previewFit} /></AspectRatio> : <div className="media-placeholder">Nessuna immagine selezionata</div>)}
+    {error && <Text className="media-error" size="xs" role="alert">{error}</Text>}
     <Modal opened={opened} onClose={() => setOpened(false)} title="Archivio media" size="xl" centered>
       <Stack gap="md">
         <TextInput aria-label="Cerca nell’archivio media" placeholder="Cerca nel testo alternativo…" value={search} onChange={(event) => setSearch(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === "Enter") void load(); }} rightSectionWidth={78} rightSection={<Button variant="subtle" size="xs" onClick={() => void load()}>Cerca</Button>} />

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { asRichText, validateProject, type ProjectContent } from "../../shared/content-schema";
-import { composeThemes, mainTheme, missingInStep, missingProjectFields, otherThemes } from "./project-fields";
+import { composeThemes, emptyImageBlocks, mainTheme, missingInStep, missingProjectFields, otherThemes } from "./project-fields";
 
 const vuoto: ProjectContent = {
   slug: "", title: "", subtitle: "", statusLabel: "In corso", dateRange: "", location: "", audience: "", themes: [],
@@ -53,5 +53,30 @@ describe("temi", () => {
     expect(composeThemes("Ascolto", ["Cura"])).toEqual(["Ascolto", "Cura"]);
     expect(composeThemes("  ", ["Cura"])).toEqual(["Cura"]);
     expect(composeThemes("Ascolto", [])).toEqual(["Ascolto"]);
+  });
+});
+
+describe("blocchi immagine incompleti", () => {
+  const conBlocchi = (blocks: ProjectContent["blocks"]): ProjectContent => ({ ...completo, blocks });
+
+  it("segnala la posizione dei blocchi immagine rimasti senza foto", () => {
+    const progetto = conBlocchi([
+      { id: "a", type: "paragraph", text: asRichText("Testo") },
+      { id: "b", type: "image", src: "", alt: "Senza foto" },
+      { id: "c", type: "image", src: "/assets/x.svg", alt: "Con foto" },
+      { id: "d", type: "image", alt: "Mai scelta" },
+    ]);
+    expect(emptyImageBlocks(progetto)).toEqual([2, 4]);
+  });
+
+  it("non segnala nulla quando ogni immagine ha il suo file", () => {
+    expect(emptyImageBlocks(conBlocchi([{ id: "a", type: "image", src: "/assets/x.svg", alt: "Con foto" }]))).toEqual([]);
+    expect(emptyImageBlocks(completo)).toEqual([]);
+  });
+
+  it("descrive la stessa condizione che il server rifiuta", () => {
+    const progetto = conBlocchi([{ id: "b", type: "image", src: "  ", alt: "Spazi" }]);
+    expect(emptyImageBlocks(progetto)).toEqual([1]);
+    expect(validateProject(progetto)).toBe(false);
   });
 });

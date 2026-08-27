@@ -20,10 +20,15 @@ Ogni volta che si mette mano a una sezione:
    ```bash
    npm run dev:worker   # API dei contenuti su :8787
    npm run dev:admin    # back office su :5173
-   npm run dev          # sito pubblico su :5174
+   VITE_CONTENT_API_URL=http://127.0.0.1:8787 npm run dev   # sito pubblico su :5174
    ```
    Se una porta è occupata, chiudi il processo che la tiene invece di cambiarla: gli indirizzi sono cablati nella
    configurazione di sviluppo.
+
+   **`VITE_CONTENT_API_URL` non è facoltativa durante il lavoro.** Senza quella variabile il sito legge i contenuti
+   di esempio scritti in `app/components/**/content.ts` e ignora del tutto il database: la pagina sembra funzionare,
+   mostra dati verosimili, e ogni verifica fatta lì è falsa. Prima di fidarti di quello che vedi, controlla che una
+   modifica salvata e pubblicata nel back office compaia davvero sulla pagina.
 
 2. **Apri la pagina pubblica corrispondente** e leggila dall'alto in basso, segnando le sezioni nell'ordine in cui
    compaiono.

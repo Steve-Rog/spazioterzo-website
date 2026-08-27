@@ -1,11 +1,13 @@
 import "../styles/projects.css";
 import { useParams, useLoaderData } from "react-router";
 import { ProjectDetail } from "../components/projects/ProjectDetail";
-import { getPublicProject, getPublicSite } from "../content/public-api";
+import { getRelatedProjects } from "../components/projects/content";
+import { getPublicProject, getPublicProjects, getPublicSite } from "../content/public-api";
 
 export async function loader({ params }: { params: { slug?: string } }) {
-  const [project, site] = await Promise.all([getPublicProject(params.slug), getPublicSite()]);
-  return { project, site };
+  // l'archivio serve a risolvere «Altri progetti» sui contenuti pubblicati, non sulle copie di esempio
+  const [project, site, catalog] = await Promise.all([getPublicProject(params.slug), getPublicSite(), getPublicProjects()]);
+  return { project, site, related: project ? getRelatedProjects(project, catalog) : [] };
 }
 
 export function meta({ data }: { data?: { project?: Awaited<ReturnType<typeof getPublicProject>>; site?: Awaited<ReturnType<typeof getPublicSite>> } }) {
@@ -23,7 +25,7 @@ export function meta({ data }: { data?: { project?: Awaited<ReturnType<typeof ge
 
 export default function ProjectDetailRoute() {
   const { slug } = useParams();
-  const { project, site } = useLoaderData<typeof loader>();
+  const { project, site, related } = useLoaderData<typeof loader>();
 
   if (!project) {
     return (
@@ -35,5 +37,5 @@ export default function ProjectDetailRoute() {
     );
   }
 
-  return <ProjectDetail project={project} site={site} />;
+  return <ProjectDetail project={project} site={site} related={related} />;
 }

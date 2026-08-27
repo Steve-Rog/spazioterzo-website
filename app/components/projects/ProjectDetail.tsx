@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { SiteHeader } from "../layout/SiteHeader";
 import { Arrow } from "../ui/Arrow";
 import { Reveal } from "../ui/Reveal";
-import { getRelatedProjects, type Project, type ProjectBlock } from "./content";
+import { type Project, type ProjectBlock } from "./content";
 import type { SiteSettingsContent } from "../../../shared/content-schema";
 
 function ProjectBlockView({ block }: { block: ProjectBlock }) {
@@ -21,6 +21,10 @@ function ProjectBlockView({ block }: { block: ProjectBlock }) {
   return <p className="project-detail-stat"><strong>{block.value}</strong><span>{block.label}</span></p>;
 }
 
+function PlayIcon() {
+  return <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" strokeWidth="1.4" /><path d="M10 8.5l6 3.5-6 3.5z" fill="currentColor" /></svg>;
+}
+
 function ProjectVideo({ project }: { project: Project }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const video = project.video;
@@ -29,6 +33,8 @@ function ProjectVideo({ project }: { project: Project }) {
   const source = video.provider === "youtube"
     ? `https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1`
     : `https://player.vimeo.com/video/${video.id}?autoplay=1`;
+  // senza miniatura la copertina evita il riquadro vuoto al posto del video
+  const thumbnail = video.thumbnail || project.cover;
 
   return (
     <section className="project-video" aria-label="Video del progetto">
@@ -36,8 +42,8 @@ function ProjectVideo({ project }: { project: Project }) {
         <iframe src={source} title={`Video: ${project.title}`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
       ) : (
         <button type="button" onClick={() => setIsPlaying(true)}>
-          <img src={video.thumbnail} alt={video.alt} loading="lazy" />
-          <span><b>▶</b> Guarda il video</span>
+          <img src={thumbnail} alt={video.alt || project.coverAlt} loading="lazy" />
+          <span><PlayIcon /> Guarda il video</span>
         </button>
       )}
       {video.caption && <p>{video.caption}</p>}
@@ -45,9 +51,8 @@ function ProjectVideo({ project }: { project: Project }) {
   );
 }
 
-export function ProjectDetail({ project, site }: { project: Project; site: SiteSettingsContent }) {
+export function ProjectDetail({ project, site, related = [] }: { project: Project; site: SiteSettingsContent; related?: Project[] }) {
   const reduceMotion = useReducedMotion();
-  const relatedProjects = getRelatedProjects(project);
 
   return (
     <main className="project-detail-page">
@@ -107,7 +112,7 @@ export function ProjectDetail({ project, site }: { project: Project; site: SiteS
 
       {project.cta && <section className="project-detail-cta"><p>Questo progetto può diventare anche uno spazio per te.</p><Link to={project.cta.href}>{project.cta.label} <Arrow /></Link></section>}
 
-      {relatedProjects.length > 0 && <section className="project-related"><p className="section-label">Altri progetti</p><div>{relatedProjects.map((related) => <Link key={related.slug} to={`/progetti/${related.slug}`}><img src={related.cover} alt="" loading="lazy" /><span>{related.themes[0]}</span><h2>{related.title}</h2><p>{related.subtitle}</p><b>Scopri <Arrow /></b></Link>)}</div></section>}
+      {related.length > 0 && <section className="project-related"><p className="section-label">Altri progetti</p><div>{related.map((altro) => <Link key={altro.slug} to={`/progetti/${altro.slug}`}><img src={altro.cover} alt="" loading="lazy" /><span>{altro.themes[0]}</span><h2>{altro.title}</h2><p>{altro.subtitle}</p><b>Scopri <Arrow /></b></Link>)}</div></section>}
     </main>
   );
 }

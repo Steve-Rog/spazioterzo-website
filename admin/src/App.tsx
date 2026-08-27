@@ -22,10 +22,11 @@ import { sanitiseTags } from "./tags";
 import { PreviewFrame } from "./PreviewFrame";
 import { projectToLegacy, teamToLegacy } from "../../app/content/public-api";
 import { ProjectDetail } from "../../app/components/projects/ProjectDetail";
+import { getRelatedProjects } from "../../app/components/projects/content";
 import { TeamProfileContent } from "../../app/components/people/TeamProfileModal";
 import { HomePage } from "../../app/components/home/HomePage";
 
-import { composeThemes, mainTheme, missingInStep, missingProjectFields, otherThemes, type ProjectFieldName } from "./project-fields";
+import { composeThemes, emptyImageBlocks, mainTheme, missingInStep, missingProjectFields, otherThemes, type ProjectFieldName } from "./project-fields";
 
 type User = { email: string; role: "admin" | "editor" };
 /** Nelle schede il nome della sezione è già nella linguetta attiva: evita di ripeterlo dentro la scheda. */
@@ -63,9 +64,13 @@ export function App() {
   const isMobile = useMediaQuery("(max-width: 767px)");
   const isAdmin = user?.role === "admin";
   const activeTeam = team.filter((item) => item.state !== "archived");
-  const relatedOptions = useMemo(() => projects
+  /** I progetti attivi con il loro contenuto: alimentano sia la scelta dei correlati sia l'anteprima. */
+  const catalogoProgetti = useMemo(() => projects
     .filter((project) => project.state !== "archived")
-    .map((project) => ({ value: project.slug, label: (project.draft ?? project.published)?.title || project.slug })), [projects]);
+    .map((project) => project.draft ?? project.published)
+    .filter((contenuto): contenuto is ProjectContent => Boolean(contenuto)), [projects]);
+  const relatedOptions = useMemo(() => catalogoProgetti
+    .map((project) => ({ value: project.slug, label: project.title || project.slug })), [catalogoProgetti]);
   const siteContent = site?.draft ?? site?.published;
   const siteSeoDefaults = { suffix: siteContent?.seo.titleSuffix ?? defaultSiteSettings.seo.titleSuffix, shareImage: siteContent?.seo.shareImage };
 
@@ -203,7 +208,7 @@ export function App() {
     </AppShell.Navbar>
     <AppShell.Main className="admin-main"><main className="admin-workspace">
       {section !== "site" && !editing && <ArchiveView section={section} items={section === "projects" ? projects : team} isAdmin={Boolean(isAdmin)} teamFull={activeTeam.length >= 3} onNew={() => setEditingId("new")} onOpen={openEntity} onMove={(item, direction) => void move(section, item, direction)} onRestore={(id) => void restore(resourceFor(section), id)} onDuplicate={(item) => void duplicate(item as ContentEntity<ProjectContent>)} onPublish={(id) => void publish(resourceFor(section), id)} onArchive={(id) => void archive(resourceFor(section), id)} />}
-      {section === "projects" && editing && <ProjectEditor key={editingId} entity={currentProject} isAdmin={Boolean(isAdmin)} siteSeo={siteSeoDefaults} siteSettings={siteContent ?? defaultSiteSettings} relatedOptions={relatedOptions.filter((option) => option.value !== currentProject?.slug)} onBack={closeEditor} onSaved={saved} onPublish={publish} onArchive={archive} onDirtyChange={setDirty} />}
+      {section === "projects" && editing && <ProjectEditor key={editingId} entity={currentProject} isAdmin={Boolean(isAdmin)} siteSeo={siteSeoDefaults} siteSettings={siteContent ?? defaultSiteSettings} relatedOptions={relatedOptions.filter((option) => option.value !== currentProject?.slug)} catalogo={catalogoProgetti} onBack={closeEditor} onSaved={saved} onPublish={publish} onArchive={archive} onDirtyChange={setDirty} />}
       {section === "team" && editing && <TeamEditor key={editingId} entity={currentTeam} teamCount={activeTeam.length} teamIndex={Math.max(0, activeTeam.findIndex((item) => item.id === editingId))} onBack={closeEditor} onSaved={saved} onPublish={publish} onArchive={archive} onDirtyChange={setDirty} />}
       {section === "site" && <SiteEditor key={site?.id ?? "site"} entity={site ?? undefined} activePanel={sitePanel} anchor={initialRoute.anchor} onSaved={saved} onPublish={publish} onDirtyChange={setDirty} />}
     </main></AppShell.Main>
@@ -318,12 +323,16 @@ function EditorFrame({ title, eyebrow, entity, resource, isAdmin = true, onBack,
   </section>;
 }
 
-function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedOptions, onBack, onSaved, onPublish, onArchive, onDirtyChange }: { entity?: ContentEntity<ProjectContent>; isAdmin: boolean; siteSeo: { suffix: string; shareImage?: string }; siteSettings: SiteSettingsContent; relatedOptions: Array<{ value: string; label: string }>; onBack: () => void; onSaved: (entity: ContentEntity, message?: string) => Promise<void>; onPublish: (resource: AdminResource, id: string) => Promise<void>; onArchive: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {
+/** Riferimento stabile: passato a un effetto, un array nuovo a ogni render lo farebbe ripartire. */
+const vuoto: number[] = [];
+
+function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedOptions, catalogo, onBack, onSaved, onPublish, onArchive, onDirtyChange }: { entity?: ContentEntity<ProjectContent>; isAdmin: boolean; siteSeo: { suffix: string; shareImage?: string }; siteSettings: SiteSettingsContent; relatedOptions: Array<{ value: string; label: string }>; catalogo: ProjectContent[]; onBack: () => void; onSaved: (entity: ContentEntity, message?: string) => Promise<void>; onPublish: (resource: AdminResource, id: string) => Promise<void>; onArchive: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {
   const form = useForm<ProjectContent>({ mode: "controlled", initialValues: clone(entity?.draft ?? entity?.published ?? blankProject()) });
   const [saving, setSaving] = useState(false);
   const [step, setStep] = useState(0);
   const [slugEdited, setSlugEdited] = useState(Boolean(entity));
   const [errors, setErrors] = useState<Partial<Record<ProjectFieldName, string>>>({});
+  const [blocchiIncompleti, setBlocchiIncompleti] = useState<number[]>(vuoto);
   const [scheda, setScheda] = useState<string | null>("opening");
   const set = form.setFieldValue as FieldSetter<ProjectContent>;
   const newProject = !entity;
@@ -346,6 +355,15 @@ function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedOptions,
 
   const save = async () => {
     if (missing.length) { showMissing(missing); notifications.show({ color: "orange", message: `Manca ancora: ${missing.map((requirement) => requirement.label.toLowerCase()).join(", ")}.` }); return; }
+    // il server rifiuterebbe con un messaggio generico: qui si dice quale blocco è rimasto a metà
+    const senzaFoto = emptyImageBlocks(form.values);
+    if (senzaFoto.length) {
+      setBlocchiIncompleti(senzaFoto);
+      if (newProject) setStep(2); else setScheda("story");
+      notifications.show({ color: "orange", message: senzaFoto.length === 1 ? `Il blocco ${senzaFoto[0]} del racconto è un’immagine senza foto: scegline una o elimina il blocco.` : `Blocchi ${senzaFoto.join(", ")} del racconto: sono immagini senza foto.` });
+      return;
+    }
+    setBlocchiIncompleti(vuoto);
     setErrors({});
     setSaving(true);
     try {
@@ -365,14 +383,14 @@ function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedOptions,
 
   const opening = <ProjectOpening value={form.values} set={set} errors={errors} onTitleChange={setProjectTitle} onSlugChange={(slug) => { setSlugEdited(true); set("slug", slug); }} />;
   const overview = <ProjectOverview value={form.values} set={set} errors={errors} />;
-  const story = <ProjectStory value={form.values} set={set} />;
+  const story = <ProjectStory value={form.values} set={set} blocchiIncompleti={blocchiIncompleti} />;
   const outcomes = <ProjectOutcomes value={form.values} set={set} />;
   const diary = <ProjectDiary value={form.values} set={set} />;
   const network = <ProjectNetwork value={form.values} set={set} />;
   const invite = <ProjectInvite value={form.values} set={set} relatedOptions={relatedOptions} />;
   const seo = <ProjectSeo value={form.values} set={set} suffix={siteSeo.suffix} shareImage={siteSeo.shareImage} />;
 
-  return <form onSubmit={(event) => { event.preventDefault(); void save(); }}><EditorFrame title={entity ? form.values.title || "Progetto senza titolo" : "Nuovo progetto"} eyebrow={entity ? "Modifica progetto" : "Crea progetto"} entity={entity} resource="projects" isAdmin={isAdmin} onBack={onBack} onSave={() => void save()} saving={saving} dirty={form.isDirty()} preview={<ProjectPreview project={form.values} site={siteSettings} focus={selettoreProgetto(scheda)} />} onPublish={onPublish} onArchive={onArchive} onDirtyChange={onDirtyChange}>
+  return <form onSubmit={(event) => { event.preventDefault(); void save(); }}><EditorFrame title={entity ? form.values.title || "Progetto senza titolo" : "Nuovo progetto"} eyebrow={entity ? "Modifica progetto" : "Crea progetto"} entity={entity} resource="projects" isAdmin={isAdmin} onBack={onBack} onSave={() => void save()} saving={saving} dirty={form.isDirty()} preview={<ProjectPreview project={form.values} site={siteSettings} catalogo={catalogo} focus={selettoreProgetto(scheda)} />} onPublish={onPublish} onArchive={onArchive} onDirtyChange={onDirtyChange}>
     {newProject
       ? <>
           <Stepper active={step} onStepClick={goToStep} allowNextStepsSelect={false} className="project-stepper">
@@ -433,11 +451,11 @@ function ProjectOverview({ value, set, errors }: { value: ProjectContent; set: F
   </section>;
 }
 
-function ProjectStory({ value, set }: { value: ProjectContent; set: FieldSetter<ProjectContent> }) {
+function ProjectStory({ value, set, blocchiIncompleti }: { value: ProjectContent; set: FieldSetter<ProjectContent>; blocchiIncompleti: number[] }) {
   return <section className="form-section">
     <SectionHeading title="L’intenzione e il racconto" hint="Il corpo della pagina: l’intenzione in apertura, poi i blocchi nell’ordine in cui appaiono." shape="story" />
     <RichTextField label="L’intenzione" hint="Perché esiste questo progetto, in poche righe." maxLength={contentLimits.project.objective} value={value.objective} onChange={(next) => set("objective", next)} />
-    <BlocksEditor blocks={value.blocks} onChange={(next) => set("blocks", next)} />
+    <BlocksEditor blocks={value.blocks} onChange={(next) => set("blocks", next)} incompleti={blocchiIncompleti} />
     <VideoEditor value={value.video} onChange={(next) => set("video", next)} />
   </section>;
 }
@@ -709,7 +727,7 @@ function blockSummary(block: ProjectBlock): string {
   return [block.value.trim(), block.label.trim()].filter(Boolean).join(" ") || "Dato da compilare";
 }
 
-function BlocksEditor({ blocks, onChange }: { blocks: ProjectBlock[]; onChange: (blocks: ProjectBlock[]) => void }) {
+function BlocksEditor({ blocks, onChange, incompleti = [] }: { blocks: ProjectBlock[]; onChange: (blocks: ProjectBlock[]) => void; incompleti?: number[] }) {
   const [closed, setClosed] = useState<string[]>([]);
   const [dragging, setDragging] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
@@ -728,6 +746,15 @@ function BlocksEditor({ blocks, onChange }: { blocks: ProjectBlock[]; onChange: 
   const toggle = (id: string) => setClosed((current) => current.includes(id) ? current.filter((closedId) => closedId !== id) : [...current, id]);
   const allClosed = blocks.length > 0 && closed.length >= blocks.length;
 
+  // un blocco segnalato ma chiuso nasconderebbe il proprio errore: si apre e si mostra
+  useEffect(() => {
+    if (!incompleti.length) return;
+    const daAprire = incompleti.map((posizione) => blocks[posizione - 1]?.id).filter(Boolean) as string[];
+    setClosed((current) => current.filter((id) => !daAprire.includes(id)));
+    const attesa = window.setTimeout(() => document.querySelector(`[data-block="${incompleti[0]}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }), 60);
+    return () => window.clearTimeout(attesa);
+  }, [incompleti]);
+
   return <section className="blocks">
     <Group justify="space-between">
       <Text fw={700}>Blocchi del racconto</Text>
@@ -741,6 +768,7 @@ function BlocksEditor({ blocks, onChange }: { blocks: ProjectBlock[]; onChange: 
       return <div
         className="block-edit"
         key={block.id}
+        data-block={index + 1}
         data-dragging={dragging === block.id || undefined}
         data-over={overId === block.id && dragging !== block.id || undefined}
         draggable={grabbed === block.id}
@@ -763,13 +791,13 @@ function BlocksEditor({ blocks, onChange }: { blocks: ProjectBlock[]; onChange: 
             <ActionIcon aria-label={`Elimina il blocco ${index + 1}`} variant="subtle" color="red" onClick={() => remove(index, block.type)}><IconTrash size={16} stroke={1.7} /></ActionIcon>
           </Group>
         </div>
-        {!isClosed && <div className="block-body">{block.type === "paragraph" && <RichTextField label="Testo" maxLength={contentLimits.project.paragraph} value={block.text} onChange={(text) => update(index, { ...block, text })} />}{block.type === "quote" && <Stack><RichTextField label="Citazione" maxLength={contentLimits.project.quote} value={block.text} onChange={(text) => update(index, { ...block, text })} /><TextInput label="Fonte" maxLength={contentLimits.project.quoteSource} value={block.source ?? ""} onChange={(event) => update(index, { ...block, source: event.currentTarget.value || undefined })} /></Stack>}{block.type === "list" && <Stack><TextInput label="Titolo elenco" maxLength={contentLimits.project.listTitle} value={block.title} onChange={(event) => update(index, { ...block, title: event.currentTarget.value })} /><Textarea label="Voci" description="Una riga per voce" maxLength={contentLimits.project.listItem * 12} autosize minRows={3} value={block.items.join("\n")} onChange={(event) => update(index, { ...block, items: lines(event.currentTarget.value) })} /></Stack>}{block.type === "image" && <Stack><MediaPicker label="Immagine" required value={{ url: block.src ?? "", alt: block.alt, assetId: block.assetId }} onChange={(next) => update(index, { ...block, src: next.url, alt: next.alt, assetId: next.assetId })} /><Textarea label="Didascalia" maxLength={contentLimits.project.imageCaption} autosize minRows={2} value={block.caption ?? ""} onChange={(event) => update(index, { ...block, caption: event.currentTarget.value || undefined })} /></Stack>}{block.type === "stat" && <div className="form-grid"><TextInput label="Valore" maxLength={contentLimits.project.statValue} value={block.value} onChange={(event) => update(index, { ...block, value: event.currentTarget.value })} /><TextInput label="Etichetta" maxLength={contentLimits.project.statLabel} value={block.label} onChange={(event) => update(index, { ...block, label: event.currentTarget.value })} /></div>}</div>}
+        {!isClosed && <div className="block-body">{block.type === "paragraph" && <RichTextField label="Testo" maxLength={contentLimits.project.paragraph} value={block.text} onChange={(text) => update(index, { ...block, text })} />}{block.type === "quote" && <Stack><RichTextField label="Citazione" maxLength={contentLimits.project.quote} value={block.text} onChange={(text) => update(index, { ...block, text })} /><TextInput label="Fonte" maxLength={contentLimits.project.quoteSource} value={block.source ?? ""} onChange={(event) => update(index, { ...block, source: event.currentTarget.value || undefined })} /></Stack>}{block.type === "list" && <Stack><TextInput label="Titolo elenco" maxLength={contentLimits.project.listTitle} value={block.title} onChange={(event) => update(index, { ...block, title: event.currentTarget.value })} /><Textarea label="Voci" description="Una riga per voce" maxLength={contentLimits.project.listItem * 12} autosize minRows={3} value={block.items.join("\n")} onChange={(event) => update(index, { ...block, items: lines(event.currentTarget.value) })} /></Stack>}{block.type === "image" && <Stack><MediaPicker label="Immagine" required error={incompleti.includes(index + 1) ? "Scegli la foto: senza immagine il blocco non si può salvare." : undefined} value={{ url: block.src ?? "", alt: block.alt, assetId: block.assetId }} onChange={(next) => update(index, { ...block, src: next.url, alt: next.alt, assetId: next.assetId })} /><Textarea label="Didascalia" maxLength={contentLimits.project.imageCaption} autosize minRows={2} value={block.caption ?? ""} onChange={(event) => update(index, { ...block, caption: event.currentTarget.value || undefined })} /></Stack>}{block.type === "stat" && <div className="form-grid"><TextInput label="Valore" maxLength={contentLimits.project.statValue} value={block.value} onChange={(event) => update(index, { ...block, value: event.currentTarget.value })} /><TextInput label="Etichetta" maxLength={contentLimits.project.statLabel} value={block.label} onChange={(event) => update(index, { ...block, label: event.currentTarget.value })} /></div>}</div>}
       </div>;
     })}
   </section>;
 }
 function LinksEditor({ links, onChange }: { links: ProjectContent["links"]; onChange: (links: ProjectContent["links"]) => void }) { return <section className="repeatable-section"><Group justify="space-between"><Text fw={700}>Link del progetto</Text><Button variant="subtle" color="dark" size="xs" leftSection={<IconPlus size={15} stroke={1.8} />} onClick={() => onChange([...links, { label: "", href: "", kind: "website" }])}>Aggiungi link</Button></Group>{links.map((link, index) => <div className="activity-edit" key={`${link.href}-${index}`}><div className="form-grid"><TextInput label="Etichetta" maxLength={contentLimits.project.linkLabel} value={link.label} onChange={(event) => onChange(links.map((entry, itemIndex) => itemIndex === index ? { ...entry, label: event.currentTarget.value } : entry))} /><TextInput label="URL" maxLength={2_000} value={link.href} onChange={(event) => onChange(links.map((entry, itemIndex) => itemIndex === index ? { ...entry, href: event.currentTarget.value } : entry))} /><Select label="Tipo" data={["website", "instagram", "facebook", "materials"]} value={link.kind} onChange={(next) => onChange(links.map((entry, itemIndex) => itemIndex === index ? { ...entry, kind: (next ?? "website") as ProjectContent["links"][number]["kind"] } : entry))} /></div><Button variant="subtle" color="red" size="xs" leftSection={<IconTrash size={15} stroke={1.8} />} onClick={() => onChange(links.filter((_, itemIndex) => itemIndex !== index))}>Rimuovi link</Button></div>)}</section>; }
-function VideoEditor({ value, onChange }: { value: ProjectContent["video"]; onChange: (value: ProjectContent["video"]) => void }) { const video = value ?? { provider: "youtube" as const, id: "", alt: "", thumbnail: "", caption: "" }; return <section className="repeatable-section"><Group justify="space-between"><Text fw={700}>Video</Text><Button variant="subtle" color={value ? "red" : "dark"} size="xs" leftSection={value ? <IconTrash size={15} stroke={1.8} /> : <IconPlus size={15} stroke={1.8} />} onClick={() => onChange(value ? undefined : video)}>{value ? "Rimuovi video" : "Aggiungi video"}</Button></Group>{value && <Stack><div className="form-grid"><Select label="Provider" data={["youtube", "vimeo"]} value={video.provider} onChange={(next) => onChange({ ...video, provider: (next ?? "youtube") as "youtube" | "vimeo" })} /><TextInput label="ID video" description="Solo ID, non URL completo" maxLength={64} value={video.id} onChange={(event) => onChange({ ...video, id: event.currentTarget.value })} /><TextInput label="Testo alternativo" maxLength={contentLimits.project.videoAlt} value={video.alt} onChange={(event) => onChange({ ...video, alt: event.currentTarget.value })} /><Textarea label="Didascalia" maxLength={contentLimits.project.videoCaption} autosize minRows={2} value={video.caption ?? ""} onChange={(event) => onChange({ ...video, caption: event.currentTarget.value || undefined })} /></div><MediaPicker label="Miniatura video" required value={{ url: video.thumbnail ?? "", alt: video.alt }} onChange={(next) => onChange({ ...video, thumbnail: next.url || undefined, alt: next.alt })} /></Stack>}</section>; }
+function VideoEditor({ value, onChange }: { value: ProjectContent["video"]; onChange: (value: ProjectContent["video"]) => void }) { const video = value ?? { provider: "youtube" as const, id: "", alt: "", thumbnail: "", caption: "" }; return <section className="repeatable-section"><Group justify="space-between"><Text fw={700}>Video</Text><Button variant="subtle" color={value ? "red" : "dark"} size="xs" leftSection={value ? <IconTrash size={15} stroke={1.8} /> : <IconPlus size={15} stroke={1.8} />} onClick={() => onChange(value ? undefined : video)}>{value ? "Rimuovi video" : "Aggiungi video"}</Button></Group>{value && <Stack><div className="form-grid"><Select label="Provider" data={["youtube", "vimeo"]} value={video.provider} onChange={(next) => onChange({ ...video, provider: (next ?? "youtube") as "youtube" | "vimeo" })} /><TextInput label="ID video" description="Solo ID, non URL completo" maxLength={64} value={video.id} onChange={(event) => onChange({ ...video, id: event.currentTarget.value })} /><TextInput label="Testo alternativo" maxLength={contentLimits.project.videoAlt} value={video.alt} onChange={(event) => onChange({ ...video, alt: event.currentTarget.value })} /><Textarea label="Didascalia" maxLength={contentLimits.project.videoCaption} autosize minRows={2} value={video.caption ?? ""} onChange={(event) => onChange({ ...video, caption: event.currentTarget.value || undefined })} /></div><MediaPicker label="Miniatura video" description="L’immagine su cui si clicca per far partire il video. Se non la scegli, il sito usa la copertina del progetto." value={{ url: video.thumbnail ?? "", alt: video.alt }} onChange={(next) => onChange({ ...video, thumbnail: next.url || undefined, alt: next.alt })} /></Stack>}</section>; }
 function SocialLinks({ value, onChange }: { value: SiteSettingsContent["identity"]["socialLinks"]; onChange: (value: SiteSettingsContent["identity"]["socialLinks"]) => void }) { return <section className="repeatable-section"><Group justify="space-between"><Text fw={700}>Social</Text><Button variant="subtle" color="dark" size="xs" leftSection={<IconPlus size={15} stroke={1.8} />} onClick={() => onChange([...value, { label: "", href: "" }])}>Aggiungi social</Button></Group>{value.map((link, index) => <div className="activity-edit" key={`${link.href}-${index}`}><div className="form-grid"><TextInput label="Nome" maxLength={contentLimits.site.socialLabel} value={link.label} onChange={(event) => onChange(value.map((entry, itemIndex) => itemIndex === index ? { ...entry, label: event.currentTarget.value } : entry))} /><TextInput label="URL" maxLength={2_000} value={link.href} onChange={(event) => onChange(value.map((entry, itemIndex) => itemIndex === index ? { ...entry, href: event.currentTarget.value } : entry))} /></div><Button variant="subtle" color="red" size="xs" leftSection={<IconTrash size={15} stroke={1.8} />} onClick={() => onChange(value.filter((_, itemIndex) => itemIndex !== index))}>Rimuovi social</Button></div>)}</section>; }
 function ReviewProject({ project, missing, onFix }: { project: ProjectContent; missing: ReturnType<typeof missingProjectFields>; onFix: () => void }) {
   const pronto = missing.length === 0;
@@ -797,8 +825,11 @@ function ReviewProject({ project, missing, onFix }: { project: ProjectContent; m
 function previewCropStyle(member: TeamMemberContent) { const crop = member.imageCrop; if (!crop) return undefined; const focusX = crop.x + crop.width / 2; const focusY = crop.y + crop.height / 2; const zoom = Math.max(1, Math.min(3, 100 / Math.min(crop.width, crop.height))); return { objectPosition: `${focusX}% ${focusY}%`, transform: `scale(${zoom})`, transformOrigin: `${focusX}% ${focusY}%` }; }
 
 /** Le anteprime disegnano i componenti veri del sito: se cambia la pagina pubblica, cambia anche qui. */
-function ProjectPreview({ project, site, height, focus }: { project: ProjectContent; site: SiteSettingsContent; height?: number; focus?: string }) {
-  return <PreviewFrame height={height} focus={focus}><ProjectDetail project={projectToLegacy(project)} site={site} /></PreviewFrame>;
+function ProjectPreview({ project, site, catalogo, height, focus }: { project: ProjectContent; site: SiteSettingsContent; catalogo: ProjectContent[]; height?: number; focus?: string }) {
+  const legacy = projectToLegacy(project);
+  // «Altri progetti» mostra i progetti veri del back office, come farà la pagina pubblicata
+  const correlati = getRelatedProjects(legacy, catalogo.map(projectToLegacy));
+  return <PreviewFrame height={height} focus={focus}><ProjectDetail project={legacy} site={site} related={correlati} /></PreviewFrame>;
 }
 
 function TeamPreview({ member, height, index, total }: { member: TeamMemberContent; height?: number; index: number; total: number }) {

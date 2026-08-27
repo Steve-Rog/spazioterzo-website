@@ -89,6 +89,24 @@ describe("patto fra sito e anteprima", () => {
     for (const ancora of ancore) expect(Object.keys(fuocoHome), `la sezione ${ancora} non sa dove far guardare l'anteprima`).toContain(ancora);
   });
 
+  it("i componenti del sito non pescano dai contenuti di esempio del repository", () => {
+    // i dati in app/components/**/content.ts sono copie di prova: se un componente li legge,
+    // la pagina mostra quelli invece dei contenuti pubblicati dal back office
+    const colpevoli = fileRicorsivi(cartellaComponenti).filter((percorso) => {
+      const contenuto = readFileSync(percorso, "utf8");
+      return /import \{[^}]*\b(projects|teamMembers)\b[^}]*\} from/.test(contenuto);
+    });
+    expect(colpevoli.map((percorso) => percorso.replace(radice, ""))).toEqual([]);
+  });
+
+  it("i progetti correlati arrivano dal catalogo di chi disegna la pagina", () => {
+    const contenuti = readFileSync(join(cartellaComponenti, "projects", "content.ts"), "utf8");
+    expect(contenuti).toContain("getRelatedProjects(project: Project, catalog: Project[])");
+    // rotta pubblica e anteprima passano entrambe un catalogo: senza, la sezione resterebbe vuota o falsa
+    expect(readFileSync(join(radice, "app", "routes", "project-detail.tsx"), "utf8")).toContain("getRelatedProjects(project, catalog)");
+    expect(readFileSync(join(import.meta.dirname, "App.tsx"), "utf8")).toContain("getRelatedProjects(legacy, catalogo.map(projectToLegacy))");
+  });
+
   it("quello che va mostrato in anteprima non vive dentro una finestra di Mantine", () => {
     // i portali di Modal e Drawer escono dall'iframe: il contenuto va estratto in un componente riusabile
     const profilo = readFileSync(join(cartellaComponenti, "people", "TeamProfileModal.tsx"), "utf8");

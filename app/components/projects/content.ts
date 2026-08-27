@@ -173,12 +173,17 @@ export const projects: Project[] = [
   },
 ];
 
-export function getProject(slug: string | undefined) {
-  return projects.find((project) => project.slug === slug);
+export function getProject(slug: string | undefined, catalog: Project[] = projects) {
+  return catalog.find((project) => project.slug === slug);
 }
 
-export function getRelatedProjects(project: Project) {
+/**
+ * Il catalogo va passato da chi disegna la pagina: sono i progetti veri, quelli caricati
+ * dall'API o mostrati nel back office. Senza, la sezione «Altri progetti» finirebbe per
+ * mostrare le copie di esempio di questo file al posto dei contenuti pubblicati.
+ */
+export function getRelatedProjects(project: Project, catalog: Project[]) {
   return project.relatedSlugs
-    .map((slug) => getProject(slug))
+    .map((slug) => getProject(slug, catalog))
     .filter((related): related is Project => Boolean(related));
 }

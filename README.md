@@ -65,6 +65,13 @@ Una volta avviato il Worker, importa i contenuti attuali nel database locale:
 curl -X POST http://127.0.0.1:8787/v1/development/seed -H 'x-spazioterzo-seed: local-only'
 ```
 
+Per vedere sul sito i contenuti del database — e non le copie di esempio del
+repository — avvialo indicandogli l'API locale:
+
+```bash
+VITE_CONTENT_API_URL=http://127.0.0.1:8787 npm run dev
+```
+
 Apri l'admin all'indirizzo indicato da Vite. L'utente locale iniziale è
 `editor@spazioterzo.test`; in produzione questo accesso viene sostituito da
 Cloudflare Access con codice monouso e JWT validato dal Worker.

@@ -31,6 +31,15 @@ export const missingProjectFields = (project: ProjectContent) => projectRequirem
 
 export const missingInStep = (project: ProjectContent, step: 0 | 1) => missingProjectFields(project).filter((requirement) => requirement.step === step);
 
+/**
+ * Blocchi immagine senza file: il server li rifiuta con un messaggio generico, qui si vede
+ * quale blocco è rimasto a metà. Restituisce le posizioni (1, 2, 3…) come si leggono nell'editor.
+ */
+export const emptyImageBlocks = (project: ProjectContent) => project.blocks
+  .map((block, index) => ({ block, position: index + 1 }))
+  .filter(({ block }) => block.type === "image" && !filled(block.src))
+  .map(({ position }) => position);
+
 /** Il primo tema compare nell'intestazione della pagina accanto allo stato, gli altri solo nella riga «Area». */
 export const mainTheme = (themes: string[]) => themes[0] ?? "";
 export const otherThemes = (themes: string[]) => themes.slice(1);

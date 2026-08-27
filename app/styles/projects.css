@@ -75,7 +75,7 @@
 .project-video button:after { content: ''; position: absolute; inset: 0; background: rgba(13,37,43,.29); transition: background .3s; }
 .project-video button:hover:after { background: rgba(13,37,43,.14); }
 .project-video button span { position: absolute; z-index: 1; left: 50%; top: 50%; transform: translate(-50%, -50%); display: inline-flex; align-items: center; gap: 15px; padding: 13px 18px; color: var(--paper); background: var(--ink); font: 500 10px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .07em; white-space: nowrap; }
-.project-video button b { color: var(--sun); font-size: 16px; }
+.project-video button span svg { color: var(--sun); flex: none; }
 .project-video > p { margin: 11px 0 0; color: #617a7c; font: 500 10px 'DM Mono', monospace; }
 .project-outcomes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, .8fr); gap: clamp(46px, 10vw, 180px); padding: clamp(83px, 11vw, 160px) clamp(24px, 9vw, 150px); color: var(--paper); background: var(--ink); }
 .project-outcomes .section-label { color: #b5c7c4; }
