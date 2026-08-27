@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { AspectRatio, Button, Group, Image, Modal, SimpleGrid, Skeleton, Stack, Text, TextInput } from "@mantine/core";
-import { Dropzone, IMAGE_MIME_TYPE } from "@mantine/dropzone";
+import { Dropzone } from "@mantine/dropzone";
 import { notifications } from "@mantine/notifications";
 import { IconPencil, IconPhotoPlus, IconTrash } from "@tabler/icons-react";
 import { adminApi, type MediaAsset } from "./api";
+import { ACCEPTED_MEDIA_TYPES } from "../../shared/content-schema";
 
 type MediaValue = { url: string; alt: string; assetId?: string };
 
@@ -91,7 +92,7 @@ export function MediaPicker({ label, description, value, onChange, required = fa
       <Stack gap="md">
         <TextInput aria-label="Cerca nell’archivio media" placeholder="Cerca nel testo alternativo…" value={search} onChange={(event) => setSearch(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === "Enter") void load(); }} rightSectionWidth={78} rightSection={<Button variant="subtle" size="xs" onClick={() => void load()}>Cerca</Button>} />
         {altEditable && <TextInput label="Testo alternativo" description="Descrivi l’immagine: serve prima di caricarne una nuova." maxLength={180} value={value.alt} onChange={(event) => onChange({ ...value, alt: event.currentTarget.value })} />}
-        <Dropzone onDrop={upload} onReject={() => notifications.show({ color: "red", message: "Sono ammessi JPEG, PNG e WebP fino a 10 MB." })} accept={IMAGE_MIME_TYPE} maxSize={10 * 1024 * 1024} multiple={false} loading={uploading} className="media-dropzone">
+        <Dropzone onDrop={upload} onReject={() => notifications.show({ color: "red", message: "Sono ammessi JPEG, PNG e WebP fino a 10 MB." })} accept={[...ACCEPTED_MEDIA_TYPES]} maxSize={10 * 1024 * 1024} multiple={false} loading={uploading} className="media-dropzone">
           <Text ta="center" fw={600}>Trascina qui un’immagine oppure clicca per caricarla</Text><Text ta="center" c="dimmed" size="xs">JPEG, PNG o WebP · massimo 10 MB{altEditable ? " · compila prima il testo alternativo" : ""}</Text>
         </Dropzone>
         {loading ? <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }} spacing="sm">{Array.from({ length: 8 }, (_, index) => <Skeleton key={index} height={130} />)}</SimpleGrid> : assets.length ? <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }} spacing="sm">{assets.map((asset) => <MediaTile key={asset.id} asset={asset} onSelect={() => select(asset)} onRenamed={(alt) => setAssets((current) => current.map((item) => item.id === asset.id ? { ...item, alt } : item))} onDeleted={() => setAssets((current) => current.filter((item) => item.id !== asset.id))} />)}</SimpleGrid> : <div className="empty-media">Nessuna immagine trovata. Carica la prima.</div>}
