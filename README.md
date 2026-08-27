@@ -10,6 +10,9 @@ npm run build
 npm run typecheck
 ```
 
+Il progetto richiede **Node 22.12+**. Con `nvm`, dalla root del repository basta
+eseguire `nvm use`: il file `.nvmrc` seleziona la versione corretta.
+
 Le rotte sono dichiarate in `app/routes.ts`; ogni voce punta al rispettivo route module in `app/routes/`.
 
 ## Deploy su Vercel
@@ -79,3 +82,18 @@ Cloudflare Access con codice monouso e JWT validato dal Worker.
 Prima del deploy l'associazione deve creare le risorse D1/R2, configurare le
 variabili Access indicate in [cloudflare/README.md](cloudflare/README.md) e
 impostare `VITE_CONTENT_API_URL` nel progetto Vercel.
+
+## Automazioni GitHub e ambienti
+
+Il sito pubblico su Vercel resta indipendente da queste automazioni: nessun push
+invia il frontend pubblico a Cloudflare.
+
+- Pull request e push su `main`: verifiche automatiche (tipi, test, build sito e build admin).
+- Push sul branch `development`: applica le migrazioni al D1 di sviluppo e pubblica solo il Worker di sviluppo.
+- Produzione: non parte mai da un push. Si avvia manualmente da GitHub Actions, richiede la parola `DEPLOY` e va protetta con approvazione GitHub Environment.
+
+Prima di attivare il deploy di sviluppo, in GitHub apri **Settings → Secrets and
+variables → Actions** e crea la variabile `CLOUDFLARE_ACCOUNT_ID`. Poi crea gli
+Environment `development` e `production`: in ciascuno salva il relativo secret
+`CLOUDFLARE_API_TOKEN`. Le autorizzazioni minime del token e i passaggi di
+attivazione sono descritti in [cloudflare/README.md](cloudflare/README.md).

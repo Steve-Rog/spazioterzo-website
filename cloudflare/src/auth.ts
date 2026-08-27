@@ -17,7 +17,7 @@ function keySetFor(teamDomain: string) {
 export async function authenticateAdmin(request: Request, env: Env): Promise<AdminIdentity | null> {
   let email: string | undefined;
 
-  if (env.ENVIRONMENT === "development") {
+  if (env.ENVIRONMENT === "local") {
     email = request.headers.get("x-spazioterzo-dev-email")?.trim().toLowerCase();
   } else {
     if (!env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUDIENCE) return null;

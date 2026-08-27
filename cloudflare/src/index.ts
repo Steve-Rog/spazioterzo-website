@@ -26,7 +26,7 @@ function withCors(response: Response, request: Request, env: Env, isAdmin = fals
   const headers = new Headers(response.headers);
   if (isAdmin) {
     const origin = request.headers.get("Origin");
-    if (origin && (origin === env.ADMIN_ORIGIN || env.ENVIRONMENT === "development")) headers.set("Access-Control-Allow-Origin", origin);
+    if (origin && (origin === env.ADMIN_ORIGIN || env.ENVIRONMENT === "local")) headers.set("Access-Control-Allow-Origin", origin);
     headers.set("Vary", "Origin");
   } else headers.set("Access-Control-Allow-Origin", "*");
   headers.set("Access-Control-Allow-Headers", "Content-Type, Cf-Access-Jwt-Assertion, x-spazioterzo-dev-email");
@@ -311,7 +311,7 @@ async function saveAdminUser(request: Request, env: Env, actor: AdminIdentity, e
 }
 
 async function serveLocalMedia(pathname: string, env: Env) {
-  if (env.ENVIRONMENT !== "development") return null;
+  if (env.ENVIRONMENT !== "local") return null;
   const key = pathname.replace(/^\/media\//, "");
   const object = await env.MEDIA.get(key);
   if (!object) return json({ error: "Media non trovato" }, { status: 404 });
@@ -327,7 +327,7 @@ async function router(request: Request, env: Env): Promise<Response> {
   if (pathname.startsWith("/media/")) return (await serveLocalMedia(pathname, env)) ?? json({ error: "Non trovato" }, { status: 404 });
   if (pathname === "/health") return json({ status: "ok", environment: env.ENVIRONMENT });
   if (pathname === "/v1/development/seed" && request.method === "POST") {
-    if (env.ENVIRONMENT !== "development" || request.headers.get("x-spazioterzo-seed") !== "local-only") return json({ error: "Non trovato" }, { status: 404 });
+    if (env.ENVIRONMENT !== "local" || request.headers.get("x-spazioterzo-seed") !== "local-only") return json({ error: "Non trovato" }, { status: 404 });
     return json(await seedDevelopmentDatabase(env), { status: 201 });
   }
 

@@ -8,6 +8,9 @@ build/
 .env
 .env.*
 !.env.example
+cloudflare/.dev.vars
+cloudflare/.dev.vars.*
+!cloudflare/.dev.vars.example
 
 # Tool caches and logs
 .vite/

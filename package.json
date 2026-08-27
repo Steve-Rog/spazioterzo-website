@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "build": "react-router build",
@@ -13,6 +13,10 @@
     "typecheck": "react-router typegen && tsc",
     "dev:worker": "wrangler dev --config cloudflare/wrangler.jsonc --local",
     "db:migrate:local": "wrangler d1 migrations apply spazioterzo-dev --local --config cloudflare/wrangler.jsonc",
+    "db:migrate:dev": "wrangler d1 migrations apply spazioterzo-dev --remote --env development --config cloudflare/wrangler.jsonc",
+    "db:migrate:production": "wrangler d1 migrations apply spazioterzo-production --remote --env production --config cloudflare/wrangler.jsonc",
+    "deploy:worker:dev": "wrangler deploy --keep-vars --env development --config cloudflare/wrangler.jsonc",
+    "deploy:worker:production": "wrangler deploy --keep-vars --env production --config cloudflare/wrangler.jsonc",
     "dev:admin": "vite --config admin/vite.config.ts",
     "build:admin": "vite build --config admin/vite.config.ts",
     "typecheck:worker": "tsc -p cloudflare/tsconfig.json",
@@ -42,7 +46,7 @@
     "react-router": "^7.18.2"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260702.1",
+    "@cloudflare/workers-types": "5.20260826.1",
     "@react-router/dev": "^7.18.2",
     "@types/node": "^26.3.0",
     "@types/react": "^19.2.18",
@@ -50,6 +54,6 @@
     "typescript": "^5.9.3",
     "vite": "^8.2.2",
     "vitest": "^4.1.11",
-    "wrangler": "^3.114.12"
+    "wrangler": "4.126.0"
   }
 }

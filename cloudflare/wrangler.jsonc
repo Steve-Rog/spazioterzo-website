@@ -1,35 +1,65 @@
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
-  "name": "spazioterzo-api-dev",
+  "name": "spazioterzo-api-local",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-26",
+  "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "head_sampling_rate": 1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.01
+    }
+  },
   "vars": {
-    "ENVIRONMENT": "development",
+    "ENVIRONMENT": "local",
     "PUBLIC_MEDIA_BASE_URL": "http://localhost:8787/media"
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "spazioterzo-dev",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "61e33bf0-cd38-485d-a123-7c67830eb1e8",
       "migrations_dir": "migrations"
     }
   ],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "spazioterzo-media-dev" }],
   "env": {
+    "development": {
+      "name": "spazioterzo-api-dev",
+      "vars": {
+        "ENVIRONMENT": "development",
+        "PUBLIC_MEDIA_BASE_URL": "https://media.dev.spazioterzo.it",
+        "PUBLIC_API_BASE_URL": "https://api.dev.spazioterzo.it",
+        "ADMIN_ORIGIN": "https://admin.dev.spazioterzo.it"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "spazioterzo-dev",
+          "database_id": "61e33bf0-cd38-485d-a123-7c67830eb1e8",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "spazioterzo-media-dev" }]
+    },
     "production": {
       "name": "spazioterzo-api",
       "vars": {
         "ENVIRONMENT": "production",
-        "PUBLIC_MEDIA_BASE_URL": "https://media.example.org",
-        "PUBLIC_API_BASE_URL": "https://api.example.org"
+        "PUBLIC_MEDIA_BASE_URL": "https://media.spazioterzo.it",
+        "PUBLIC_API_BASE_URL": "https://api.spazioterzo.it",
+        "ADMIN_ORIGIN": "https://admin.spazioterzo.it"
       },
       "d1_databases": [
         {
           "binding": "DB",
           "database_name": "spazioterzo-production",
-          "database_id": "00000000-0000-0000-0000-000000000000",
+          "database_id": "736d29ce-db34-48aa-aabc-16cfdbbfb453",
           "migrations_dir": "migrations"
         }
       ],
