@@ -17,6 +17,7 @@ import { projectSnippet, siteSnippet } from "./seo";
 import { diffContent, type FieldChange } from "./diff";
 import { IconArrowDown, IconArrowLeft, IconArrowRight, IconArrowUp, IconChevronRight, IconChevronDown, IconChevronUp, IconDots, IconGripVertical, IconPlus, IconTrash } from "@tabler/icons-react";
 import { inFondoAllaPagina, sezioneCorrente } from "./home-sections";
+import { selettoreHome, selettoreProgetto } from "./preview-focus";
 import { sanitiseTags } from "./tags";
 import { PreviewFrame } from "./PreviewFrame";
 import { projectToLegacy, teamToLegacy } from "../../app/content/public-api";
@@ -323,6 +324,7 @@ function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedOptions,
   const [step, setStep] = useState(0);
   const [slugEdited, setSlugEdited] = useState(Boolean(entity));
   const [errors, setErrors] = useState<Partial<Record<ProjectFieldName, string>>>({});
+  const [scheda, setScheda] = useState<string | null>("opening");
   const set = form.setFieldValue as FieldSetter<ProjectContent>;
   const newProject = !entity;
   const missing = missingProjectFields(form.values);
@@ -370,7 +372,7 @@ function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedOptions,
   const invite = <ProjectInvite value={form.values} set={set} relatedOptions={relatedOptions} />;
   const seo = <ProjectSeo value={form.values} set={set} suffix={siteSeo.suffix} shareImage={siteSeo.shareImage} />;
 
-  return <form onSubmit={(event) => { event.preventDefault(); void save(); }}><EditorFrame title={entity ? form.values.title || "Progetto senza titolo" : "Nuovo progetto"} eyebrow={entity ? "Modifica progetto" : "Crea progetto"} entity={entity} resource="projects" isAdmin={isAdmin} onBack={onBack} onSave={() => void save()} saving={saving} dirty={form.isDirty()} preview={<ProjectPreview project={form.values} site={siteSettings} />} onPublish={onPublish} onArchive={onArchive} onDirtyChange={onDirtyChange}>
+  return <form onSubmit={(event) => { event.preventDefault(); void save(); }}><EditorFrame title={entity ? form.values.title || "Progetto senza titolo" : "Nuovo progetto"} eyebrow={entity ? "Modifica progetto" : "Crea progetto"} entity={entity} resource="projects" isAdmin={isAdmin} onBack={onBack} onSave={() => void save()} saving={saving} dirty={form.isDirty()} preview={<ProjectPreview project={form.values} site={siteSettings} focus={selettoreProgetto(scheda)} />} onPublish={onPublish} onArchive={onArchive} onDirtyChange={onDirtyChange}>
     {newProject
       ? <>
           <Stepper active={step} onStepClick={goToStep} allowNextStepsSelect={false} className="project-stepper">
@@ -386,7 +388,7 @@ function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedOptions,
               : <Button color="orange" loading={saving} onClick={() => void save()}>Crea il progetto</Button>}
           </Group>
         </>
-      : <SectionTitleContext.Provider value><Tabs defaultValue="opening" className="editor-tabs">
+      : <SectionTitleContext.Provider value><Tabs value={scheda} onChange={setScheda} className="editor-tabs">
           <Tabs.List>
             <Tabs.Tab value="opening">Copertina e apertura</Tabs.Tab>
             <Tabs.Tab value="overview">Il progetto</Tabs.Tab>
@@ -511,10 +513,11 @@ function TeamEditor({ entity, teamCount, teamIndex, onBack, onSaved, onPublish, 
 function SiteEditor({ entity, activePanel, anchor, onSaved, onPublish, onDirtyChange }: { entity?: ContentEntity<SiteSettingsContent>; activePanel: SitePanel; anchor?: string; onSaved: (entity: ContentEntity, message?: string) => Promise<void>; onPublish: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {
   const form = useForm<SiteSettingsContent>({ mode: "controlled", initialValues: clone(entity?.draft ?? entity?.published ?? defaultSiteSettings) });
   const [saving, setSaving] = useState(false);
+  const [sezioneHome, setSezioneHome] = useState<string | null>(anchor ?? "apertura");
   const update = (recipe: (draft: SiteSettingsContent) => void) => { const next = clone(form.values); recipe(next); form.setValues(next); };
   const save = form.onSubmit(async (values) => { setSaving(true); try { const saved = await adminApi.save("site", entity?.id, values); form.resetDirty(values); await onSaved(saved); } catch (error) { notifications.show({ color: "red", message: error instanceof Error ? error.message : "Bozza non salvata" }); } finally { setSaving(false); } });
   const panelTitle = activePanel === "identity" ? "Identità del sito" : activePanel === "home" ? "Home" : "SEO e condivisione";
-  return <form onSubmit={save}><EditorFrame title={panelTitle} eyebrow="Sito" entity={entity} resource="site" onSave={() => save()} saving={saving} dirty={form.isDirty()} preview={<SitePreview site={form.values} />} onPublish={onPublish} onDirtyChange={onDirtyChange}>{activePanel === "identity" ? <SiteIdentity value={form.values} update={update} /> : activePanel === "home" ? <HomeEditor value={form.values} update={update} initialAnchor={anchor} /> : <SiteSeo value={form.values} update={update} />}</EditorFrame></form>;
+  return <form onSubmit={save}><EditorFrame title={panelTitle} eyebrow="Sito" entity={entity} resource="site" onSave={() => save()} saving={saving} dirty={form.isDirty()} preview={<SitePreview site={form.values} focus={activePanel === "home" ? selettoreHome(sezioneHome) : undefined} />} onPublish={onPublish} onDirtyChange={onDirtyChange}>{activePanel === "identity" ? <SiteIdentity value={form.values} update={update} /> : activePanel === "home" ? <HomeEditor value={form.values} update={update} initialAnchor={anchor} onSectionChange={setSezioneHome} /> : <SiteSeo value={form.values} update={update} />}</EditorFrame></form>;
 }
 
 function SiteIdentity({ value, update }: { value: SiteSettingsContent; update: (recipe: (draft: SiteSettingsContent) => void) => void }) {
@@ -562,13 +565,15 @@ const homeSections: Array<{ key: keyof SiteSettingsContent["home"]; anchor: stri
   { key: "contact", anchor: "contatti", label: "04 — Contatti", hint: "La chiusura della pagina con l’invito a scrivere.", shape: "cta" },
 ];
 
-function HomeEditor({ value, update, initialAnchor }: { value: SiteSettingsContent; update: (recipe: (draft: SiteSettingsContent) => void) => void; initialAnchor?: string }) {
+function HomeEditor({ value, update, initialAnchor, onSectionChange }: { value: SiteSettingsContent; update: (recipe: (draft: SiteSettingsContent) => void) => void; initialAnchor?: string; onSectionChange?: (anchor: string) => void }) {
   const [current, setCurrent] = useState(initialAnchor ?? homeSections[0].anchor);
   const containers = useRef(new Map<string, HTMLElement>());
   const scrittoDaNoi = useRef(initialAnchor);
 
+  const avvisa = useRef(onSectionChange); avvisa.current = onSectionChange;
   const segnala = (anchor: string) => {
     setCurrent(anchor);
+    avvisa.current?.(anchor);
     scrittoDaNoi.current = anchor;
     window.history.replaceState(null, "", `#/sito/home/${anchor}`);
   };
@@ -792,8 +797,8 @@ function ReviewProject({ project, missing, onFix }: { project: ProjectContent; m
 function previewCropStyle(member: TeamMemberContent) { const crop = member.imageCrop; if (!crop) return undefined; const focusX = crop.x + crop.width / 2; const focusY = crop.y + crop.height / 2; const zoom = Math.max(1, Math.min(3, 100 / Math.min(crop.width, crop.height))); return { objectPosition: `${focusX}% ${focusY}%`, transform: `scale(${zoom})`, transformOrigin: `${focusX}% ${focusY}%` }; }
 
 /** Le anteprime disegnano i componenti veri del sito: se cambia la pagina pubblica, cambia anche qui. */
-function ProjectPreview({ project, site, height }: { project: ProjectContent; site: SiteSettingsContent; height?: number }) {
-  return <PreviewFrame height={height}><ProjectDetail project={projectToLegacy(project)} site={site} /></PreviewFrame>;
+function ProjectPreview({ project, site, height, focus }: { project: ProjectContent; site: SiteSettingsContent; height?: number; focus?: string }) {
+  return <PreviewFrame height={height} focus={focus}><ProjectDetail project={projectToLegacy(project)} site={site} /></PreviewFrame>;
 }
 
 function TeamPreview({ member, height, index, total }: { member: TeamMemberContent; height?: number; index: number; total: number }) {
@@ -802,6 +807,6 @@ function TeamPreview({ member, height, index, total }: { member: TeamMemberConte
   </PreviewFrame>;
 }
 
-function SitePreview({ site, height }: { site: SiteSettingsContent; height?: number }) {
-  return <PreviewFrame height={height}><HomePage site={site} /></PreviewFrame>;
+function SitePreview({ site, height, focus }: { site: SiteSettingsContent; height?: number; focus?: string }) {
+  return <PreviewFrame height={height} focus={focus}><HomePage site={site} /></PreviewFrame>;
 }

@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { fuocoHome, fuocoProgetto } from "./preview-focus";
 
 /**
  * L'anteprima del back office disegna i componenti veri del sito.
@@ -66,6 +67,26 @@ describe("patto fra sito e anteprima", () => {
     const fogli = readdirSync(cartellaStili).filter((nome) => nome.endsWith(".css"));
     expect(fogli.length).toBeGreaterThan(0);
     for (const foglio of fogli) expect(anteprima).not.toContain(`styles/${foglio}?inline`);
+  });
+
+  it("i punti su cui si mette a fuoco l'anteprima esistono davvero nel sito", () => {
+    // se un selettore non corrisponde a nulla, l'anteprima resterebbe ferma senza dirlo
+    const markupSito = fileRicorsivi(cartellaComponenti).map((percorso) => readFileSync(percorso, "utf8")).join("\n");
+    for (const selettore of [...Object.values(fuocoProgetto), ...Object.values(fuocoHome)]) {
+      if (!selettore) continue;
+      expect(markupSito, `manca ${selettore} nei componenti del sito`).toContain(`"${selettore.slice(1)}`);
+    }
+  });
+
+  it("ogni scheda dell'editor e ogni sezione della home hanno un bersaglio nell'anteprima", () => {
+    const pannello = readFileSync(join(import.meta.dirname, "App.tsx"), "utf8");
+    const schede = [...pannello.matchAll(/<Tabs\.Tab value="(\w+)"/g)].map((match) => match[1]);
+    expect(schede.length).toBeGreaterThan(0);
+    for (const scheda of schede) expect(Object.keys(fuocoProgetto), `la scheda ${scheda} non sa dove far guardare l'anteprima`).toContain(scheda);
+
+    const elenco = pannello.slice(pannello.indexOf("const homeSections"), pannello.indexOf("function HomeEditor"));
+    const ancore = [...elenco.matchAll(/anchor: "([\w-]+)"/g)].map((match) => match[1]);
+    for (const ancora of ancore) expect(Object.keys(fuocoHome), `la sezione ${ancora} non sa dove far guardare l'anteprima`).toContain(ancora);
   });
 
   it("quello che va mostrato in anteprima non vive dentro una finestra di Mantine", () => {

@@ -283,7 +283,10 @@ Perché resti così valgono quattro impegni, tutti verificati da `admin/src/ante
    `HomePage.tsx`: la rotta e l'anteprima usano quello, così aggiungere una sezione è un'operazione sola.
 3. **I fogli di stile stanno in `app/styles/`** e vengono raccolti da soli (`import.meta.glob`): non esiste un
    elenco da tenere allineato.
-4. **Quello che deve comparire in anteprima non vive dentro un `Modal` o un `Drawer`.** I loro portali escono
+4. **Ogni sezione dell'editor dice all'anteprima dove guardare.** Le corrispondenze fra scheda o sezione e
+   fascia della pagina stanno in `admin/src/preview-focus.ts`; un test controlla che ogni scheda ne abbia una
+   e che i selettori esistano davvero nel markup del sito.
+5. **Quello che deve comparire in anteprima non vive dentro un `Modal` o un `Drawer`.** I loro portali escono
    dall'iframe: estrai il contenuto in un componente riusabile, come `TeamProfileContent`.
 
 Se qualcuno rompe uno di questi punti il test fallisce subito, invece di lasciarlo scoprire mesi dopo a chi apre

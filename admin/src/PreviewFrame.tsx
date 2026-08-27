@@ -19,7 +19,7 @@ const fogliDelSito = Object.entries(moduliCss)
  * Serve l'iframe perché i fogli di stile pubblici agiscono su selettori globali (body, h1, a…)
  * che altrimenti riscriverebbero l'aspetto del back office.
  */
-export function PreviewFrame({ children, width = 1280, height = 820, className = "" }: { children: ReactNode; width?: number; height?: number; className?: string }) {
+export function PreviewFrame({ children, width = 1280, height = 820, className = "", focus }: { children: ReactNode; width?: number; height?: number; className?: string; focus?: string }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [documento, setDocumento] = useState<Document | null>(null);
 
@@ -31,15 +31,31 @@ export function PreviewFrame({ children, width = 1280, height = 820, className =
     doc.write('<!doctype html><html lang="it"><head><meta charset="utf-8"></head><body><div id="anteprima"></div></body></html>');
     doc.close();
     const stile = doc.createElement("style");
-    stile.textContent = `${fogliDelSito}\nbody { margin: 0; width: ${width}px; overflow-x: hidden; }\n.profile-modal-shell { background: var(--ink, #132b35); min-height: 100%; }`;
+    stile.textContent = `${fogliDelSito}\nhtml { overflow-x: hidden; } body { margin: 0; width: ${width}px; }\n.profile-modal-shell { background: var(--ink, #132b35); min-height: 100%; }`;
     doc.head.append(stile);
     setDocumento(doc);
   }, [width]);
 
   const radice = documento?.getElementById("anteprima");
 
+  // l'anteprima segue la sezione che si sta compilando invece di restare sempre in cima
+  useEffect(() => {
+    if (!documento) return;
+    const vaiA = () => {
+      const bersaglio = focus ? documento.querySelector(focus) : null;
+      const scorrimento = documento.documentElement.scrollTop || documento.body.scrollTop || 0;
+      const posizione = bersaglio ? bersaglio.getBoundingClientRect().top + scorrimento : 0;
+      documento.documentElement.scrollTop = posizione;
+      documento.body.scrollTop = posizione;
+      frame.current?.contentWindow?.scrollTo({ top: posizione });
+    };
+    // un piccolo ritardo lascia al contenuto il tempo di prendere le sue misure
+    const attesa = window.setTimeout(vaiA, 120);
+    return () => window.clearTimeout(attesa);
+  }, [documento, focus]);
+
   return <>
-    <iframe ref={frame} className={`preview-frame ${className}`.trim()} title="Anteprima del sito" tabIndex={-1} style={{ width, height }} />
+    <iframe ref={frame} className={`preview-frame ${className}`.trim()} title="Anteprima del sito" tabIndex={-1} data-focus={focus ?? "inizio"} style={{ width, height }} />
     {radice && createPortal(
       // niente animazioni d'ingresso: in un riquadro ridotto lascerebbero il contenuto invisibile
       <MotionConfig reducedMotion="always"><MemoryRouter>{children}</MemoryRouter></MotionConfig>,
