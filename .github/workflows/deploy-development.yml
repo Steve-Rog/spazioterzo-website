@@ -39,4 +39,4 @@ jobs:
       - run: npm ci
       - run: npm run typecheck:worker
       - run: npm run db:migrate:dev
-      - run: npm run deploy:worker:dev -- --yes
+      - run: npm run deploy:worker:dev
