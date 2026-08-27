@@ -1,11 +1,5 @@
 import "../styles/home.css";
-import { Activities } from "../components/home/Activities";
-import { AssociationIntro } from "../components/home/AssociationIntro";
-import { Contact } from "../components/home/Contact";
-import { Hero } from "../components/home/Hero";
-import { ImageStatement } from "../components/home/ImageStatement";
-import { OriginStory } from "../components/home/OriginStory";
-import { Territory } from "../components/home/Territory";
+import { HomePage } from "../components/home/HomePage";
 import { getPublicSite } from "../content/public-api";
 import { useLoaderData } from "react-router";
 
@@ -32,15 +26,5 @@ export function links({ data }: { data?: { site?: Awaited<ReturnType<typeof getP
 
 export default function Home() {
   const { site } = useLoaderData<typeof loader>();
-  return (
-    <main>
-      <Hero content={site} />
-      <AssociationIntro content={site} />
-      <ImageStatement content={site} />
-      <OriginStory content={site} />
-      <Activities content={site} />
-      <Territory content={site} />
-      <Contact content={site} />
-    </main>
-  );
+  return <HomePage site={site} />;
 }

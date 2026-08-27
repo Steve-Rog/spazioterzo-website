@@ -22,13 +22,7 @@ import { PreviewFrame } from "./PreviewFrame";
 import { projectToLegacy, teamToLegacy } from "../../app/content/public-api";
 import { ProjectDetail } from "../../app/components/projects/ProjectDetail";
 import { TeamProfileContent } from "../../app/components/people/TeamProfileModal";
-import { Hero } from "../../app/components/home/Hero";
-import { AssociationIntro } from "../../app/components/home/AssociationIntro";
-import { ImageStatement } from "../../app/components/home/ImageStatement";
-import { OriginStory } from "../../app/components/home/OriginStory";
-import { Activities } from "../../app/components/home/Activities";
-import { Territory } from "../../app/components/home/Territory";
-import { Contact } from "../../app/components/home/Contact";
+import { HomePage } from "../../app/components/home/HomePage";
 
 import { composeThemes, mainTheme, missingInStep, missingProjectFields, otherThemes, type ProjectFieldName } from "./project-fields";
 
@@ -809,13 +803,5 @@ function TeamPreview({ member, height, index, total }: { member: TeamMemberConte
 }
 
 function SitePreview({ site, height }: { site: SiteSettingsContent; height?: number }) {
-  return <PreviewFrame height={height}>
-    <Hero content={site} />
-    <AssociationIntro content={site} />
-    <ImageStatement content={site} />
-    <OriginStory content={site} />
-    <Activities content={site} />
-    <Territory content={site} />
-    <Contact content={site} />
-  </PreviewFrame>;
+  return <PreviewFrame height={height}><HomePage site={site} /></PreviewFrame>;
 }

@@ -2,12 +2,17 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { MemoryRouter } from "react-router";
 import { MotionConfig } from "framer-motion";
-import globalCss from "../../app/styles/global.css?inline";
-import homeCss from "../../app/styles/home.css?inline";
-import peopleCss from "../../app/styles/people.css?inline";
-import projectsCss from "../../app/styles/projects.css?inline";
 
-const fogliDelSito = [globalCss, homeCss, peopleCss, projectsCss].join("\n");
+/**
+ * Tutti i fogli di stile del sito, raccolti da soli: un file nuovo in app/styles entra
+ * nell'anteprima senza che nessuno debba aggiungerlo qui a mano.
+ * global.css va per primo perché contiene variabili e regole di base.
+ */
+const moduliCss = import.meta.glob("../../app/styles/*.css", { query: "?inline", import: "default", eager: true }) as Record<string, string>;
+const fogliDelSito = Object.entries(moduliCss)
+  .sort(([a], [b]) => (a.endsWith("global.css") ? -1 : b.endsWith("global.css") ? 1 : a.localeCompare(b)))
+  .map(([, contenuto]) => contenuto)
+  .join("\n");
 
 /**
  * Disegna i componenti veri del sito dentro un riquadro isolato.

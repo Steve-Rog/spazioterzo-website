@@ -269,7 +269,27 @@ Cose che hanno fatto perdere tempo una volta: non serve perderlo due.
   transizioni Mantine non completano — pannelli e modali restano vuoti. Non è un bug dell'applicazione: fai uno
   screenshot per forzare un fotogramma prima di interagire.
 
-## 15. Prima di dire che è finito
+## 15. Il patto fra sito e anteprima
+
+L'anteprima non è una copia del sito: **è il sito**, disegnato con gli stessi componenti e gli stessi fogli di
+stile. Perciò una modifica al frontend — markup, classi, testi, spaziature, animazioni, responsive — non richiede
+alcun intervento sul back office: l'anteprima cambia da sola.
+
+Perché resti così valgono quattro impegni, tutti verificati da `admin/src/anteprima.test.ts`:
+
+1. **I componenti di pagina ricevono i dati dalle proprietà.** Niente `useLoaderData` o `useParams` dentro
+   `app/components/`: chi carica i dati è la rotta.
+2. **La composizione di una pagina vive in un componente condiviso**, non nella rotta. La home sta in
+   `HomePage.tsx`: la rotta e l'anteprima usano quello, così aggiungere una sezione è un'operazione sola.
+3. **I fogli di stile stanno in `app/styles/`** e vengono raccolti da soli (`import.meta.glob`): non esiste un
+   elenco da tenere allineato.
+4. **Quello che deve comparire in anteprima non vive dentro un `Modal` o un `Drawer`.** I loro portali escono
+   dall'iframe: estrai il contenuto in un componente riusabile, come `TeamProfileContent`.
+
+Se qualcuno rompe uno di questi punti il test fallisce subito, invece di lasciarlo scoprire mesi dopo a chi apre
+l'anteprima e la trova diversa dal sito. Non serve congelare la UI del sito: serve rispettare il patto.
+
+## 16. Prima di dire che è finito
 
 ```bash
 npm test                    # logica condivisa e conversioni
