@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
  * senza un tema. Sono letture del sorgente perché il comportamento vive nei componenti.
  */
 
-const app = join(import.meta.dirname);
+const app = join(import.meta.dirname, "..", "app");
 const leggi = (...parti: string[]) => readFileSync(join(app, ...parti), "utf8");
 
 describe("quando i contenuti non arrivano", () => {
