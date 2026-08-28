@@ -5,6 +5,8 @@
   "compatibility_date": "2026-08-26",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
+  // le risposte pubbliche portano già Cache-Control: così Cloudflare le serve senza eseguire il Worker
+  "cache": { "enabled": true },
   "assets": {
     "directory": "../admin/dist",
     "binding": "ASSETS",
@@ -37,6 +39,7 @@
   "env": {
     "development": {
       "name": "spazioterzo-api-dev",
+      "cache": { "enabled": true },
       "assets": {
         "directory": "../admin/dist",
         "binding": "ASSETS",
@@ -66,6 +69,7 @@
     },
     "production": {
       "name": "spazioterzo-api",
+      "cache": { "enabled": true },
       "assets": {
         "directory": "../admin/dist",
         "binding": "ASSETS",

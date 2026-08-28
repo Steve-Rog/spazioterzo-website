@@ -1,4 +1,5 @@
 import { ACCEPTED_MEDIA_TYPES, MAX_MEDIA_BYTES, MAX_TEAM_MEMBERS, contentValidationError, publicationReadinessError, type ContentEntity, type ContentState, type EntityType, type ProjectContent, type SiteSettingsContent, type TeamMemberContent } from "../../shared/content-schema";
+import { cache } from "cloudflare:workers";
 import { authenticateAdmin, requireAdmin, type AdminIdentity } from "./auth";
 import { seedDevelopmentDatabase } from "./seed";
 
@@ -118,7 +119,7 @@ async function publish(env: Env, actor: AdminIdentity, type: EntityType, id: str
     .bind(row?.draft_revision_id, entity.id).run();
   await audit(env, actor.email, "published", entity.id, { type });
   const published = await findEntity(env, type, entity.id);
-  if (published) await purgePublicContent(env, actor.email, type, published, entity.slug);
+  if (published) await purgePublicContent(env, actor.email, published);
   return json(published);
 }
 
@@ -158,7 +159,7 @@ async function archiveEntity(env: Env, actor: AdminIdentity, type: EntityType, i
   if (!entity) return json({ error: "Contenuto non trovato" }, { status: 404 });
   await env.DB.prepare("UPDATE content_entities SET state = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(id).run();
   await audit(env, actor.email, "archived", id, { type });
-  if (entity.published) await purgePublicContent(env, actor.email, type, entity, entity.slug);
+  if (entity.published) await purgePublicContent(env, actor.email, entity);
   return json(await findEntity(env, type, id));
 }
 
@@ -181,29 +182,25 @@ async function updateDisplayOrder(env: Env, actor: AdminIdentity, type: EntityTy
   if (!entity) return json({ error: "Contenuto non trovato" }, { status: 404 });
   await env.DB.prepare("UPDATE content_entities SET display_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(displayOrder, id).run();
   await audit(env, actor.email, "display_order_updated", id, { type, displayOrder });
-  if (entity.published) await purgePublicContent(env, actor.email, type, entity, entity.slug);
+  if (entity.published) await purgePublicContent(env, actor.email, entity);
   return json(await findEntity(env, type, id));
 }
 
-async function purgePublicContent(env: Env, actor: string, type: EntityType, entity: ContentEntity<unknown>, previousSlug?: string) {
-  if (env.ENVIRONMENT !== "production" || !env.CF_ZONE_ID || !env.CF_CACHE_PURGE_TOKEN || !env.PUBLIC_API_BASE_URL) return;
-  const base = env.PUBLIC_API_BASE_URL.replace(/\/$/, "");
-  const urls = new Set<string>();
-  if (type === "site") urls.add(`${base}/v1/public/site`);
-  if (type === "team_member") urls.add(`${base}/v1/public/team`);
-  if (type === "project") {
-    urls.add(`${base}/v1/public/projects`);
-    [previousSlug, entity.slug, entity.draft && (entity.draft as ProjectContent).slug, entity.published && (entity.published as ProjectContent).slug]
-      .filter((slug): slug is string => Boolean(slug)).forEach((slug) => urls.add(`${base}/v1/public/projects/${encodeURIComponent(slug)}`));
-  }
+/**
+ * Svuota la cache delle risposte pubbliche dopo una pubblicazione.
+ *
+ * Le regole di cache della zona non valgono per i Worker — girano prima della cache — quindi
+ * l'invalidazione passa da `cache.purge` del Worker stesso. Si azzera l'intero prefisso pubblico
+ * invece dei singoli indirizzi: sono poche voci, e così non se ne dimentica nessuno.
+ */
+async function purgePublicContent(env: Env, actor: string, entity: ContentEntity<unknown>) {
+  if (env.ENVIRONMENT === "local") return;
   try {
-    const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${env.CF_ZONE_ID}/purge_cache`, {
-      method: "POST", headers: { Authorization: `Bearer ${env.CF_CACHE_PURGE_TOKEN}`, "Content-Type": "application/json" }, body: JSON.stringify({ files: [...urls] }),
-    });
-    if (!response.ok) throw new Error(`Purge Cloudflare non riuscito (${response.status})`);
-    await audit(env, actor, "public_cache_purged", entity.id, { type, urls: [...urls] });
+    const esito = await cache.purge({ pathPrefixes: ["/v1/public/"] });
+    if (!esito.success) throw new Error(esito.errors.map((errore) => errore.message ?? "errore sconosciuto").join("; ") || "Purge non riuscito");
+    await audit(env, actor, "public_cache_purged", entity.id, { pathPrefixes: ["/v1/public/"] });
   } catch (error) {
-    await audit(env, actor, "public_cache_purge_failed", entity.id, { type, message: error instanceof Error ? error.message : "Errore sconosciuto" });
+    await audit(env, actor, "public_cache_purge_failed", entity.id, { message: error instanceof Error ? error.message : "Errore sconosciuto" });
   }
 }
 

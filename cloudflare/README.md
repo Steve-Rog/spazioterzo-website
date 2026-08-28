@@ -69,18 +69,16 @@ Per Access servono, in entrambi gli ambienti remoti:
 - `ACCESS_TEAM_DOMAIN`
 - `ACCESS_AUDIENCE`
 
-Solo in produzione, dopo avere impostato la Cache Rule, servono anche:
-
-- `CF_ZONE_ID`
-- `CF_CACHE_PURGE_TOKEN`
+Non servono segreti per la cache: la cache del Worker si abilita da `wrangler.jsonc`
+(`"cache": { "enabled": true }`) e si invalida dal codice.
 
 ## Produzione
 
 - Configurare Cloudflare Access con OTP e allow-list di email.
 - Inserire `ACCESS_TEAM_DOMAIN` e `ACCESS_AUDIENCE` come secrets del Worker.
 - Configurare `PUBLIC_MEDIA_BASE_URL` sul dominio `media` dell'associazione.
-- Configurare `PUBLIC_API_BASE_URL` con il dominio API definitivo e creare una Cache Rule che memorizzi `/v1/public/*` per cinque minuti.
-- Salvare `CF_ZONE_ID` e `CF_CACHE_PURGE_TOKEN` come secrets: il token deve poter purgare soltanto la zona dell'associazione. A ogni pubblicazione il Worker invalida gli URL pubblici interessati; se il purge fallisce, registra l'errore e la cache scade comunque entro cinque minuti.
+- Configurare `PUBLIC_API_BASE_URL` con il dominio API definitivo.
+- La cache delle risposte pubbliche è quella del Worker, non della zona: le Cache Rules, le Page Rules e le altre impostazioni di zona **non hanno effetto** sui Worker, che girano prima della cache. Si abilita con `"cache": { "enabled": true }` e obbedisce al `Cache-Control` che il Worker già invia (`s-maxage=300`). A ogni pubblicazione il Worker svuota il prefisso `/v1/public/` con `cache.purge`; se fallisce, registra `public_cache_purge_failed` negli eventi e la cache scade comunque entro cinque minuti.
 - D1 e R2 sono già separati dall'ambiente dev; non riusare mai quelli di sviluppo in produzione.
 - Inserire il primo amministratore nel D1 di produzione con `INSERT INTO admin_users (email, role) VALUES ('email@associazione.it', 'admin')`; l'email deve essere anche nella allow-list Access.
 - Applicare le migrazioni solo con `--remote` nell'ambiente corretto.
