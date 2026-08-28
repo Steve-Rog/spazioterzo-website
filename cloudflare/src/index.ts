@@ -77,13 +77,18 @@ async function nextDisplayOrder(env: Env, type: EntityType) {
   return (row?.value ?? -1) + 1;
 }
 
-async function saveDraft(env: Env, actor: AdminIdentity, type: EntityType, id: string | undefined, payload: unknown, requestedOrder?: number) {
+async function saveDraft(env: Env, actor: AdminIdentity, type: EntityType, id: string | undefined, payload: unknown, requestedOrder?: number, expectedUpdatedAt?: string) {
   const validationError = contentValidationError(type, payload);
   if (validationError) return json({ error: validationError }, { status: 422 });
   const typedPayload = payload as ProjectContent | TeamMemberContent | SiteSettingsContent;
   const slug = type === "project" ? (typedPayload as ProjectContent).slug : type === "site" ? "site" : slugify((typedPayload as TeamMemberContent).name);
   let entity = id ? await findEntity(env, type, id) : type === "site" ? await findEntity(env, type, "site") : null;
   if (id && !entity) return json({ error: "Contenuto non trovato" }, { status: 404 });
+  // chi salva dichiara da quale versione è partito: senza questo controllo l'ultimo salvataggio
+  // cancellerebbe in silenzio il lavoro di chi ha salvato nel frattempo
+  if (entity && expectedUpdatedAt && entity.updatedAt !== expectedUpdatedAt) {
+    return json({ error: "Questo contenuto è stato modificato da un'altra persona mentre lo stavi scrivendo. Ricarica la pagina per vedere la versione aggiornata: il tuo testo non è stato salvato." }, { status: 409 });
+  }
 
   if (!entity) {
     if (type === "team_member") {
@@ -174,6 +179,23 @@ async function unarchiveEntity(env: Env, actor: AdminIdentity, type: EntityType,
   await env.DB.prepare("UPDATE content_entities SET state = 'draft', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(id).run();
   await audit(env, actor.email, "unarchived", id, { type });
   return json(await findEntity(env, type, id));
+}
+
+/**
+ * Scambia la posizione di due contenuti in una sola transazione.
+ * Due UPDATE separati lascerebbero, se il secondo fallisce, due contenuti con lo stesso ordine.
+ */
+async function swapDisplayOrder(env: Env, actor: AdminIdentity, type: EntityType, id: string, otherId: unknown) {
+  if (typeof otherId !== "string" || otherId === id) return json({ error: "Scambio non valido" }, { status: 422 });
+  const [entity, other] = await Promise.all([findEntity(env, type, id), findEntity(env, type, otherId)]);
+  if (!entity || !other) return json({ error: "Contenuto non trovato" }, { status: 404 });
+  await env.DB.batch([
+    env.DB.prepare("UPDATE content_entities SET display_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(other.displayOrder, entity.id),
+    env.DB.prepare("UPDATE content_entities SET display_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(entity.displayOrder, other.id),
+  ]);
+  await audit(env, actor.email, "display_order_swapped", entity.id, { type, otherId: other.id });
+  if (entity.published || other.published) await purgePublicContent(env, actor.email, entity);
+  return json(await listEntities(env, type));
 }
 
 async function updateDisplayOrder(env: Env, actor: AdminIdentity, type: EntityType, id: string, displayOrder: unknown) {
@@ -378,7 +400,7 @@ async function router(request: Request, env: Env): Promise<Response> {
     return forbidden ?? saveAdminUser(request, env, identity!, decodeURIComponent(userMatch[1]));
   }
 
-  const match = pathname.match(/^\/v1\/admin\/(projects|team|site)(?:\/([^/]+))?(?:\/(publish|archive|unarchive|order|revisions))?(?:\/([^/]+))?(?:\/(restore))?$/);
+  const match = pathname.match(/^\/v1\/admin\/(projects|team|site)(?:\/([^/]+))?(?:\/(publish|archive|unarchive|order|swap|revisions))?(?:\/([^/]+))?(?:\/(restore))?$/);
   if (!match) return json({ error: "Non trovato" }, { status: 404 });
   const [, resource, id, action, revisionId, restoreAction] = match;
   const type: EntityType = resource === "projects" ? "project" : resource === "team" ? "team_member" : "site";
@@ -413,6 +435,12 @@ async function router(request: Request, env: Env): Promise<Response> {
     const forbidden = requireAdmin(identity, "admin");
     return forbidden ?? unarchiveEntity(env, identity!, type, id);
   }
+  if (request.method === "POST" && action === "swap" && id) {
+    const forbidden = requireAdmin(identity, "admin");
+    if (forbidden) return forbidden;
+    const body = await request.json<{ otherId?: unknown }>();
+    return swapDisplayOrder(env, identity!, type, id, body.otherId);
+  }
   if (request.method === "POST" && action === "order" && id) {
     const forbidden = requireAdmin(identity, "admin");
     if (forbidden) return forbidden;
@@ -424,8 +452,8 @@ async function router(request: Request, env: Env): Promise<Response> {
     return forbidden ?? restoreRevision(env, identity!, type, id, revisionId);
   }
   if ((request.method === "POST" && !id) || (request.method === "PUT" && id)) {
-    const body = await request.json<{ payload?: unknown; displayOrder?: number }>();
-    return saveDraft(env, identity!, type, id, body.payload, body.displayOrder);
+    const body = await request.json<{ payload?: unknown; displayOrder?: number; expectedUpdatedAt?: string }>();
+    return saveDraft(env, identity!, type, id, body.payload, body.displayOrder, typeof body.expectedUpdatedAt === "string" ? body.expectedUpdatedAt : undefined);
   }
   return json({ error: "Metodo non consentito" }, { status: 405 });
 }

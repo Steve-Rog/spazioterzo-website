@@ -20,6 +20,11 @@ export class ConnessioneAssente extends Error {
   constructor(message = "Non riesco a contattare il server dei contenuti.") { super(message); this.name = "ConnessioneAssente"; }
 }
 
+/** Il server ha risposto «non sei tu»: in produzione vuol dire che la sessione Access è scaduta. */
+export class AccessoNegato extends Error {
+  constructor(message = "La sessione è scaduta.") { super(message); this.name = "AccessoNegato"; }
+}
+
 const TIMEOUT_MS = 12_000;
 
 async function request<T>(path: string, init: RequestInit = {}) {
@@ -30,18 +35,23 @@ async function request<T>(path: string, init: RequestInit = {}) {
   } catch {
     throw new ConnessioneAssente();
   }
-  if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "Operazione non riuscita");
+  if (!response.ok) {
+    const messaggio = (await response.json().catch(() => null))?.error;
+    if (response.status === 401 || response.status === 403) throw new AccessoNegato(messaggio ?? undefined);
+    throw new Error(messaggio ?? "Operazione non riuscita");
+  }
   return response.json() as Promise<T>;
 }
 
 export const adminApi = {
   me: () => request<{ email: string; role: "admin" | "editor" }>("/v1/admin/me"),
   list: <T>(resource: AdminResource) => request<ContentEntity<T>[]>(`/v1/admin/${resource}`),
-  save: <T>(resource: AdminResource, id: string | undefined, payload: T, displayOrder?: number) => request<ContentEntity<T>>(`/v1/admin/${resource}${id ? `/${id}` : ""}`, { method: id ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payload, ...(displayOrder === undefined ? {} : { displayOrder }) }) }),
+  save: <T>(resource: AdminResource, id: string | undefined, payload: T, displayOrder?: number, expectedUpdatedAt?: string) => request<ContentEntity<T>>(`/v1/admin/${resource}${id ? `/${id}` : ""}`, { method: id ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payload, ...(displayOrder === undefined ? {} : { displayOrder }), ...(expectedUpdatedAt ? { expectedUpdatedAt } : {}) }) }),
   publish: <T>(resource: AdminResource, id: string) => request<ContentEntity<T>>(`/v1/admin/${resource}/${id}/publish`, { method: "POST" }),
   archive: <T>(resource: AdminResource, id: string) => request<ContentEntity<T>>(`/v1/admin/${resource}/${id}/archive`, { method: "POST" }),
   unarchive: <T>(resource: AdminResource, id: string) => request<ContentEntity<T>>(`/v1/admin/${resource}/${id}/unarchive`, { method: "POST" }),
   order: <T>(resource: AdminResource, id: string, displayOrder: number) => request<ContentEntity<T>>(`/v1/admin/${resource}/${id}/order`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayOrder }) }),
+  swap: <T>(resource: AdminResource, id: string, otherId: string) => request<ContentEntity<T>[]>(`/v1/admin/${resource}/${id}/swap`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ otherId }) }),
   revisions: (resource: AdminResource, id: string) => request<RevisionSummary[]>(`/v1/admin/${resource}/${id}/revisions`),
   revision: <T>(resource: AdminResource, id: string, revisionId: string) => request<T>(`/v1/admin/${resource}/${id}/revisions/${revisionId}`),
   restoreRevision: <T>(resource: AdminResource, id: string, revisionId: string) => request<ContentEntity<T>>(`/v1/admin/${resource}/${id}/revisions/${revisionId}/restore`, { method: "POST" }),

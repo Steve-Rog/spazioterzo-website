@@ -1,0 +1,62 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+
+/**
+ * Difetti trovati leggendo il back office: questi controlli servono a non ritrovarseli.
+ * Sono letture del sorgente perché il codice sta dentro i componenti; quando qualcuno
+ * li estrarrà in funzioni pure, questi test vanno riscritti come test veri.
+ */
+
+const pannello = readFileSync(join(import.meta.dirname, "App.tsx"), "utf8");
+const client = readFileSync(join(import.meta.dirname, "api.ts"), "utf8");
+const worker = readFileSync(join(import.meta.dirname, "..", "..", "cloudflare", "src", "index.ts"), "utf8");
+
+describe("ripristino di una revisione", () => {
+  it("ricarica i contenuti e fa ripartire l'editor", () => {
+    // senza, l'editor resta sui valori di prima e il salvataggio successivo cancella il ripristino
+    expect(pannello).toContain("await onRestored?.()");
+    expect(pannello).toContain("const restored = async () => { setDirty(false); await reload(); setVersioneEditor");
+    for (const editor of ["ProjectEditor", "TeamEditor", "SiteEditor"]) {
+      expect(pannello, `${editor} non riparte dopo un ripristino`).toContain(`<${editor} onRestored={restored} key={`);
+    }
+  });
+});
+
+describe("ordine dei contenuti", () => {
+  it("sposta rispetto a quello che l'utente vede, non alla lista intera", () => {
+    expect(pannello).toContain("onMove(item, visible[index - 1])");
+    expect(pannello).toContain("onMove(item, visible[index + 1])");
+  });
+
+  it("scambia le posizioni in una richiesta sola", () => {
+    // due chiamate separate lasciano due contenuti con lo stesso ordine se la seconda fallisce
+    expect(pannello).toContain("adminApi.swap(resource, item.id, neighbour.id)");
+    expect(pannello).not.toContain("Promise.all([adminApi.order");
+    expect(worker).toContain("async function swapDisplayOrder");
+    expect(worker).toContain("env.DB.batch([");
+  });
+});
+
+describe("scritture concorrenti", () => {
+  it("il salvataggio dichiara da quale versione parte", () => {
+    expect(client).toContain("expectedUpdatedAt");
+    const salvataggi = [...pannello.matchAll(/adminApi\.save\((.*?)\);/g)].map((match) => match[1]);
+    expect(salvataggi.length).toBeGreaterThan(0);
+    for (const salvataggio of salvataggi) expect(salvataggio, `un salvataggio non manda la versione: ${salvataggio}`).toContain("entity?.updatedAt");
+  });
+
+  it("il server rifiuta chi parte da una versione superata", () => {
+    expect(worker).toContain("entity.updatedAt !== expectedUpdatedAt");
+    expect(worker).toContain("status: 409");
+  });
+});
+
+describe("sessione scaduta", () => {
+  it("in produzione non propone il modulo dell'ambiente locale", () => {
+    expect(client).toContain("export class AccessoNegato");
+    expect(client).toContain("response.status === 401 || response.status === 403");
+    expect(pannello).toContain("error instanceof AccessoNegato && !import.meta.env.DEV");
+    expect(pannello).toContain("function SessionExpiredScreen");
+  });
+});

@@ -7,7 +7,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { asRichText, contentLimits, MAX_HOME_ACTIVITIES, plainText, type ContentEntity, type ProjectBlock, type ProjectContent, type RichText, type SiteSettingsContent, type TeamMemberContent } from "../../shared/content-schema";
 import { defaultSiteSettings } from "../../shared/default-site-settings";
-import { adminApi, ConnessioneAssente, type AdminResource, type AdminUser, type RevisionSummary } from "./api";
+import { adminApi, AccessoNegato, ConnessioneAssente, type AdminResource, type AdminUser, type RevisionSummary } from "./api";
 import { MediaPicker } from "./MediaPicker";
 import { ImageCropper } from "./ImageCropper";
 import { RichTextField } from "./RichTextField";
@@ -61,6 +61,9 @@ export function App() {
   const [mobileNavOpened, setMobileNavOpened] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [offline, setOffline] = useState(false);
+  const [sessioneScaduta, setSessioneScaduta] = useState(false);
+  /** Cambia quando una revisione viene ripristinata: entra nella key dell'editor per farlo ripartire dai dati nuovi. */
+  const [versioneEditor, setVersioneEditor] = useState(0);
   const isMobile = useMediaQuery("(max-width: 767px)");
   const isAdmin = user?.role === "admin";
   const activeTeam = team.filter((item) => item.state !== "archived");
@@ -77,6 +80,7 @@ export function App() {
   const reload = async (initial = false) => {
     if (initial) setLoading(true);
     setOffline(false);
+    setSessioneScaduta(false);
     try {
       const identity = await adminApi.me();
       const listedProjects = await adminApi.list<ProjectContent>("projects");
@@ -87,6 +91,8 @@ export function App() {
       } else { setTeam([]); setSite(null); setUsers([]); if (section !== "projects") { setSection("projects"); setEditingId(null); } }
     } catch (error) {
       if (error instanceof ConnessioneAssente) { setOffline(true); }
+      // in produzione l'accesso passa da Cloudflare Access: il modulo con l'email di sviluppo non servirebbe a niente
+      else if (error instanceof AccessoNegato && !import.meta.env.DEV) { setSessioneScaduta(true); }
       else {
         setUser(null);
         if (window.localStorage.getItem("spazioterzo-dev-email")) notifications.show({ color: "red", message: error instanceof Error ? error.message : "Accesso non disponibile" });
@@ -145,6 +151,8 @@ export function App() {
   const closeEditor = () => leaveEditor(() => setEditingId(null));
   const saved = async (entity: ContentEntity, message = "Bozza salvata.") => { setDirty(false); await reload(); setEditingId(entity.id); notifications.show({ color: "teal", message }); };
   const openEntity = (id: string) => setEditingId(id);
+  /** Il form non si accorgerebbe del ripristino: si ricarica e si rimonta, altrimenti il salvataggio dopo lo cancella. */
+  const restored = async () => { setDirty(false); await reload(); setVersioneEditor((numero) => numero + 1); };
   const archive = async (resource: AdminResource, id: string) => {
     if (!window.confirm("Archiviare questo contenuto? Non sarà più visibile sul sito. Potrai ripristinarlo dal filtro «Archiviati».")) return;
     try { await adminApi.archive(resource, id); setDirty(false); await reload(); setEditingId(null); notifications.show({ color: "orange", message: "Contenuto archiviato." }); }
@@ -172,16 +180,15 @@ export function App() {
     try { await adminApi.publish(resource, id); await reload(); notifications.show({ color: "teal", message: "Contenuto pubblicato sul sito." }); }
     catch (error) { notifications.show({ color: "red", message: error instanceof Error ? error.message : "Pubblicazione non riuscita" }); }
   };
-  const move = async (resource: "projects" | "team", item: ContentEntity<ProjectContent | TeamMemberContent>, direction: -1 | 1) => {
-    const items = (resource === "projects" ? projects : team).filter((entry) => entry.state !== "archived");
-    const index = items.findIndex((entry) => entry.id === item.id); const neighbour = items[index + direction];
-    if (!neighbour) return;
-    try { await Promise.all([adminApi.order(resource, item.id, neighbour.displayOrder), adminApi.order(resource, neighbour.id, item.displayOrder)]); await reload(); }
+  /** Lo scambio avviene fra i due elementi che l'utente vede vicini: con un filtro attivo la lista completa non lo sa. */
+  const move = async (resource: "projects" | "team", item: ContentEntity, neighbour: ContentEntity) => {
+    try { await adminApi.swap(resource, item.id, neighbour.id); await reload(); }
     catch (error) { notifications.show({ color: "red", message: error instanceof Error ? error.message : "Ordine non aggiornato" }); }
   };
 
   if (loading) return <LoadingScreen />;
   if (offline) return <OfflineScreen onRetry={() => void reload(true)} />;
+  if (sessioneScaduta) return <SessionExpiredScreen />;
   if (!user) return <AccessGate onSubmit={saveLocalEmail} />;
 
   const currentProject = section === "projects" && editingId && editingId !== "new" ? projects.find((item) => item.id === editingId) : undefined;
@@ -207,10 +214,10 @@ export function App() {
       <div className="admin-profile"><Text size="xs" lineClamp={1}>{user.email}</Text><Menu position="top-start" width={230}><Menu.Target><UnstyledButton className="profile-trigger"><span>{isAdmin ? "Amministratore" : "Editor · progetti"}</span><IconDots size={16} stroke={1.7} /></UnstyledButton></Menu.Target><Menu.Dropdown>{isAdmin && <Menu.Item onClick={() => setAccessOpen(true)}>Gestisci accessi</Menu.Item>}<Menu.Item color="red" onClick={() => { window.localStorage.removeItem("spazioterzo-dev-email"); window.location.reload(); }}>Esci dall’ambiente locale</Menu.Item></Menu.Dropdown></Menu></div>
     </AppShell.Navbar>
     <AppShell.Main className="admin-main"><main className="admin-workspace">
-      {section !== "site" && !editing && <ArchiveView section={section} items={section === "projects" ? projects : team} isAdmin={Boolean(isAdmin)} teamFull={activeTeam.length >= 3} onNew={() => setEditingId("new")} onOpen={openEntity} onMove={(item, direction) => void move(section, item, direction)} onRestore={(id) => void restore(resourceFor(section), id)} onDuplicate={(item) => void duplicate(item as ContentEntity<ProjectContent>)} onPublish={(id) => void publish(resourceFor(section), id)} onArchive={(id) => void archive(resourceFor(section), id)} />}
-      {section === "projects" && editing && <ProjectEditor key={editingId} entity={currentProject} isAdmin={Boolean(isAdmin)} siteSeo={siteSeoDefaults} siteSettings={siteContent ?? defaultSiteSettings} relatedOptions={relatedOptions.filter((option) => option.value !== currentProject?.slug)} catalogo={catalogoProgetti} onBack={closeEditor} onSaved={saved} onPublish={publish} onArchive={archive} onDirtyChange={setDirty} />}
-      {section === "team" && editing && <TeamEditor key={editingId} entity={currentTeam} teamCount={activeTeam.length} teamIndex={Math.max(0, activeTeam.findIndex((item) => item.id === editingId))} onBack={closeEditor} onSaved={saved} onPublish={publish} onArchive={archive} onDirtyChange={setDirty} />}
-      {section === "site" && <SiteEditor key={site?.id ?? "site"} entity={site ?? undefined} activePanel={sitePanel} anchor={initialRoute.anchor} onSaved={saved} onPublish={publish} onDirtyChange={setDirty} />}
+      {section !== "site" && !editing && <ArchiveView section={section} items={section === "projects" ? projects : team} isAdmin={Boolean(isAdmin)} teamFull={activeTeam.length >= 3} onNew={() => setEditingId("new")} onOpen={openEntity} onMove={(item, neighbour) => void move(section, item, neighbour)} onRestore={(id) => void restore(resourceFor(section), id)} onDuplicate={(item) => void duplicate(item as ContentEntity<ProjectContent>)} onPublish={(id) => void publish(resourceFor(section), id)} onArchive={(id) => void archive(resourceFor(section), id)} />}
+      {section === "projects" && editing && <ProjectEditor onRestored={restored} key={`${editingId}-${versioneEditor}`} entity={currentProject} isAdmin={Boolean(isAdmin)} siteSeo={siteSeoDefaults} siteSettings={siteContent ?? defaultSiteSettings} relatedOptions={relatedOptions.filter((option) => option.value !== currentProject?.slug)} catalogo={catalogoProgetti} onBack={closeEditor} onSaved={saved} onPublish={publish} onArchive={archive} onDirtyChange={setDirty} />}
+      {section === "team" && editing && <TeamEditor onRestored={restored} key={`${editingId}-${versioneEditor}`} entity={currentTeam} teamCount={activeTeam.length} teamIndex={Math.max(0, activeTeam.findIndex((item) => item.id === editingId))} onBack={closeEditor} onSaved={saved} onPublish={publish} onArchive={archive} onDirtyChange={setDirty} />}
+      {section === "site" && <SiteEditor onRestored={restored} key={`${site?.id ?? "site"}-${versioneEditor}`} entity={site ?? undefined} activePanel={sitePanel} anchor={initialRoute.anchor} onSaved={saved} onPublish={publish} onDirtyChange={setDirty} />}
     </main></AppShell.Main>
     <Drawer opened={accessOpen} onClose={() => setAccessOpen(false)} title="Accessi" position="right" size="lg"><UserManagement users={users} currentEmail={user.email} onChanged={async () => { await reload(); notifications.show({ color: "teal", message: "Accesso aggiornato." }); }} /></Drawer>
   </AppShell>;
@@ -242,6 +249,17 @@ function OfflineScreen({ onRetry }: { onRetry: () => void }) {
   </section></main>;
 }
 
+/** In produzione l'accesso è di Cloudflare Access: qui non c'è nessun modulo da compilare, solo da rientrare. */
+function SessionExpiredScreen() {
+  return <main className="access-gate"><section>
+    <img className="access-logo" src="/assets/logo_spazioterzo.svg" alt="Spazio Terzo" />
+    <Text className="eyebrow">Area riservata</Text>
+    <h1>La sessione è scaduta.</h1>
+    <Text c="dimmed">Per continuare serve rientrare: ricaricando la pagina ricevi un nuovo codice all’email autorizzata. Le bozze salvate non si perdono.</Text>
+    <Group mt="lg"><Button color="orange" onClick={() => window.location.reload()}>Rientra</Button></Group>
+  </section></main>;
+}
+
 function NavLabel({ name, detail }: { name: string; detail: string | number }) { return <Group justify="space-between" wrap="nowrap"><span>{name}</span><small>{detail}</small></Group>; }
 
 function AccessGate({ onSubmit }: { onSubmit: (email: string) => void }) {
@@ -250,7 +268,7 @@ function AccessGate({ onSubmit }: { onSubmit: (email: string) => void }) {
 }
 
 type ArchiveEntity = ContentEntity<ProjectContent | TeamMemberContent>;
-function ArchiveView({ section, items, isAdmin, teamFull, onNew, onOpen, onMove, onRestore, onDuplicate, onPublish, onArchive }: { section: "projects" | "team"; items: ArchiveEntity[]; isAdmin: boolean; teamFull: boolean; onNew: () => void; onOpen: (id: string) => void; onMove: (item: ArchiveEntity, direction: -1 | 1) => void; onRestore: (id: string) => void; onDuplicate: (item: ArchiveEntity) => void; onPublish: (id: string) => void; onArchive: (id: string) => void }) {
+function ArchiveView({ section, items, isAdmin, teamFull, onNew, onOpen, onMove, onRestore, onDuplicate, onPublish, onArchive }: { section: "projects" | "team"; items: ArchiveEntity[]; isAdmin: boolean; teamFull: boolean; onNew: () => void; onOpen: (id: string) => void; onMove: (item: ArchiveEntity, neighbour: ArchiveEntity) => void; onRestore: (id: string) => void; onDuplicate: (item: ArchiveEntity) => void; onPublish: (id: string) => void; onArchive: (id: string) => void }) {
   const form = useForm({ mode: "controlled", initialValues: { query: "", status: "all" } });
   const showArchived = form.values.status === "archived";
   const visible = useMemo(() => items.filter((item) => {
@@ -266,12 +284,12 @@ function ArchiveView({ section, items, isAdmin, teamFull, onNew, onOpen, onMove,
   const counts = { all: active.length, draft: active.filter((item) => item.state === "draft").length, published: active.filter((item) => item.state === "published").length, archived: items.filter((item) => item.state === "archived").length };
   return <section className="archive-view"><header className="view-header"><div><Text className="eyebrow">Archivio</Text><h1>{title}</h1><Text c="dimmed">{section === "projects" ? "Crea, ordina e prepara i progetti prima della pubblicazione." : "La pagina Persone mantiene il collage con un massimo di tre profili."}</Text></div>{canCreate ? <Button color="orange" onClick={onNew}>{section === "projects" ? "Nuovo progetto" : "Nuova persona"}</Button> : <Tooltip label="Il collage pubblico ospita tre profili: archiviane uno per liberare un posto."><span tabIndex={0} className="disabled-cta"><Button color="orange" disabled>Nuova persona</Button></span></Tooltip>}</header>
     <div className="archive-tools"><TextInput placeholder={`Cerca ${title.toLowerCase()}…`} {...form.getInputProps("query")} /><SegmentedControl aria-label="Filtra per stato" value={form.values.status} onChange={(status) => form.setFieldValue("status", status)} data={[{ value: "all", label: `Tutti ${counts.all}` }, { value: "draft", label: `Bozze ${counts.draft}` }, { value: "published", label: `Online ${counts.published}` }, { value: "archived", label: `Archiviati ${counts.archived}` }]} /></div>
-    <div className="archive-list">{visible.length ? visible.map((item, index) => { const content = item.draft ?? item.published; const name = content && "title" in content ? content.title : content && "name" in content ? content.name : "Senza titolo"; const note = content && "subtitle" in content ? content.subtitle : content && "role" in content ? content.role : ""; const image = content && "cover" in content ? content.cover : content && "image" in content ? content.image : ""; const hasPendingChanges = changedSincePublication(item); return <div className="archive-row" key={item.id}><UnstyledButton onClick={() => onOpen(item.id)} className="archive-open">{image && <img src={image} alt="" />}<div className="archive-copy"><Text fw={700}>{name || "Senza titolo"}</Text><Text c="dimmed" size="sm" lineClamp={1}>{note}</Text><Text className="archive-updated" size="xs">Modificato {archiveDate(item.updatedAt)}{hasPendingChanges && item.published ? " · modifiche non online" : ""}{item.slug ? ` · /${item.slug}` : ""}</Text></div><Badge className={`state state-${item.state}`} variant="light">{item.state === "published" ? "Online" : statusLabel(item.state)}</Badge></UnstyledButton>{isAdmin && <Group gap={0} className="archive-actions">{showArchived ? <Button size="xs" variant="default" onClick={() => onRestore(item.id)}>Ripristina</Button> : <><Menu position="bottom-end" withinPortal><Menu.Target><ActionIcon aria-label={`Altre azioni per ${name || "questo contenuto"}`} variant="subtle" color="dark"><IconDots size={17} stroke={1.7} /></ActionIcon></Menu.Target><Menu.Dropdown><Menu.Item onClick={() => onOpen(item.id)}>Apri</Menu.Item>{section === "projects" && <Menu.Item onClick={() => onDuplicate(item)}>Duplica</Menu.Item>}{hasPendingChanges && <Menu.Item onClick={() => onPublish(item.id)}>{item.published ? "Pubblica modifiche" : "Pubblica"}</Menu.Item>}<Menu.Divider /><Menu.Item color="red" onClick={() => onArchive(item.id)}>Archivia</Menu.Item></Menu.Dropdown></Menu><Tooltip label="Sposta su"><ActionIcon aria-label={`Sposta ${name || "elemento"} più in alto`} variant="subtle" color="dark" disabled={index === 0} onClick={() => onMove(item, -1)}><IconArrowUp size={17} stroke={1.7} /></ActionIcon></Tooltip><Tooltip label="Sposta giù"><ActionIcon aria-label={`Sposta ${name || "elemento"} più in basso`} variant="subtle" color="dark" disabled={index === visible.length - 1} onClick={() => onMove(item, 1)}><IconArrowDown size={17} stroke={1.7} /></ActionIcon></Tooltip></>}</Group>}</div>; }) : <div className="empty-state"><h2>{showArchived ? "Nessun contenuto archiviato." : "Nessun contenuto qui."}</h2><p>{showArchived ? "Gli elementi archiviati compariranno qui e potrai riportarli in bozza." : "Prova un’altra ricerca oppure crea il primo elemento."}</p></div>}</div>
+    <div className="archive-list">{visible.length ? visible.map((item, index) => { const content = item.draft ?? item.published; const name = content && "title" in content ? content.title : content && "name" in content ? content.name : "Senza titolo"; const note = content && "subtitle" in content ? content.subtitle : content && "role" in content ? content.role : ""; const image = content && "cover" in content ? content.cover : content && "image" in content ? content.image : ""; const hasPendingChanges = changedSincePublication(item); return <div className="archive-row" key={item.id}><UnstyledButton onClick={() => onOpen(item.id)} className="archive-open">{image && <img src={image} alt="" />}<div className="archive-copy"><Text fw={700}>{name || "Senza titolo"}</Text><Text c="dimmed" size="sm" lineClamp={1}>{note}</Text><Text className="archive-updated" size="xs">Modificato {archiveDate(item.updatedAt)}{hasPendingChanges && item.published ? " · modifiche non online" : ""}{item.slug ? ` · /${item.slug}` : ""}</Text></div><Badge className={`state state-${item.state}`} variant="light">{item.state === "published" ? "Online" : statusLabel(item.state)}</Badge></UnstyledButton>{isAdmin && <Group gap={0} className="archive-actions">{showArchived ? <Button size="xs" variant="default" onClick={() => onRestore(item.id)}>Ripristina</Button> : <><Menu position="bottom-end" withinPortal><Menu.Target><ActionIcon aria-label={`Altre azioni per ${name || "questo contenuto"}`} variant="subtle" color="dark"><IconDots size={17} stroke={1.7} /></ActionIcon></Menu.Target><Menu.Dropdown><Menu.Item onClick={() => onOpen(item.id)}>Apri</Menu.Item>{section === "projects" && <Menu.Item onClick={() => onDuplicate(item)}>Duplica</Menu.Item>}{hasPendingChanges && <Menu.Item onClick={() => onPublish(item.id)}>{item.published ? "Pubblica modifiche" : "Pubblica"}</Menu.Item>}<Menu.Divider /><Menu.Item color="red" onClick={() => onArchive(item.id)}>Archivia</Menu.Item></Menu.Dropdown></Menu><Tooltip label="Sposta su"><ActionIcon aria-label={`Sposta ${name || "elemento"} più in alto`} variant="subtle" color="dark" disabled={index === 0} onClick={() => onMove(item, visible[index - 1])}><IconArrowUp size={17} stroke={1.7} /></ActionIcon></Tooltip><Tooltip label="Sposta giù"><ActionIcon aria-label={`Sposta ${name || "elemento"} più in basso`} variant="subtle" color="dark" disabled={index === visible.length - 1} onClick={() => onMove(item, visible[index + 1])}><IconArrowDown size={17} stroke={1.7} /></ActionIcon></Tooltip></>}</Group>}</div>; }) : <div className="empty-state"><h2>{showArchived ? "Nessun contenuto archiviato." : "Nessun contenuto qui."}</h2><p>{showArchived ? "Gli elementi archiviati compariranno qui e potrai riportarli in bozza." : "Prova un’altra ricerca oppure crea il primo elemento."}</p></div>}</div>
   </section>;
 }
 
-type EditorFrameProps = { title: string; eyebrow: string; entity?: ContentEntity; resource: AdminResource; isAdmin?: boolean; onBack?: () => void; onSave: () => void; saving: boolean; dirty?: boolean; preview: React.ReactNode; children: React.ReactNode; onPublish?: (resource: AdminResource, id: string) => Promise<void>; onArchive?: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void };
-function EditorFrame({ title, eyebrow, entity, resource, isAdmin = true, onBack, onSave, saving, dirty = false, preview, children, onPublish, onArchive, onDirtyChange }: EditorFrameProps) {
+type EditorFrameProps = { title: string; eyebrow: string; entity?: ContentEntity; resource: AdminResource; isAdmin?: boolean; onBack?: () => void; onSave: () => void; saving: boolean; dirty?: boolean; preview: React.ReactNode; children: React.ReactNode; onRestored?: () => Promise<void>; onPublish?: (resource: AdminResource, id: string) => Promise<void>; onArchive?: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void };
+function EditorFrame({ title, eyebrow, entity, resource, isAdmin = true, onBack, onSave, saving, dirty = false, preview, children, onPublish, onArchive, onDirtyChange, onRestored }: EditorFrameProps) {
   const [previewOpen, setPreviewOpen] = useState(false); const [revisionsOpen, setRevisionsOpen] = useState(false);
   const notifyDirty = useRef(onDirtyChange); notifyDirty.current = onDirtyChange;
   useEffect(() => { notifyDirty.current?.(dirty); }, [dirty]);
@@ -319,14 +337,14 @@ function EditorFrame({ title, eyebrow, entity, resource, isAdmin = true, onBack,
       </aside>
     </div>
     <Drawer opened={previewOpen} onClose={() => setPreviewOpen(false)} title="Anteprima della bozza" position="right" size="100%"><div className="public-preview">{preview}</div></Drawer>
-    {entity && <RevisionDrawer opened={revisionsOpen} onClose={() => setRevisionsOpen(false)} resource={resource} entity={entity} />}
+    {entity && <RevisionDrawer opened={revisionsOpen} onClose={() => setRevisionsOpen(false)} resource={resource} entity={entity} onRestored={onRestored} />}
   </section>;
 }
 
 /** Riferimento stabile: passato a un effetto, un array nuovo a ogni render lo farebbe ripartire. */
 const vuoto: number[] = [];
 
-function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedOptions, catalogo, onBack, onSaved, onPublish, onArchive, onDirtyChange }: { entity?: ContentEntity<ProjectContent>; isAdmin: boolean; siteSeo: { suffix: string; shareImage?: string }; siteSettings: SiteSettingsContent; relatedOptions: Array<{ value: string; label: string }>; catalogo: ProjectContent[]; onBack: () => void; onSaved: (entity: ContentEntity, message?: string) => Promise<void>; onPublish: (resource: AdminResource, id: string) => Promise<void>; onArchive: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {
+function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedOptions, catalogo, onBack, onSaved, onPublish, onArchive, onDirtyChange, onRestored }: { onRestored?: () => Promise<void>; entity?: ContentEntity<ProjectContent>; isAdmin: boolean; siteSeo: { suffix: string; shareImage?: string }; siteSettings: SiteSettingsContent; relatedOptions: Array<{ value: string; label: string }>; catalogo: ProjectContent[]; onBack: () => void; onSaved: (entity: ContentEntity, message?: string) => Promise<void>; onPublish: (resource: AdminResource, id: string) => Promise<void>; onArchive: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {
   const form = useForm<ProjectContent>({ mode: "controlled", initialValues: clone(entity?.draft ?? entity?.published ?? blankProject()) });
   const [saving, setSaving] = useState(false);
   const [step, setStep] = useState(0);
@@ -367,7 +385,7 @@ function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedOptions,
     setErrors({});
     setSaving(true);
     try {
-      const saved = await adminApi.save("projects", entity?.id, form.values, entity?.displayOrder);
+      const saved = await adminApi.save("projects", entity?.id, form.values, entity?.displayOrder, entity?.updatedAt);
       form.resetDirty(form.values);
       await onSaved(saved, entity ? "Bozza salvata." : "Progetto creato: ora puoi completarlo.");
     } catch (error) { notifications.show({ color: "red", message: error instanceof Error ? error.message : "Bozza non salvata" }); }
@@ -390,7 +408,7 @@ function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedOptions,
   const invite = <ProjectInvite value={form.values} set={set} relatedOptions={relatedOptions} />;
   const seo = <ProjectSeo value={form.values} set={set} suffix={siteSeo.suffix} shareImage={siteSeo.shareImage} />;
 
-  return <form onSubmit={(event) => { event.preventDefault(); void save(); }}><EditorFrame title={entity ? form.values.title || "Progetto senza titolo" : "Nuovo progetto"} eyebrow={entity ? "Modifica progetto" : "Crea progetto"} entity={entity} resource="projects" isAdmin={isAdmin} onBack={onBack} onSave={() => void save()} saving={saving} dirty={form.isDirty()} preview={<ProjectPreview project={form.values} site={siteSettings} catalogo={catalogo} focus={selettoreProgetto(scheda)} />} onPublish={onPublish} onArchive={onArchive} onDirtyChange={onDirtyChange}>
+  return <form onSubmit={(event) => { event.preventDefault(); void save(); }}><EditorFrame title={entity ? form.values.title || "Progetto senza titolo" : "Nuovo progetto"} eyebrow={entity ? "Modifica progetto" : "Crea progetto"} entity={entity} resource="projects" isAdmin={isAdmin} onBack={onBack} onSave={() => void save()} saving={saving} dirty={form.isDirty()} preview={<ProjectPreview project={form.values} site={siteSettings} catalogo={catalogo} focus={selettoreProgetto(scheda)} />} onPublish={onPublish} onArchive={onArchive} onDirtyChange={onDirtyChange} onRestored={onRestored}>
     {newProject
       ? <>
           <Stepper active={step} onStepClick={goToStep} allowNextStepsSelect={false} className="project-stepper">
@@ -520,22 +538,22 @@ function ProjectSeo({ value, set, suffix, shareImage }: { value: ProjectContent;
 }
 function FieldCounter({ length, max }: { length: number; max: number }) { return <Text size="xs" ta="right" c={length > max * .9 ? "orange" : "dimmed"} aria-live="polite">{length}/{max}</Text>; }
 
-function TeamEditor({ entity, teamCount, teamIndex, onBack, onSaved, onPublish, onArchive, onDirtyChange }: { entity?: ContentEntity<TeamMemberContent>; teamCount: number; teamIndex: number; onBack: () => void; onSaved: (entity: ContentEntity, message?: string) => Promise<void>; onPublish: (resource: AdminResource, id: string) => Promise<void>; onArchive: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {
+function TeamEditor({ entity, teamCount, teamIndex, onBack, onSaved, onPublish, onArchive, onDirtyChange, onRestored }: { onRestored?: () => Promise<void>; entity?: ContentEntity<TeamMemberContent>; teamCount: number; teamIndex: number; onBack: () => void; onSaved: (entity: ContentEntity, message?: string) => Promise<void>; onPublish: (resource: AdminResource, id: string) => Promise<void>; onArchive: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {
   const form = useForm<TeamMemberContent>({ mode: "controlled", initialValues: clone(entity?.draft ?? entity?.published ?? blankTeamMember()), validate: { name: (value) => value.trim() ? null : "Il nome è obbligatorio", role: (value) => value.trim() ? null : "Il ruolo è obbligatorio", image: (value) => value ? null : "Scegli un ritratto" } });
   const [saving, setSaving] = useState(false); const set = form.setFieldValue as FieldSetter<TeamMemberContent>;
-  const save = form.onSubmit(async (values) => { setSaving(true); try { const saved = await adminApi.save("team", entity?.id, values, entity?.displayOrder); form.resetDirty(values); await onSaved(saved); } catch (error) { notifications.show({ color: "red", message: error instanceof Error ? error.message : "Bozza non salvata" }); } finally { setSaving(false); } });
+  const save = form.onSubmit(async (values) => { setSaving(true); try { const saved = await adminApi.save("team", entity?.id, values, entity?.displayOrder, entity?.updatedAt); form.resetDirty(values); await onSaved(saved); } catch (error) { notifications.show({ color: "red", message: error instanceof Error ? error.message : "Bozza non salvata" }); } finally { setSaving(false); } });
   if (!entity && teamCount >= 3) return <section className="editor-view"><header className="editor-header"><div><Button variant="subtle" color="dark" size="xs" leftSection={<IconArrowLeft size={15} stroke={1.8} />} onClick={onBack}>Archivio</Button><Text className="eyebrow">Persone</Text><h1>Il team è completo</h1></div></header><div className="empty-state"><p>Il collage pubblico è progettato per tre persone. Archivia un profilo esistente per liberare un posto, poi torna qui.</p><Button color="orange" onClick={onBack}>Vai all’archivio persone</Button></div></section>;
-  return <form onSubmit={save}><EditorFrame title={entity ? form.values.name || "Persona senza nome" : "Nuova persona"} eyebrow="Persone" entity={entity} resource="team" onBack={onBack} onSave={() => save()} saving={saving} dirty={form.isDirty()} preview={<TeamPreview member={form.values} index={teamIndex} total={Math.max(teamCount, teamIndex + 1)} />} onPublish={onPublish} onArchive={onArchive} onDirtyChange={onDirtyChange}><section className="form-section"><div className="section-heading"><h2>Profilo</h2><p>{teamCount}/3 profili attivi. L’ordine si gestisce dall’archivio.</p></div><div className="form-grid"><TextInput label="Nome e cognome" required maxLength={contentLimits.team.name} value={form.values.name} onChange={(event) => set("name", event.currentTarget.value)} /><TextInput label="Ruolo" required maxLength={contentLimits.team.role} value={form.values.role} onChange={(event) => set("role", event.currentTarget.value)} /></div><MediaPicker label="Ritratto" required showPreview={false} altEditable={false} altHint="Il testo alternativo si costruisce dal nome inserito qui sopra." value={{ url: form.values.image, alt: `Ritratto di ${form.values.name || "persona del team"}`, assetId: form.values.imageAssetId }} onChange={(next) => { if (next.url === form.values.image && next.assetId === form.values.imageAssetId) return; form.setValues({ ...form.values, image: next.url, imageAssetId: next.assetId, imageCrop: undefined, imagePosition: undefined }); }} /><ImageCropper image={form.values.image} value={form.values.imageCrop} onChange={(imageCrop) => set("imageCrop", imageCrop)} title="Ritaglio del ritratto" description="Sposta il volto nell’area: è esattamente la parte che apparirà sul sito." /><RichTextList label="Bio" maxLength={contentLimits.team.bioParagraph} values={form.values.bio} onChange={(next) => set("bio", next)} /><RichTextField label="Citazione" maxLength={contentLimits.team.quote} value={form.values.quote} onChange={(next) => set("quote", next)} /><TextInput label="Autore citazione" maxLength={contentLimits.team.quoteAuthor} value={form.values.quoteAuthor ?? ""} onChange={(event) => set("quoteAuthor", event.currentTarget.value || undefined)} /></section></EditorFrame></form>;
+  return <form onSubmit={save}><EditorFrame title={entity ? form.values.name || "Persona senza nome" : "Nuova persona"} eyebrow="Persone" entity={entity} resource="team" onBack={onBack} onSave={() => save()} saving={saving} dirty={form.isDirty()} preview={<TeamPreview member={form.values} index={teamIndex} total={Math.max(teamCount, teamIndex + 1)} />} onPublish={onPublish} onArchive={onArchive} onDirtyChange={onDirtyChange} onRestored={onRestored}><section className="form-section"><div className="section-heading"><h2>Profilo</h2><p>{teamCount}/3 profili attivi. L’ordine si gestisce dall’archivio.</p></div><div className="form-grid"><TextInput label="Nome e cognome" required maxLength={contentLimits.team.name} value={form.values.name} onChange={(event) => set("name", event.currentTarget.value)} /><TextInput label="Ruolo" required maxLength={contentLimits.team.role} value={form.values.role} onChange={(event) => set("role", event.currentTarget.value)} /></div><MediaPicker label="Ritratto" required showPreview={false} altEditable={false} altHint="Il testo alternativo si costruisce dal nome inserito qui sopra." value={{ url: form.values.image, alt: `Ritratto di ${form.values.name || "persona del team"}`, assetId: form.values.imageAssetId }} onChange={(next) => { if (next.url === form.values.image && next.assetId === form.values.imageAssetId) return; form.setValues({ ...form.values, image: next.url, imageAssetId: next.assetId, imageCrop: undefined, imagePosition: undefined }); }} /><ImageCropper image={form.values.image} value={form.values.imageCrop} onChange={(imageCrop) => set("imageCrop", imageCrop)} title="Ritaglio del ritratto" description="Sposta il volto nell’area: è esattamente la parte che apparirà sul sito." /><RichTextList label="Bio" maxLength={contentLimits.team.bioParagraph} values={form.values.bio} onChange={(next) => set("bio", next)} /><RichTextField label="Citazione" maxLength={contentLimits.team.quote} value={form.values.quote} onChange={(next) => set("quote", next)} /><TextInput label="Autore citazione" maxLength={contentLimits.team.quoteAuthor} value={form.values.quoteAuthor ?? ""} onChange={(event) => set("quoteAuthor", event.currentTarget.value || undefined)} /></section></EditorFrame></form>;
 }
 
-function SiteEditor({ entity, activePanel, anchor, onSaved, onPublish, onDirtyChange }: { entity?: ContentEntity<SiteSettingsContent>; activePanel: SitePanel; anchor?: string; onSaved: (entity: ContentEntity, message?: string) => Promise<void>; onPublish: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {
+function SiteEditor({ entity, activePanel, anchor, onSaved, onPublish, onDirtyChange, onRestored }: { onRestored?: () => Promise<void>; entity?: ContentEntity<SiteSettingsContent>; activePanel: SitePanel; anchor?: string; onSaved: (entity: ContentEntity, message?: string) => Promise<void>; onPublish: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {
   const form = useForm<SiteSettingsContent>({ mode: "controlled", initialValues: clone(entity?.draft ?? entity?.published ?? defaultSiteSettings) });
   const [saving, setSaving] = useState(false);
   const [sezioneHome, setSezioneHome] = useState<string | null>(anchor ?? "apertura");
   const update = (recipe: (draft: SiteSettingsContent) => void) => { const next = clone(form.values); recipe(next); form.setValues(next); };
-  const save = form.onSubmit(async (values) => { setSaving(true); try { const saved = await adminApi.save("site", entity?.id, values); form.resetDirty(values); await onSaved(saved); } catch (error) { notifications.show({ color: "red", message: error instanceof Error ? error.message : "Bozza non salvata" }); } finally { setSaving(false); } });
+  const save = form.onSubmit(async (values) => { setSaving(true); try { const saved = await adminApi.save("site", entity?.id, values, undefined, entity?.updatedAt); form.resetDirty(values); await onSaved(saved); } catch (error) { notifications.show({ color: "red", message: error instanceof Error ? error.message : "Bozza non salvata" }); } finally { setSaving(false); } });
   const panelTitle = activePanel === "identity" ? "Identità del sito" : activePanel === "home" ? "Home" : "SEO e condivisione";
-  return <form onSubmit={save}><EditorFrame title={panelTitle} eyebrow="Sito" entity={entity} resource="site" onSave={() => save()} saving={saving} dirty={form.isDirty()} preview={<SitePreview site={form.values} focus={activePanel === "home" ? selettoreHome(sezioneHome) : undefined} />} onPublish={onPublish} onDirtyChange={onDirtyChange}>{activePanel === "identity" ? <SiteIdentity value={form.values} update={update} /> : activePanel === "home" ? <HomeEditor value={form.values} update={update} initialAnchor={anchor} onSectionChange={setSezioneHome} /> : <SiteSeo value={form.values} update={update} />}</EditorFrame></form>;
+  return <form onSubmit={save}><EditorFrame title={panelTitle} eyebrow="Sito" entity={entity} resource="site" onSave={() => save()} saving={saving} dirty={form.isDirty()} preview={<SitePreview site={form.values} focus={activePanel === "home" ? selettoreHome(sezioneHome) : undefined} />} onPublish={onPublish} onDirtyChange={onDirtyChange} onRestored={onRestored}>{activePanel === "identity" ? <SiteIdentity value={form.values} update={update} /> : activePanel === "home" ? <HomeEditor value={form.values} update={update} initialAnchor={anchor} onSectionChange={setSezioneHome} /> : <SiteSeo value={form.values} update={update} />}</EditorFrame></form>;
 }
 
 function SiteIdentity({ value, update }: { value: SiteSettingsContent; update: (recipe: (draft: SiteSettingsContent) => void) => void }) {
@@ -694,7 +712,7 @@ function SiteSeo({ value, update }: { value: SiteSettingsContent; update: (recip
   </section>;
 }
 
-function RevisionDrawer({ opened, onClose, resource, entity }: { opened: boolean; onClose: () => void; resource: AdminResource; entity: ContentEntity }) {
+function RevisionDrawer({ opened, onClose, resource, entity, onRestored }: { opened: boolean; onClose: () => void; resource: AdminResource; entity: ContentEntity; onRestored?: () => Promise<void> }) {
   const [revisions, setRevisions] = useState<RevisionSummary[] | null>(null);
   const [error, setError] = useState("");
   const [openDiff, setOpenDiff] = useState<string | null>(null);
@@ -709,7 +727,13 @@ function RevisionDrawer({ opened, onClose, resource, entity }: { opened: boolean
   };
   const restore = async (revisionId: string) => {
     if (!window.confirm("Ripristinare questa revisione come nuova bozza? La bozza attuale viene sostituita.")) return;
-    try { await adminApi.restoreRevision(resource, entity.id, revisionId); notifications.show({ color: "teal", message: "Revisione ripristinata come nuova bozza." }); onClose(); }
+    try {
+      await adminApi.restoreRevision(resource, entity.id, revisionId);
+      onClose();
+      // senza questo l'editor resterebbe sui valori di prima e il salvataggio successivo cancellerebbe il ripristino
+      await onRestored?.();
+      notifications.show({ color: "teal", message: "Revisione ripristinata come nuova bozza." });
+    }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Ripristino non riuscito"); }
   };
   return <Drawer opened={opened} onClose={onClose} title="Cronologia revisioni" position="right" size="md">
