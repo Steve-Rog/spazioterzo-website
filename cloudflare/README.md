@@ -87,3 +87,29 @@ Solo in produzione, dopo avere impostato la Cache Rule, servono anche:
 - Conservare un export D1 periodico fuori dal database di produzione.
 
 Gli endpoint admin validano il JWT Access; non abilitare `workers.dev` in produzione.
+
+## Copiare i contenuti fra ambienti
+
+Per lavorare in sviluppo sui testi veri, senza toccarli:
+
+```bash
+npm run content:prod-to-dev
+```
+
+Copia revisioni, entità e file R2 da produzione a sviluppo, riscrivendo gli indirizzi dei media
+sul dominio giusto — altrimenti le immagini resterebbero puntate al bucket dell'altro ambiente.
+Lo stesso lo fa il workflow **Copy production content to development**, che non dipende dal
+wrangler installato sulla propria macchina.
+
+`admin_users` e `audit_events` non vengono mai copiati: chi può entrare e cosa ha fatto
+appartengono all'ambiente, non ai contenuti.
+
+La direzione opposta cancella il lavoro dell'associazione e non sta nei workflow. Va lanciata a
+mano e chiede una conferma scritta, dopo avere mostrato il punto di ripristino di Time Travel:
+
+```bash
+npm run content:dev-to-prod -- --conferma SOVRASCRIVI
+```
+
+Se qualcosa va storto, D1 conserva la storia del database (7 giorni sul piano gratuito, 30 su
+quello a pagamento): `wrangler d1 time-travel restore spazioterzo-production --bookmark=…`.
