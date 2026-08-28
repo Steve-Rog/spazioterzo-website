@@ -6,8 +6,8 @@ import { getPublicProject, getPublicProjects, getPublicSite } from "../content/p
 import { pageMeta, withSiteSuffix } from "../content/site-meta";
 
 export async function loader({ params }: { params: { slug?: string } }) {
-  // l'archivio serve a risolvere «Altri progetti» sui contenuti pubblicati, non sulle copie di esempio
-  const [project, site, catalog] = await Promise.all([getPublicProject(params.slug), getPublicSite(), getPublicProjects()]);
+  // l'archivio serve solo alla fascia «Altri progetti»: se non risponde si rinuncia a quella, non alla pagina
+  const [project, site, catalog] = await Promise.all([getPublicProject(params.slug), getPublicSite(), getPublicProjects().catch(() => [])]);
   const contenuto = { project, site, related: project ? getRelatedProjects(project, catalog) : [] };
   // la pagina «non trovato» va servita con lo stato giusto: con un 200 i motori di ricerca
   // indicizzerebbero un indirizzo sbagliato come se fosse una pagina valida

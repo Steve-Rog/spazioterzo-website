@@ -2,7 +2,7 @@ import "@mantine/core/styles.css";
 import "./styles/global.css";
 
 import { MantineProvider } from "@mantine/core";
-import { useLoaderData, useLocation, useRouteLoaderData } from "react-router";
+import { isRouteErrorResponse, useLoaderData, useLocation, useRouteError, useRouteLoaderData } from "react-router";
 import {
   Links,
   Meta,
@@ -10,6 +10,7 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
+import { defaultSiteSettings } from "../shared/default-site-settings";
 import { getPublicSite } from "./content/public-api";
 import { SiteFooter } from "./components/layout/SiteFooter";
 import { SiteHeader } from "./components/layout/SiteHeader";
@@ -31,6 +32,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
         {favicon && <link rel="icon" href={favicon} />}
+        {/* se il JavaScript è disattivato le animazioni non partono: il contenuto deve restare visibile */}
+        <noscript><style>{`[style*="opacity:0"]{opacity:1!important;transform:none!important}`}</style></noscript>
       </head>
       <body>
         {children}
@@ -56,5 +59,34 @@ export default function App() {
       <Outlet />
       <SiteFooter identity={site.identity} />
     </MantineProvider>
+  );
+}
+
+/**
+ * Quando l'API dei contenuti non risponde, il loader radice fallisce e senza questo
+ * il sito diventerebbe la schermata d'errore di React Router: nessun logo, nessun modo
+ * di raggiungere l'associazione. Qui i recapiti sono quelli del repository, perché
+ * proprio i contenuti sono ciò che manca.
+ */
+export function ErrorBoundary() {
+  const errore = useRouteError();
+  const nonTrovato = isRouteErrorResponse(errore) && errore.status === 404;
+  const { organizationName, email } = defaultSiteSettings.identity;
+
+  return (
+    <main className="site-error">
+      <img src="/assets/logo_spazioterzo.svg" alt={organizationName} />
+      <p className="section-label">{nonTrovato ? "404" : "Sito non disponibile"}</p>
+      <h1>{nonTrovato ? "Questa pagina non esiste." : "Il sito non è raggiungibile in questo momento."}</h1>
+      <p>
+        {nonTrovato
+          ? "L’indirizzo potrebbe essere cambiato."
+          : "Stiamo avendo un problema tecnico e i contenuti non si caricano. Riprova fra qualche minuto: nel frattempo puoi scriverci."}
+      </p>
+      <p className="site-error-actions">
+        <a href="/">Torna alla home</a>
+        <a href={`mailto:${email}`}>{email}</a>
+      </p>
+    </main>
   );
 }
