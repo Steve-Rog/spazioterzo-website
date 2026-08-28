@@ -1,5 +1,5 @@
 import "../styles/projects.css";
-import { useParams, useLoaderData } from "react-router";
+import { data, useParams, useLoaderData } from "react-router";
 import { ProjectDetail } from "../components/projects/ProjectDetail";
 import { getRelatedProjects } from "../components/projects/content";
 import { getPublicProject, getPublicProjects, getPublicSite } from "../content/public-api";
@@ -8,7 +8,10 @@ import { pageMeta, withSiteSuffix } from "../content/site-meta";
 export async function loader({ params }: { params: { slug?: string } }) {
   // l'archivio serve a risolvere «Altri progetti» sui contenuti pubblicati, non sulle copie di esempio
   const [project, site, catalog] = await Promise.all([getPublicProject(params.slug), getPublicSite(), getPublicProjects()]);
-  return { project, site, related: project ? getRelatedProjects(project, catalog) : [] };
+  const contenuto = { project, site, related: project ? getRelatedProjects(project, catalog) : [] };
+  // la pagina «non trovato» va servita con lo stato giusto: con un 200 i motori di ricerca
+  // indicizzerebbero un indirizzo sbagliato come se fosse una pagina valida
+  return project ? contenuto : data(contenuto, { status: 404 });
 }
 
 export function meta({ loaderData }: { loaderData?: { project?: Awaited<ReturnType<typeof getPublicProject>>; site?: Awaited<ReturnType<typeof getPublicSite>> } }) {
