@@ -24,6 +24,17 @@
         "not_found_handling": "none"
       },
       "routes": [{ "pattern": "dev.spazioterzo.it", "custom_domain": true }]
+    },
+    "production": {
+      "name": "spazioterzo-site",
+      "assets": {
+        "directory": "./build/client",
+        "binding": "ASSETS",
+        "not_found_handling": "none"
+      },
+      // Finché il dominio principale serve il vecchio sito, il sito nuovo vive qui con i contenuti
+      // veri: il giorno del passaggio si aggiunge spazioterzo.it (e www) a questo elenco.
+      "routes": [{ "pattern": "anteprima.spazioterzo.it", "custom_domain": true }]
     }
   }
 }

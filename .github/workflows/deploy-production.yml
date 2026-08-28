@@ -1,4 +1,4 @@
-name: Deploy API to production
+name: Deploy to production
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Migrate D1 and deploy Worker
+    name: Migrate D1 and deploy Workers
     if: github.event.inputs.confirm == 'DEPLOY'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -41,3 +41,6 @@ jobs:
       - run: npm test
       - run: npm run db:migrate:production
       - run: npm run deploy:worker:production
+      # il sito pubblico è un Worker a parte: oggi risponde su anteprima.spazioterzo.it,
+      # il dominio vero si aggiunge in wrangler.jsonc il giorno del passaggio
+      - run: npm run deploy:site:prod

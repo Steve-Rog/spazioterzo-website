@@ -1,0 +1,55 @@
+name: Backup production content
+
+# Time Travel di D1 copre gli incidenti recenti (7 giorni sul piano gratuito, 30 su quello a
+# pagamento), ma non l'errore scoperto dopo settimane né la perdita dell'account: questo export
+# resta su GitHub, fuori da Cloudflare.
+
+on:
+  schedule:
+    # ogni lunedì alle 04:15 UTC, quando nessuno sta scrivendo contenuti
+    - cron: "15 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-production-content
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Export D1 and keep it as an artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Export the whole database
+        run: npx wrangler d1 export spazioterzo-production --remote --config cloudflare/wrangler.jsonc --output contenuti-produzione.sql
+
+      - name: Check the export is not empty
+        # un export vuoto passerebbe inosservato per mesi, fino al giorno in cui serve
+        run: |
+          righe=$(grep -c "INSERT INTO" contenuti-produzione.sql || true)
+          echo "istruzioni di inserimento: $righe"
+          test "$righe" -gt 0
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: contenuti-produzione-${{ github.run_id }}
+          path: contenuti-produzione.sql
+          retention-days: 90

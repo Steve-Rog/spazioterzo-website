@@ -24,7 +24,9 @@
     "build:site:dev": "CLOUDFLARE_ENV=development VITE_CONTENT_API_URL=https://api.dev.spazioterzo.it react-router build",
     "deploy:site:dev": "npm run build:site:dev && wrangler deploy --config build/server/wrangler.json",
     "content:prod-to-dev": "node cloudflare/scripts/copia-contenuti.mjs --da production --a development",
-    "content:dev-to-prod": "node cloudflare/scripts/copia-contenuti.mjs --da development --a production"
+    "content:dev-to-prod": "node cloudflare/scripts/copia-contenuti.mjs --da development --a production",
+    "build:site:prod": "CLOUDFLARE_ENV=production VITE_CONTENT_API_URL=https://api.spazioterzo.it react-router build",
+    "deploy:site:prod": "npm run build:site:prod && wrangler deploy --config build/server/wrangler.json"
   },
   "dependencies": {
     "@mantine/core": "^9.5.2",

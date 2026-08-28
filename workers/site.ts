@@ -10,8 +10,21 @@ const handler = createRequestHandler(
   import.meta.env.MODE,
 );
 
+/** Gli indirizzi del sito vero. Tutto il resto è una copia di lavoro. */
+const domìniPubblici = new Set(["spazioterzo.it", "www.spazioterzo.it"]);
+
 export default {
-  fetch(request) {
-    return handler(request);
+  async fetch(request) {
+    const risposta = await handler(request);
+
+    // dev.spazioterzo.it e anteprima.spazioterzo.it servono gli stessi testi del sito vero:
+    // senza questo finirebbero nei motori di ricerca come doppioni, rubandogli posizioni
+    if (!domìniPubblici.has(new URL(request.url).hostname)) {
+      const intestazioni = new Headers(risposta.headers);
+      intestazioni.set("X-Robots-Tag", "noindex, nofollow");
+      return new Response(risposta.body, { status: risposta.status, statusText: risposta.statusText, headers: intestazioni });
+    }
+
+    return risposta;
   },
 } satisfies ExportedHandler;
