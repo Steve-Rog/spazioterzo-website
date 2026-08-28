@@ -9,7 +9,8 @@ function teamHeroCopy(count: number) {
   if (count === 0) return { heading: "Le persone.", intro: "I profili del team saranno disponibili a breve." };
   if (count === 1) return { heading: "Uno sguardo.", intro: "Una persona, un lavoro costruito nella relazione." };
   if (count === 2) return { heading: "Due sguardi.", intro: "Due persone, un lavoro costruito nella relazione." };
-  return { heading: "Tre sguardi.", intro: "Tre persone, un lavoro costruito nella relazione." };
+  if (count === 3) return { heading: "Tre sguardi.", intro: "Tre persone, un lavoro costruito nella relazione." };
+  return { heading: "Più sguardi.", intro: `${count} persone, un lavoro costruito nella relazione.` };
 }
 
 export function PeopleHero({ teamMembers }: { teamMembers: TeamMember[] }) {
@@ -41,6 +42,9 @@ export function PeopleHero({ teamMembers }: { teamMembers: TeamMember[] }) {
     ];
 
   const portraitRotation = [-4, 4, -2];
+  // gli scarti sono pensati per tre ritratti: con più persone si riusano invece di sparire
+  const offsetFor = (index: number) => foregroundOffsets[index % foregroundOffsets.length];
+  const rotationFor = (index: number) => portraitRotation[index % portraitRotation.length];
 
   const clearScheduledOpen = () => {
     if (openingTimer.current !== null) window.clearTimeout(openingTimer.current);
@@ -120,13 +124,13 @@ export function PeopleHero({ teamMembers }: { teamMembers: TeamMember[] }) {
             onPointerEnter={(event) => canHover && event.pointerType === "mouse" && setForegroundMemberIndex(index)}
             onFocus={() => foregroundFromFocus(index)}
             onBlur={() => setForegroundMemberIndex(null)}
-            initial={reduceMotion ? false : { opacity: 0, y: 56, rotate: index === 0 ? -8 : index === 1 ? 7 : -5 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 56, rotate: rotationFor(index) * 2 }}
             animate={{
               opacity: foregroundMemberIndex === null || foregroundMemberIndex === index ? 1 : 0.62,
-              x: foregroundMemberIndex === index ? foregroundOffsets[index].x : "0vw",
-              y: foregroundMemberIndex === index ? foregroundOffsets[index].y : "0vw",
+              x: foregroundMemberIndex === index ? offsetFor(index).x : "0vw",
+              y: foregroundMemberIndex === index ? offsetFor(index).y : "0vw",
               scale: foregroundMemberIndex === index ? (isMobile ? 1.08 : 1.3) : foregroundMemberIndex === null ? 1 : (isMobile ? 0.9 : 0.86),
-              rotate: foregroundMemberIndex === index ? 0 : portraitRotation[index],
+              rotate: foregroundMemberIndex === index ? 0 : rotationFor(index),
               zIndex: foregroundMemberIndex === index ? 7 : index + 1,
             }}
             transition={{ duration: reduceMotion ? 0 : 0.48, ease: [0.22, 1, 0.36, 1] }}

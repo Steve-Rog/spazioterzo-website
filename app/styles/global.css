@@ -75,3 +75,12 @@ h1 em, h2 em { font-family: 'Playfair Display', Georgia, serif; font-weight: 500
 @media (prefers-reduced-motion: reduce) {
   *, *:before, *:after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* Pagina mostrata quando i contenuti non si caricano: deve reggersi da sola, senza dati dal CMS. */
+.site-error { min-height: 100svh; display: grid; align-content: center; justify-items: start; gap: 14px; padding: clamp(32px, 8vw, 120px); background: var(--ink); color: var(--paper); }
+.site-error img { width: 132px; margin-bottom: 22px; }
+.site-error h1 { margin: 0; max-width: 18ch; font: 400 clamp(30px, 5vw, 54px)/1.06 var(--font-display, 'Playfair Display', serif); letter-spacing: -.02em; }
+.site-error p { margin: 0; max-width: 52ch; color: rgba(247, 244, 238, .74); font-size: 16px; line-height: 1.6; }
+.site-error .section-label { color: var(--sun); }
+.site-error-actions { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 20px; }
+.site-error-actions a { color: var(--paper); font: 500 11px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px solid var(--sun); padding-bottom: 4px; }
