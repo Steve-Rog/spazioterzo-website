@@ -1,10 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { asRichText, contentLimits, publicationReadinessError, validateProject, validateSiteSettings, validateTeamMember } from "./content-schema";
+import { asRichText, contentLimits, normaliseProjectSlug, publicationReadinessError, validateProject, validateSiteSettings, validateTeamMember } from "./content-schema";
 import { defaultSiteSettings } from "./default-site-settings";
 
 describe("content schema", () => {
   it("accepts a complete project payload", () => {
     expect(validateProject({ slug: "progetto", title: "Titolo", subtitle: "Sottotitolo", statusLabel: "In corso", dateRange: "2026", location: "Catania", audience: "Persone", themes: ["Cura"], cover: "/cover.jpg", coverAlt: "Copertina", intro: asRichText("Intro"), objective: asRichText("Obiettivo"), blocks: [], outcomes: [], links: [], partners: [], funders: [], relatedSlugs: [] })).toBe(true);
+  });
+
+  it("keeps project addresses safe when they contain spaces, accents or hyphens", () => {
+    expect(normaliseProjectSlug(" Piccoli — movimenti concreti ")).toBe("piccoli-movimenti-concreti");
+    expect(normaliseProjectSlug("gia-scritto-con-trattini")).toBe("gia-scritto-con-trattini");
+  });
+
+  it("accepts project image crops and an editable outcomes heading", () => {
+    const project = { slug: "progetto", title: "Titolo", subtitle: "Sottotitolo", statusLabel: "In corso" as const, dateRange: "2026", location: "Catania", audience: "Persone", themes: ["Cura"], cover: "/cover.jpg", coverAlt: "Copertina", coverCrop: { x: 8, y: 10, width: 70, height: 70 }, intro: asRichText("Intro"), objective: asRichText("Obiettivo"), blocks: [{ id: "image-1", type: "image" as const, src: "/image.jpg", alt: "Foto", crop: { x: 0, y: 0, width: 100, height: 100 } }], outcomesHeading: asRichText("Un titolo che si può cambiare"), outcomes: [], links: [], partners: [], funders: [], relatedSlugs: [] };
+    expect(validateProject(project)).toBe(true);
+    expect(validateProject({ ...project, coverCrop: { x: 0, y: 0, width: 101, height: 100 } })).toBe(false);
   });
 
   it("rejects incomplete public content", () => {

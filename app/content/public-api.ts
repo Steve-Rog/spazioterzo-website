@@ -10,16 +10,16 @@ export { defaultSiteSettings } from "../../shared/default-site-settings";
 export function projectToLegacy(project: ProjectContent): Project {
   return {
     slug: project.slug, title: project.title, subtitle: project.subtitle, status: project.statusLabel, dateRange: project.dateRange,
-    location: project.location, audience: project.audience, themes: project.themes, cover: project.cover, coverAlt: project.coverAlt,
+    location: project.location, audience: project.audience, themes: project.themes, cover: project.cover, coverAlt: project.coverAlt, coverCrop: project.coverCrop,
     intro: plainText(project.intro), objective: plainText(project.objective),
     blocks: project.blocks.map((block) => {
       if (block.type === "paragraph") return { type: "paragraph" as const, text: plainText(block.text) };
       if (block.type === "quote") return { type: "quote" as const, text: plainText(block.text), source: block.source };
       if (block.type === "list") return { type: "list" as const, title: block.title, items: block.items };
-      if (block.type === "image") return { type: "image" as const, src: block.src ?? "", alt: block.alt, caption: block.caption };
+      if (block.type === "image") return { type: "image" as const, src: block.src ?? "", alt: block.alt, caption: block.caption, crop: block.crop };
       return { type: "stat" as const, value: block.value, label: block.label };
     }),
-    outcomes: project.outcomes, links: project.links, video: project.video ? { ...project.video, thumbnail: project.video.thumbnail ?? "" } : undefined,
+    outcomes: project.outcomes, outcomesHeading: project.outcomesHeading, links: project.links, video: project.video ? { ...project.video, thumbnail: project.video.thumbnail ?? "" } : undefined,
     cta: project.cta, partners: project.partners, funders: project.funders, visibilityNote: project.visibilityNote, relatedSlugs: project.relatedSlugs, seoTitle: project.seoTitle, seoDescription: project.seoDescription,
   };
 }

@@ -1,4 +1,4 @@
-import { ACCEPTED_MEDIA_TYPES, MAX_MEDIA_BYTES, MAX_TEAM_MEMBERS, contentValidationError, publicationReadinessError, type ContentEntity, type ContentState, type EntityType, type ProjectContent, type SiteSettingsContent, type TeamMemberContent } from "../../shared/content-schema";
+import { ACCEPTED_MEDIA_TYPES, MAX_MEDIA_BYTES, MAX_TEAM_MEMBERS, contentValidationError, normaliseProjectSlug, publicationReadinessError, type ContentEntity, type ContentState, type EntityType, type ProjectContent, type SiteSettingsContent, type TeamMemberContent } from "../../shared/content-schema";
 import { cache } from "cloudflare:workers";
 import { authenticateAdmin, requireAdmin, type AdminIdentity } from "./auth";
 import { seedDevelopmentDatabase } from "./seed";
@@ -81,9 +81,14 @@ async function nextDisplayOrder(env: Env, type: EntityType) {
 }
 
 async function saveDraft(env: Env, actor: AdminIdentity, type: EntityType, id: string | undefined, payload: unknown, requestedOrder?: number, expectedUpdatedAt?: string) {
-  const validationError = contentValidationError(type, payload);
+  // L'indirizzo della pagina viene normalizzato prima di validarlo: spazi,
+  // maiuscole e trattini tipografici non devono mai far fallire un salvataggio.
+  const normalisedPayload = type === "project" && payload && typeof payload === "object" && !Array.isArray(payload)
+    ? { ...(payload as Record<string, unknown>), slug: typeof (payload as { slug?: unknown }).slug === "string" ? normaliseProjectSlug((payload as { slug: string }).slug) : "" }
+    : payload;
+  const validationError = contentValidationError(type, normalisedPayload);
   if (validationError) return json({ error: validationError }, { status: 422 });
-  const typedPayload = payload as ProjectContent | TeamMemberContent | SiteSettingsContent;
+  const typedPayload = normalisedPayload as ProjectContent | TeamMemberContent | SiteSettingsContent;
   const slug = type === "project" ? (typedPayload as ProjectContent).slug : type === "site" ? "site" : slugify((typedPayload as TeamMemberContent).name);
   let entity = id ? await findEntity(env, type, id) : type === "site" ? await findEntity(env, type, "site") : null;
   if (id && !entity) return json({ error: "Contenuto non trovato" }, { status: 404 });
@@ -100,19 +105,29 @@ async function saveDraft(env: Env, actor: AdminIdentity, type: EntityType, id: s
     }
     const entityId = id ?? uuid();
     const displayOrder = typeof requestedOrder === "number" && actor.role === "admin" ? requestedOrder : await nextDisplayOrder(env, type);
-    await env.DB.prepare("INSERT INTO content_entities (id, entity_type, slug, display_order) VALUES (?, ?, ?, ?)").bind(entityId, type, slug, displayOrder).run();
+    try {
+      await env.DB.prepare("INSERT INTO content_entities (id, entity_type, slug, display_order) VALUES (?, ?, ?, ?)").bind(entityId, type, slug, displayOrder).run();
+    } catch (error) {
+      if (isDuplicateSlugError(error)) return json({ error: "Questo indirizzo della pagina è già usato da un altro progetto. Scegline uno diverso." }, { status: 422 });
+      throw error;
+    }
     entity = await findEntity(env, type, entityId);
   }
   if (!entity) return json({ error: "Impossibile salvare il contenuto" }, { status: 500 });
 
   const previous = await env.DB.prepare("SELECT MAX(revision_number) AS revision FROM content_revisions WHERE entity_id = ?").bind(entity.id).first<{ revision: number | null }>();
   const revisionId = uuid();
-  await env.DB.batch([
-    env.DB.prepare("INSERT INTO content_revisions (id, entity_id, revision_number, payload, created_by) VALUES (?, ?, ?, ?, ?)")
-      .bind(revisionId, entity.id, (previous?.revision ?? 0) + 1, JSON.stringify(payload), actor.email),
-    env.DB.prepare("UPDATE content_entities SET slug = ?, display_order = ?, draft_revision_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
-      .bind(slug, actor.role === "admin" && typeof requestedOrder === "number" ? requestedOrder : entity.displayOrder, revisionId, entity.id),
-  ]);
+  try {
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO content_revisions (id, entity_id, revision_number, payload, created_by) VALUES (?, ?, ?, ?, ?)")
+        .bind(revisionId, entity.id, (previous?.revision ?? 0) + 1, JSON.stringify(normalisedPayload), actor.email),
+      env.DB.prepare("UPDATE content_entities SET slug = ?, display_order = ?, draft_revision_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+        .bind(slug, actor.role === "admin" && typeof requestedOrder === "number" ? requestedOrder : entity.displayOrder, revisionId, entity.id),
+    ]);
+  } catch (error) {
+    if (isDuplicateSlugError(error)) return json({ error: "Questo indirizzo della pagina è già usato da un altro progetto. Scegline uno diverso." }, { status: 422 });
+    throw error;
+  }
   await audit(env, actor.email, "draft_saved", entity.id, { type });
   return json(await findEntity(env, type, entity.id));
 }
@@ -231,6 +246,10 @@ async function purgePublicContent(env: Env, actor: string, entity: ContentEntity
 
 function slugify(input: string) {
   return input.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || uuid();
+}
+
+function isDuplicateSlugError(error: unknown) {
+  return error instanceof Error && /UNIQUE constraint failed: content_entities\.entity_type, content_entities\.slug/i.test(error.message);
 }
 
 async function handleAsset(request: Request, env: Env, actor: AdminIdentity) {

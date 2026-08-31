@@ -5,7 +5,7 @@ import {
 import { useForm } from "@mantine/form";
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { asRichText, contentLimits, MAX_HOME_ACTIVITIES, plainText, type ContentEntity, type ProjectBlock, type ProjectContent, type RichText, type SiteSettingsContent, type TeamMemberContent } from "../../shared/content-schema";
+import { asRichText, contentLimits, defaultProjectOutcomesHeading, MAX_HOME_ACTIVITIES, normaliseProjectSlug, plainText, type ContentEntity, type ProjectBlock, type ProjectContent, type RichText, type SiteSettingsContent, type TeamMemberContent } from "../../shared/content-schema";
 import { defaultSiteSettings } from "../../shared/default-site-settings";
 import { adminApi, AccessoNegato, ConnessioneAssente, type AdminResource, type AdminUser, type RevisionSummary } from "./api";
 import { MediaPicker } from "./MediaPicker";
@@ -36,8 +36,8 @@ type FieldSetter<T> = <K extends keyof T & string>(key: K, value: T[K]) => void;
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 const lines = (value: string) => value.split("\n").map((item) => item.trim()).filter(Boolean);
-const slugify = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, contentLimits.project.slug);
-const blankProject = (): ProjectContent => ({ slug: "", title: "", subtitle: "", statusLabel: "In corso", dateRange: "", location: "", audience: "", themes: [], cover: "", coverAlt: "", intro: asRichText(""), objective: asRichText(""), blocks: [], outcomes: [], links: [], partners: [], funders: [], relatedSlugs: [] });
+const slugify = normaliseProjectSlug;
+const blankProject = (): ProjectContent => ({ slug: "", title: "", subtitle: "", statusLabel: "In corso", dateRange: "", location: "", audience: "", themes: [], cover: "", coverAlt: "", intro: asRichText(""), objective: asRichText(""), blocks: [], outcomesHeading: clone(defaultProjectOutcomesHeading), outcomes: [], links: [], partners: [], funders: [], relatedSlugs: [] });
 const blankTeamMember = (): TeamMemberContent => ({ name: "", role: "", image: "", bio: [asRichText("")], quote: asRichText("") });
 const resourceFor = (section: Section): AdminResource => section === "projects" ? "projects" : section === "team" ? "team" : "site";
 const statusLabel = (state: ContentEntity["state"]) => state === "published" ? "Pubblicato" : state === "archived" ? "Archiviato" : "Bozza";
@@ -399,7 +399,7 @@ function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedOptions,
     setStep(next);
   };
 
-  const opening = <ProjectOpening value={form.values} set={set} errors={errors} onTitleChange={setProjectTitle} onSlugChange={(slug) => { setSlugEdited(true); set("slug", slug); }} />;
+  const opening = <ProjectOpening value={form.values} set={set} errors={errors} onTitleChange={setProjectTitle} onSlugChange={(slug) => { setSlugEdited(true); set("slug", slugify(slug)); }} />;
   const overview = <ProjectOverview value={form.values} set={set} errors={errors} />;
   const story = <ProjectStory value={form.values} set={set} blocchiIncompleti={blocchiIncompleti} />;
   const outcomes = <ProjectOutcomes value={form.values} set={set} />;
@@ -444,7 +444,8 @@ function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedOptions,
 function ProjectOpening({ value, set, errors, onTitleChange, onSlugChange }: { value: ProjectContent; set: FieldSetter<ProjectContent>; errors: Partial<Record<ProjectFieldName, string>>; onTitleChange: (title: string) => void; onSlugChange: (slug: string) => void }) {
   return <section className="form-section">
     <SectionHeading title="Copertina e apertura" hint="La prima schermata della pagina: immagine a tutto schermo, titolo e sottotitolo." shape="hero" />
-    <MediaPicker label="Immagine di copertina" required value={{ url: value.cover, alt: value.coverAlt, assetId: value.coverAssetId }} onChange={(next) => { set("cover", next.url); set("coverAlt", next.alt); set("coverAssetId", next.assetId); }} />
+    <MediaPicker label="Immagine di copertina" required value={{ url: value.cover, alt: value.coverAlt, assetId: value.coverAssetId }} onChange={(next) => { const changed = next.url !== value.cover || next.assetId !== value.coverAssetId; set("cover", next.url); set("coverAlt", next.alt); set("coverAssetId", next.assetId); if (changed) set("coverCrop", undefined); }} />
+    <ImageCropper image={value.cover} value={value.coverCrop} onChange={(coverCrop) => set("coverCrop", coverCrop)} title="Ritaglio della copertina" description="Sposta il punto importante nell’area: questa è l’inquadratura usata dal sito." aspect={16 / 10} />
     {(errors.cover || errors.coverAlt) && <Text size="xs" c="red" data-field="cover">{errors.cover ?? errors.coverAlt}</Text>}
     <div className="form-grid">
       <TextInput data-field="title" label="Titolo" required error={errors.title} maxLength={contentLimits.project.title} value={value.title} onChange={(event) => onTitleChange(event.currentTarget.value)} />
@@ -508,6 +509,7 @@ function RigheField({ label, description, values, onChange, maxLength, minRows =
 function ProjectOutcomes({ value, set }: { value: ProjectContent; set: FieldSetter<ProjectContent> }) {
   return <section className="form-section">
     <SectionHeading title="Cosa abbiamo attivato" hint="Sul sito diventano un elenco numerato: 01, 02, 03…" shape="outcomes" />
+    <RichTextField label="Titolo in evidenza" hint="La frase grande che introduce i risultati. Puoi usare il corsivo per mettere una parte in arancio." maxLength={contentLimits.project.outcomesHeading} value={value.outcomesHeading ?? defaultProjectOutcomesHeading} onChange={(next) => set("outcomesHeading", next)} />
     <RigheField label="Risultati" description="Una riga per risultato" maxLength={contentLimits.project.outcome * 12} values={value.outcomes} onChange={(next) => set("outcomes", next)} />
   </section>;
 }
@@ -865,7 +867,7 @@ function BlocksEditor({ blocks, onChange, incompleti = [] }: { blocks: ProjectBl
             <ActionIcon aria-label={`Elimina il blocco ${index + 1}`} variant="subtle" color="red" onClick={() => remove(index, block.type)}><IconTrash size={16} stroke={1.7} /></ActionIcon>
           </Group>
         </div>
-        {!isClosed && <div className="block-body">{block.type === "paragraph" && <RichTextField label="Testo" maxLength={contentLimits.project.paragraph} value={block.text} onChange={(text) => update(index, { ...block, text })} />}{block.type === "quote" && <Stack><RichTextField label="Citazione" maxLength={contentLimits.project.quote} value={block.text} onChange={(text) => update(index, { ...block, text })} /><TextInput label="Fonte" maxLength={contentLimits.project.quoteSource} value={block.source ?? ""} onChange={(event) => update(index, { ...block, source: event.currentTarget.value || undefined })} /></Stack>}{block.type === "list" && <Stack><TextInput label="Titolo elenco" maxLength={contentLimits.project.listTitle} value={block.title} onChange={(event) => update(index, { ...block, title: event.currentTarget.value })} /><RigheField label="Voci" description="Una riga per voce" maxLength={contentLimits.project.listItem * 12} minRows={3} values={block.items} onChange={(items) => update(index, { ...block, items })} /></Stack>}{block.type === "image" && <Stack><MediaPicker label="Immagine" required error={incompleti.includes(index + 1) ? "Scegli la foto: senza immagine il blocco non si può salvare." : undefined} value={{ url: block.src ?? "", alt: block.alt, assetId: block.assetId }} onChange={(next) => update(index, { ...block, src: next.url, alt: next.alt, assetId: next.assetId })} /><Textarea label="Didascalia" maxLength={contentLimits.project.imageCaption} autosize minRows={2} value={block.caption ?? ""} onChange={(event) => update(index, { ...block, caption: event.currentTarget.value || undefined })} /></Stack>}{block.type === "stat" && <div className="form-grid"><TextInput label="Valore" maxLength={contentLimits.project.statValue} value={block.value} onChange={(event) => update(index, { ...block, value: event.currentTarget.value })} /><TextInput label="Etichetta" maxLength={contentLimits.project.statLabel} value={block.label} onChange={(event) => update(index, { ...block, label: event.currentTarget.value })} /></div>}</div>}
+        {!isClosed && <div className="block-body">{block.type === "paragraph" && <RichTextField label="Testo" maxLength={contentLimits.project.paragraph} value={block.text} onChange={(text) => update(index, { ...block, text })} />}{block.type === "quote" && <Stack><RichTextField label="Citazione" maxLength={contentLimits.project.quote} value={block.text} onChange={(text) => update(index, { ...block, text })} /><TextInput label="Fonte" maxLength={contentLimits.project.quoteSource} value={block.source ?? ""} onChange={(event) => update(index, { ...block, source: event.currentTarget.value || undefined })} /></Stack>}{block.type === "list" && <Stack><TextInput label="Titolo elenco" maxLength={contentLimits.project.listTitle} value={block.title} onChange={(event) => update(index, { ...block, title: event.currentTarget.value })} /><RigheField label="Voci" description="Una riga per voce" maxLength={contentLimits.project.listItem * 12} minRows={3} values={block.items} onChange={(items) => update(index, { ...block, items })} /></Stack>}{block.type === "image" && <Stack><MediaPicker label="Immagine" required error={incompleti.includes(index + 1) ? "Scegli la foto: senza immagine il blocco non si può salvare." : undefined} value={{ url: block.src ?? "", alt: block.alt, assetId: block.assetId }} onChange={(next) => { const changed = next.url !== block.src || next.assetId !== block.assetId; update(index, { ...block, src: next.url, alt: next.alt, assetId: next.assetId, ...(changed ? { crop: undefined } : {}) }); }} /><ImageCropper image={block.src} value={block.crop} onChange={(crop) => update(index, { ...block, crop })} title="Ritaglio dell’immagine" description="Regola qui l’inquadratura che apparirà nel racconto." aspect={16 / 10} /><Textarea label="Didascalia" maxLength={contentLimits.project.imageCaption} autosize minRows={2} value={block.caption ?? ""} onChange={(event) => update(index, { ...block, caption: event.currentTarget.value || undefined })} /></Stack>}{block.type === "stat" && <div className="form-grid"><TextInput label="Valore" maxLength={contentLimits.project.statValue} value={block.value} onChange={(event) => update(index, { ...block, value: event.currentTarget.value })} /><TextInput label="Etichetta" maxLength={contentLimits.project.statLabel} value={block.label} onChange={(event) => update(index, { ...block, label: event.currentTarget.value })} /></div>}</div>}
       </div>;
     })}
   </section>;

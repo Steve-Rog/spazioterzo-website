@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { motion, useReducedMotion } from "framer-motion";
 import { Arrow } from "../ui/Arrow";
+import { imageCropStyle } from "../ui/image-crop";
 import { Reveal } from "../ui/Reveal";
 import { type Project } from "./content";
 
@@ -16,7 +17,7 @@ function ProjectRow({ project, index, featured = false }: { project: Project; in
           whileTap={reduceMotion ? undefined : { scale: 0.985 }}
           transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
         >
-          <img src={project.cover} alt={project.coverAlt} />
+          <img src={project.cover} alt={project.coverAlt} style={imageCropStyle(project.coverCrop)} />
           <figcaption>{project.status}</figcaption>
         </motion.figure>
         <div className="projects-row-copy">

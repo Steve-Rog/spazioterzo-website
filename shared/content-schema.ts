@@ -3,7 +3,7 @@ export const MAX_HOME_ACTIVITIES = 12;
 export const MAX_MEDIA_BYTES = 10 * 1024 * 1024;
 export const ACCEPTED_MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 export const contentLimits = {
-  project: { slug: 80, title: 72, subtitle: 180, dateRange: 80, location: 90, audience: 240, theme: 48, coverAlt: 180, intro: 420, objective: 600, paragraph: 1_200, quote: 320, quoteSource: 100, listTitle: 80, listItem: 220, imageAlt: 180, imageCaption: 180, statValue: 48, statLabel: 160, outcome: 240, linkLabel: 90, videoAlt: 180, videoCaption: 180, ctaLabel: 64, partner: 90, visibilityNote: 360, seoTitle: 70, seoDescription: 160 },
+  project: { slug: 80, title: 72, subtitle: 180, dateRange: 80, location: 90, audience: 240, theme: 48, coverAlt: 180, intro: 420, objective: 600, paragraph: 1_200, quote: 320, quoteSource: 100, listTitle: 80, listItem: 220, imageAlt: 180, imageCaption: 180, statValue: 48, statLabel: 160, outcome: 240, outcomesHeading: 180, linkLabel: 90, videoAlt: 180, videoCaption: 180, ctaLabel: 64, partner: 90, visibilityNote: 360, seoTitle: 70, seoDescription: 160 },
   team: { name: 72, role: 110, bioParagraph: 1_200, quote: 320, quoteAuthor: 80 },
   site: { organizationName: 80, legalForm: 110, taxId: 64, footerTagline: 160, city: 80, address: 180, country: 80, phone: 60, mapUrl: 2_000, socialLabel: 40, titleSuffix: 70, description: 160, heroHeadline: 150, heroMeta: 80, ctaLabel: 64, associationHeading: 170, associationBody: 700, originEyebrow: 80, originPrelude: 220, originHeading: 180, originStatement: 700, originIdentity: 420, activitiesHeading: 160, activityTitle: 90, activityDescription: 320, territoryHeading: 170, territoryBody: 420, imageCaption: 180, verticalWord: 40, contactHeading: 150, contactBody: 320, emailLabel: 100 },
 } as const;
@@ -11,12 +11,19 @@ export const contentLimits = {
 export type RichTextMark = "italic" | "highlight" | "link";
 export type RichTextSpan = { text: string; marks?: RichTextMark[]; href?: string };
 export type RichText = RichTextSpan[];
+export const defaultProjectOutcomesHeading: RichText = [{ text: "Piccoli movimenti, " }, { text: "possibilità concrete.", marks: ["italic"] }];
+
+/** Turns a human page address into the single format accepted by projects. */
+export function normaliseProjectSlug(input: string) {
+  return input.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, contentLimits.project.slug);
+}
 
 export type ProjectBlock =
   | { id: string; type: "paragraph"; text: RichText }
   | { id: string; type: "quote"; text: RichText; source?: string }
   | { id: string; type: "list"; title: string; items: string[] }
-  | { id: string; type: "image"; assetId?: string; src?: string; alt: string; caption?: string }
+  | { id: string; type: "image"; assetId?: string; src?: string; alt: string; caption?: string; crop?: ImageCrop }
   | { id: string; type: "stat"; value: string; label: string };
 
 export type ProjectLinkKind = "instagram" | "facebook" | "website" | "materials";
@@ -25,7 +32,7 @@ export type ProjectVideo = { provider: "youtube" | "vimeo"; id: string; thumbnai
 
 export type ProjectContent = {
   slug: string; title: string; subtitle: string; statusLabel: "In corso" | "Concluso"; dateRange: string; location: string; audience: string; themes: string[];
-  coverAssetId?: string; cover: string; coverAlt: string; intro: RichText; objective: RichText; blocks: ProjectBlock[]; outcomes: string[]; links: ProjectLink[];
+  coverAssetId?: string; cover: string; coverAlt: string; coverCrop?: ImageCrop; intro: RichText; objective: RichText; blocks: ProjectBlock[]; outcomesHeading?: RichText; outcomes: string[]; links: ProjectLink[];
   video?: ProjectVideo; cta?: { label: string; href: string }; partners: string[]; funders: string[]; visibilityNote?: string; relatedSlugs: string[]; seoTitle?: string; seoDescription?: string;
 };
 
@@ -89,7 +96,7 @@ function validateBlock(value: unknown): value is ProjectBlock {
   if (value.type === "paragraph") return validateRichText(value.text, contentLimits.project.paragraph);
   if (value.type === "quote") return validateRichText(value.text, contentLimits.project.quote) && optionalString(value.source, contentLimits.project.quoteSource);
   if (value.type === "list") return string(value.title, contentLimits.project.listTitle) && strings(value.items, 30, contentLimits.project.listItem);
-  if (value.type === "image") return (value.assetId === undefined || safeId(value.assetId)) && (value.src === undefined || safeImageUrl(value.src)) && (value.src !== undefined || value.assetId !== undefined) && string(value.alt, contentLimits.project.imageAlt) && optionalString(value.caption, contentLimits.project.imageCaption);
+  if (value.type === "image") return (value.assetId === undefined || safeId(value.assetId)) && (value.src === undefined || safeImageUrl(value.src)) && (value.src !== undefined || value.assetId !== undefined) && string(value.alt, contentLimits.project.imageAlt) && optionalString(value.caption, contentLimits.project.imageCaption) && (value.crop === undefined || validateImageCrop(value.crop));
   if (value.type === "stat") return string(value.value, contentLimits.project.statValue) && string(value.label, contentLimits.project.statLabel);
   return false;
 }
@@ -99,9 +106,9 @@ export function validateProject(value: unknown): value is ProjectContent {
   return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(value.slug)) && string(value.slug, contentLimits.project.slug)
     && string(value.title, contentLimits.project.title) && string(value.subtitle, contentLimits.project.subtitle) && (value.statusLabel === "In corso" || value.statusLabel === "Concluso")
     && string(value.dateRange, contentLimits.project.dateRange) && string(value.location, contentLimits.project.location) && string(value.audience, contentLimits.project.audience) && strings(value.themes, 20, contentLimits.project.theme)
-    && (value.coverAssetId === undefined || safeId(value.coverAssetId)) && safeImageUrl(value.cover) && string(value.coverAlt, contentLimits.project.coverAlt)
+    && (value.coverAssetId === undefined || safeId(value.coverAssetId)) && safeImageUrl(value.cover) && string(value.coverAlt, contentLimits.project.coverAlt) && (value.coverCrop === undefined || validateImageCrop(value.coverCrop))
     && validateRichText(value.intro, contentLimits.project.intro) && validateRichText(value.objective, contentLimits.project.objective) && Array.isArray(value.blocks) && value.blocks.length <= 50 && value.blocks.every(validateBlock)
-    && strings(value.outcomes, 30, contentLimits.project.outcome) && Array.isArray(value.links) && value.links.length <= 20 && value.links.every((link) => isRecord(link) && string(link.label, contentLimits.project.linkLabel) && safeUrl(link.href) && ["instagram", "facebook", "website", "materials"].includes(String(link.kind)))
+    && (value.outcomesHeading === undefined || validateRichText(value.outcomesHeading, contentLimits.project.outcomesHeading)) && strings(value.outcomes, 30, contentLimits.project.outcome) && Array.isArray(value.links) && value.links.length <= 20 && value.links.every((link) => isRecord(link) && string(link.label, contentLimits.project.linkLabel) && safeUrl(link.href) && ["instagram", "facebook", "website", "materials"].includes(String(link.kind)))
     && (value.video === undefined || validateVideo(value.video))
     && (value.cta === undefined || (isRecord(value.cta) && string(value.cta.label, contentLimits.project.ctaLabel) && safeUrl(value.cta.href)))
     && strings(value.partners, 30, contentLimits.project.partner) && strings(value.funders, 30, contentLimits.project.partner) && optionalString(value.visibilityNote, contentLimits.project.visibilityNote) && strings(value.relatedSlugs, 20, contentLimits.project.slug)

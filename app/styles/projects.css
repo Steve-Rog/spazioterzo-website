@@ -33,7 +33,8 @@
 .projects-archive-secondary .projects-row-subtitle { margin: 18px 0 30px; }
 
 .project-detail-hero { min-height: min(100svh, 930px); display: flex; flex-direction: column; }
-.project-detail-hero-image { position: absolute; z-index: -2; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.project-detail-hero-image { position: absolute; z-index: -2; inset: 0; overflow: hidden; }
+.project-detail-hero-image img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .project-detail-hero-shade { position: absolute; z-index: -1; inset: 0; background: linear-gradient(90deg, rgba(13,36,42,.93) 0%, rgba(13,36,42,.73) 39%, rgba(13,36,42,.19) 72%), linear-gradient(0deg, rgba(13,36,42,.72), transparent 51%); }
 .project-detail-hero .site-header { flex: 0 0 auto; }
 .project-detail-hero-content { margin: auto 0 0; padding: 48px clamp(24px, 9vw, 150px) clamp(64px, 8vw, 128px); max-width: min(88vw, 1250px); }
@@ -63,7 +64,8 @@
 .project-detail-list li { padding: 16px 0 16px 31px; border-top: 1px solid var(--line); position: relative; font-size: clamp(17px, 1.55vw, 22px); line-height: 1.35; }
 .project-detail-list li:before { content: '↗'; position: absolute; left: 0; color: var(--orange); }
 .project-detail-image { margin: 68px 0; }
-.project-detail-image img { display: block; width: 100%; height: auto; background: var(--ink); }
+.project-detail-image-media { overflow: hidden; background: var(--ink); }
+.project-detail-image img { display: block; width: 100%; height: clamp(260px, 48vw, 620px); object-fit: cover; background: var(--ink); }
 .project-detail-image figcaption { margin-top: 12px; color: #647d7e; font: 500 10px 'DM Mono', monospace; letter-spacing: .06em; }
 .project-detail-stat { display: flex; flex-direction: column; gap: 13px; margin: 70px 0; padding: 34px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .project-detail-stat strong { color: var(--orange); font-size: clamp(58px, 7vw, 110px); line-height: .7; letter-spacing: -.09em; }
@@ -96,7 +98,8 @@
 .project-related { padding: clamp(87px, 11vw, 165px) clamp(24px, 9vw, 150px); background: #e9e6dd; }
 .project-related > div { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(24px, 4vw, 67px); }
 .project-related a { display: block; padding-bottom: 27px; border-bottom: 1px solid var(--line); }
-.project-related img { display: block; width: 100%; aspect-ratio: 1.5; object-fit: cover; margin-bottom: 25px; background: var(--ink); transition: transform .45s cubic-bezier(.22,1,.36,1); }
+.project-related-image { overflow: hidden; margin-bottom: 25px; background: var(--ink); }
+.project-related img { display: block; width: 100%; aspect-ratio: 1.5; object-fit: cover; background: var(--ink); transition: transform .45s cubic-bezier(.22,1,.36,1); }
 .project-related a:hover img { transform: scale(.98); }
 .project-related span { color: #60797b; font: 500 9px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .09em; }
 .project-related h2 { margin: 13px 0 10px; font-size: clamp(37px, 4vw, 62px); line-height: .83; letter-spacing: -.08em; }

@@ -4,7 +4,7 @@ export type ProjectBlock =
   | { type: "paragraph"; text: string }
   | { type: "quote"; text: string; source?: string }
   | { type: "list"; title: string; items: string[] }
-  | { type: "image"; src: string; alt: string; caption?: string }
+  | { type: "image"; src: string; alt: string; caption?: string; crop?: { x: number; y: number; width: number; height: number } }
   | { type: "stat"; value: string; label: string };
 
 export type ProjectVideo = {
@@ -32,10 +32,12 @@ export type Project = {
   themes: string[];
   cover: string;
   coverAlt: string;
+  coverCrop?: { x: number; y: number; width: number; height: number };
   intro: string;
   objective: string;
   blocks: ProjectBlock[];
   outcomes: string[];
+  outcomesHeading?: import("../../../shared/content-schema").RichText;
   links?: ProjectLink[];
   video?: ProjectVideo;
   cta?: { label: string; href: string };
