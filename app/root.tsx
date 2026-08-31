@@ -12,8 +12,7 @@ import {
 } from "react-router";
 import { defaultSiteSettings } from "../shared/default-site-settings";
 import { getPublicSite } from "./content/public-api";
-import { SiteFooter } from "./components/layout/SiteFooter";
-import { SiteHeader } from "./components/layout/SiteHeader";
+import { PublicPageShell } from "./components/layout/PublicPageShell";
 
 export async function loader() {
   return { site: await getPublicSite() };
@@ -55,9 +54,9 @@ export default function App() {
 
   return (
     <MantineProvider defaultColorScheme="auto">
-      <SiteHeader identity={site.identity} currentPage={currentPage} />
-      <Outlet />
-      <SiteFooter identity={site.identity} />
+      <PublicPageShell site={site} currentPage={currentPage}>
+        <Outlet />
+      </PublicPageShell>
     </MantineProvider>
   );
 }

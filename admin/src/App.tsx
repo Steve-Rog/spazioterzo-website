@@ -25,6 +25,7 @@ import { ProjectDetail } from "../../app/components/projects/ProjectDetail";
 import { getRelatedProjects } from "../../app/components/projects/content";
 import { TeamProfileContent } from "../../app/components/people/TeamProfileModal";
 import { HomePage } from "../../app/components/home/HomePage";
+import { PublicPageShell } from "../../app/components/layout/PublicPageShell";
 
 import { composeThemes, emptyImageBlocks, mainTheme, missingInStep, missingProjectFields, otherThemes, type ProjectFieldName } from "./project-fields";
 
@@ -906,7 +907,7 @@ function ProjectPreview({ project, site, catalogo, height, focus }: { project: P
   const legacy = projectToLegacy(project);
   // «Altri progetti» mostra i progetti veri del back office, come farà la pagina pubblicata
   const correlati = getRelatedProjects(legacy, catalogo.map(projectToLegacy));
-  return <PreviewFrame height={height} focus={focus}><ProjectDetail project={legacy} related={correlati} /></PreviewFrame>;
+  return <PreviewFrame height={height} focus={focus}><PublicPageShell site={site} currentPage="projects"><ProjectDetail project={legacy} related={correlati} /></PublicPageShell></PreviewFrame>;
 }
 
 function TeamPreview({ member, height, index, total }: { member: TeamMemberContent; height?: number; index: number; total: number }) {
@@ -916,5 +917,5 @@ function TeamPreview({ member, height, index, total }: { member: TeamMemberConte
 }
 
 function SitePreview({ site, height, focus }: { site: SiteSettingsContent; height?: number; focus?: string }) {
-  return <PreviewFrame height={height} focus={focus}><HomePage site={site} /></PreviewFrame>;
+  return <PreviewFrame height={height} focus={focus}><PublicPageShell site={site} currentPage="home"><HomePage site={site} /></PublicPageShell></PreviewFrame>;
 }

@@ -46,6 +46,18 @@ describe("patto fra sito e anteprima", () => {
     }
   });
 
+  it("sito e anteprima condividono intestazione e footer", () => {
+    const cornice = readFileSync(join(cartellaComponenti, "layout", "PublicPageShell.tsx"), "utf8");
+    expect(cornice).toContain("<SiteHeader");
+    expect(cornice).toContain("<SiteFooter");
+
+    const rottaRadice = readFileSync(join(radice, "app", "root.tsx"), "utf8");
+    const anteprima = readFileSync(join(import.meta.dirname, "App.tsx"), "utf8");
+    expect(rottaRadice).toContain("<PublicPageShell site={site} currentPage={currentPage}>");
+    expect(anteprima).toContain('<PublicPageShell site={site} currentPage="home">');
+    expect(anteprima).toContain('<PublicPageShell site={site} currentPage="projects">');
+  });
+
   it("l'indice della home nel back office elenca le stesse sezioni della pagina", () => {
     const composizione = readFileSync(join(cartellaComponenti, "home", "HomePage.tsx"), "utf8");
     const ordineSito = [...composizione.matchAll(/<(\w+) content=\{site\} \/>/g)].map((match) => match[1]);
