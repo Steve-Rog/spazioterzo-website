@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asRichText, contentLimits, normaliseProjectSlug, publicationReadinessError, validateProject, validateSiteSettings, validateTeamMember } from "./content-schema";
+import { asRichText, contentLimits, imageCropZoom, normaliseProjectSlug, publicationReadinessError, validateProject, validateSiteSettings, validateTeamMember } from "./content-schema";
 import { defaultSiteSettings } from "./default-site-settings";
 
 describe("content schema", () => {
@@ -16,6 +16,13 @@ describe("content schema", () => {
     const project = { slug: "progetto", title: "Titolo", subtitle: "Sottotitolo", statusLabel: "In corso" as const, dateRange: "2026", location: "Catania", audience: "Persone", themes: ["Cura"], cover: "/cover.jpg", coverAlt: "Copertina", coverCrop: { x: 8, y: 10, width: 70, height: 70 }, intro: asRichText("Intro"), objective: asRichText("Obiettivo"), blocks: [{ id: "image-1", type: "image" as const, src: "/image.jpg", alt: "Foto", crop: { x: 0, y: 0, width: 100, height: 100 } }], outcomesHeading: asRichText("Un titolo che si può cambiare"), outcomes: [], links: [], partners: [], funders: [], relatedSlugs: [] };
     expect(validateProject(project)).toBe(true);
     expect(validateProject({ ...project, coverCrop: { x: 0, y: 0, width: 101, height: 100 } })).toBe(false);
+  });
+
+  it("derives image zoom from the visible crop edge", () => {
+    // Su una foto 4:3 mostrata in un riquadro 16:10 il lato corto visibile è
+    // inferiore a 100 già a zoom 1: usare Math.min qui ingrandirebbe per errore.
+    expect(imageCropZoom({ x: 0, y: 8.33, width: 100, height: 83.33 })).toBe(1);
+    expect(imageCropZoom({ x: 25, y: 30, width: 50, height: 40 })).toBe(2);
   });
 
   it("rejects incomplete public content", () => {

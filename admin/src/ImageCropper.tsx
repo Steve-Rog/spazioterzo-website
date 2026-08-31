@@ -2,16 +2,15 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import { IconPencil, IconRefresh } from "@tabler/icons-react";
 import { ActionIcon, Button, Group, Modal, Slider, Stack, Text, Tooltip } from "@mantine/core";
-import type { ImageCrop } from "../../shared/content-schema";
+import { imageCropFocus, imageCropZoom, type ImageCrop } from "../../shared/content-schema";
 
 const round = (value: number) => Math.round(value * 100) / 100;
 const normalise = (area: Area): ImageCrop => ({ x: round(area.x), y: round(area.y), width: round(area.width), height: round(area.height) });
-const zoomFor = (value?: ImageCrop) => value ? Math.max(1, Math.min(3, 100 / Math.min(value.width, value.height))) : 1;
+const zoomFor = (value?: ImageCrop, maxZoom = 3) => imageCropZoom(value, maxZoom);
 const cropStyle = (value?: ImageCrop): CSSProperties | undefined => {
   if (!value) return undefined;
-  const focusX = value.x + value.width / 2;
-  const focusY = value.y + value.height / 2;
-  return { objectPosition: `${focusX}% ${focusY}%`, transform: `scale(${zoomFor(value)})`, transformOrigin: `${focusX}% ${focusY}%` };
+  const focus = imageCropFocus(value);
+  return { objectPosition: `${focus.x}% ${focus.y}%`, transform: `scale(${zoomFor(value)})`, transformOrigin: `${focus.x}% ${focus.y}%` };
 };
 
 type ImageCropperProps = {
@@ -29,13 +28,13 @@ type ImageCropperProps = {
 export function ImageCropper({ image, value, onChange, title = "Ritaglio immagine", description = "Scegli la parte di foto che verrà mostrata sul sito.", aspect = 1, cropShape = "rect", maxZoom = 3 }: ImageCropperProps) {
   const [opened, setOpened] = useState(false);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(zoomFor(value));
+  const [zoom, setZoom] = useState(zoomFor(value, maxZoom));
   const [session, setSession] = useState(0);
   const areaRef = useRef<ImageCrop | undefined>(value);
 
   const resetDraft = (nextValue = value) => {
     setCrop({ x: 0, y: 0 });
-    setZoom(zoomFor(nextValue));
+    setZoom(zoomFor(nextValue, maxZoom));
     areaRef.current = nextValue;
     setSession((current) => current + 1);
   };

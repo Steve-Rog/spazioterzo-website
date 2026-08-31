@@ -900,8 +900,6 @@ function ReviewProject({ project, missing, onFix }: { project: ProjectContent; m
         </div>}
   </div>;
 }
-function previewCropStyle(member: TeamMemberContent) { const crop = member.imageCrop; if (!crop) return undefined; const focusX = crop.x + crop.width / 2; const focusY = crop.y + crop.height / 2; const zoom = Math.max(1, Math.min(3, 100 / Math.min(crop.width, crop.height))); return { objectPosition: `${focusX}% ${focusY}%`, transform: `scale(${zoom})`, transformOrigin: `${focusX}% ${focusY}%` }; }
-
 /** Le anteprime disegnano i componenti veri del sito: se cambia la pagina pubblica, cambia anche qui. */
 function ProjectPreview({ project, site, catalogo, height, focus }: { project: ProjectContent; site: SiteSettingsContent; catalogo: ProjectContent[]; height?: number; focus?: string }) {
   const legacy = projectToLegacy(project);

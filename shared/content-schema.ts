@@ -37,6 +37,21 @@ export type ProjectContent = {
 };
 
 export type ImageCrop = { x: number; y: number; width: number; height: number };
+
+/**
+ * react-easy-crop salva il rettangolo visibile rispetto alla foto originale.
+ * A zoom minimo uno dei due lati resta sempre al 100%; è quello più grande,
+ * non quello più piccolo, a dire di quanto la foto va ingrandita sul sito.
+ */
+export function imageCropZoom(crop?: ImageCrop, maxZoom = 3) {
+  if (!crop) return 1;
+  return Math.max(1, Math.min(maxZoom, 100 / Math.max(crop.width, crop.height)));
+}
+
+export function imageCropFocus(crop: ImageCrop) {
+  return { x: crop.x + crop.width / 2, y: crop.y + crop.height / 2 };
+}
+
 export type TeamMemberContent = { name: string; role: string; imageAssetId?: string; image: string; imagePosition?: string; imageCrop?: ImageCrop; bio: RichText[]; quote: RichText; quoteAuthor?: string };
 export type Activity = { id: string; title: string; description: RichText };
 export type SiteSettingsContent = {
