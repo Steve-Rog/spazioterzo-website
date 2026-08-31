@@ -24,5 +24,12 @@ export const fuocoHome: Record<string, string> = {
   contatti: ".contact",
 };
 
+/** Pannelli dell'identità → elementi condivisi dal layout pubblico. */
+export const fuocoSito: Record<"identity" | "seo", string | undefined> = {
+  identity: ".site-footer",
+  seo: undefined,
+};
+
 export const selettoreProgetto = (scheda: string | null) => (scheda ? fuocoProgetto[scheda] : undefined);
 export const selettoreHome = (sezione: string | null) => (sezione ? fuocoHome[sezione] : undefined);
+export const selettoreSito = (pannello: "identity" | "seo") => fuocoSito[pannello];

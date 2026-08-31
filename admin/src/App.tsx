@@ -17,7 +17,7 @@ import { projectSnippet, siteSnippet } from "./seo";
 import { diffContent, type FieldChange } from "./diff";
 import { IconArrowDown, IconArrowLeft, IconArrowRight, IconArrowUp, IconChevronRight, IconChevronDown, IconChevronUp, IconDots, IconGripVertical, IconPlus, IconTrash } from "@tabler/icons-react";
 import { inFondoAllaPagina, sezioneCorrente } from "./home-sections";
-import { selettoreHome, selettoreProgetto } from "./preview-focus";
+import { selettoreHome, selettoreProgetto, selettoreSito } from "./preview-focus";
 import { sanitiseTags } from "./tags";
 import { PreviewFrame } from "./PreviewFrame";
 import { projectToLegacy, teamToLegacy } from "../../app/content/public-api";
@@ -583,7 +583,8 @@ function SiteEditor({ entity, activePanel, anchor, onSaved, onPublish, onDirtyCh
   const update = (recipe: (draft: SiteSettingsContent) => void) => { const next = clone(form.values); recipe(next); form.setValues(next); };
   const save = form.onSubmit(async (values) => { setSaving(true); try { const saved = await adminApi.save("site", entity?.id, values, undefined, entity?.updatedAt); form.resetDirty(values); await onSaved(saved); } catch (error) { notifications.show({ color: "red", message: error instanceof Error ? error.message : "Bozza non salvata" }); } finally { setSaving(false); } });
   const panelTitle = activePanel === "identity" ? "Identità del sito" : activePanel === "home" ? "Home" : "SEO e condivisione";
-  return <form onSubmit={save}><EditorFrame title={panelTitle} eyebrow="Sito" entity={entity} resource="site" onSave={() => save()} saving={saving} dirty={form.isDirty()} preview={<SitePreview site={form.values} focus={activePanel === "home" ? selettoreHome(sezioneHome) : undefined} />} onPublish={onPublish} onDirtyChange={onDirtyChange} onRestored={onRestored}>{activePanel === "identity" ? <SiteIdentity value={form.values} update={update} /> : activePanel === "home" ? <HomeEditor value={form.values} update={update} initialAnchor={anchor} onSectionChange={setSezioneHome} /> : <SiteSeo value={form.values} update={update} />}</EditorFrame></form>;
+  const previewFocus = activePanel === "home" ? selettoreHome(sezioneHome) : selettoreSito(activePanel);
+  return <form onSubmit={save}><EditorFrame title={panelTitle} eyebrow="Sito" entity={entity} resource="site" onSave={() => save()} saving={saving} dirty={form.isDirty()} preview={<SitePreview site={form.values} focus={previewFocus} />} onPublish={onPublish} onDirtyChange={onDirtyChange} onRestored={onRestored}>{activePanel === "identity" ? <SiteIdentity value={form.values} update={update} /> : activePanel === "home" ? <HomeEditor value={form.values} update={update} initialAnchor={anchor} onSectionChange={setSezioneHome} /> : <SiteSeo value={form.values} update={update} />}</EditorFrame></form>;
 }
 
 function SiteIdentity({ value, update }: { value: SiteSettingsContent; update: (recipe: (draft: SiteSettingsContent) => void) => void }) {

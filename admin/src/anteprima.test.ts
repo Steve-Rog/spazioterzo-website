@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { fuocoHome, fuocoProgetto } from "./preview-focus";
+import { fuocoHome, fuocoProgetto, fuocoSito } from "./preview-focus";
 
 /**
  * L'anteprima del back office disegna i componenti veri del sito.
@@ -84,7 +84,7 @@ describe("patto fra sito e anteprima", () => {
   it("i punti su cui si mette a fuoco l'anteprima esistono davvero nel sito", () => {
     // se un selettore non corrisponde a nulla, l'anteprima resterebbe ferma senza dirlo
     const markupSito = fileRicorsivi(cartellaComponenti).map((percorso) => readFileSync(percorso, "utf8")).join("\n");
-    for (const selettore of [...Object.values(fuocoProgetto), ...Object.values(fuocoHome)]) {
+    for (const selettore of [...Object.values(fuocoProgetto), ...Object.values(fuocoHome), ...Object.values(fuocoSito)]) {
       if (!selettore) continue;
       expect(markupSito, `manca ${selettore} nei componenti del sito`).toContain(`"${selettore.slice(1)}`);
     }
