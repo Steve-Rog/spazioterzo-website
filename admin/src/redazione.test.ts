@@ -60,3 +60,21 @@ describe("sessione scaduta", () => {
     expect(pannello).toContain("function SessionExpiredScreen");
   });
 });
+
+describe("le risposte del back office non finiscono in cache", () => {
+  it("viaggiano con private, no-store", () => {
+    // con la cache del Worker attiva, una risposta conservata mostra contenuti già modificati:
+    // il salvataggio sembra non funzionare e il controllo di versione va in conflitto per sempre
+    expect(worker).toContain('headers.set("Cache-Control", "private, no-store")');
+  });
+});
+
+describe("elenchi scritti una riga per voce", () => {
+  it("non ripuliscono il testo mentre si scrive", () => {
+    // ripulendo a ogni battitura, lo spazio sparisce appena digitato e l'a capo non si può fare
+    expect(pannello).toContain("function RigheField");
+    expect(pannello).not.toContain('value={value.outcomes.join("\\n")}');
+    expect(pannello).not.toContain('value={block.items.join("\\n")}');
+  });
+});
+

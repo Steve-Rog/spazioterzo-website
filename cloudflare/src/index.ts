@@ -29,6 +29,9 @@ function withCors(response: Response, request: Request, env: Env, isAdmin = fals
     const origin = request.headers.get("Origin");
     if (origin && (origin === env.ADMIN_ORIGIN || env.ENVIRONMENT === "local")) headers.set("Access-Control-Allow-Origin", origin);
     headers.set("Vary", "Origin");
+    // Il back office non va mai in cache: sono dati di una persona sola, e una risposta
+    // conservata mostrerebbe contenuti già modificati facendo credere che il salvataggio non funzioni.
+    headers.set("Cache-Control", "private, no-store");
   } else headers.set("Access-Control-Allow-Origin", "*");
   headers.set("Access-Control-Allow-Headers", "Content-Type, Cf-Access-Jwt-Assertion, x-spazioterzo-dev-email");
   headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");

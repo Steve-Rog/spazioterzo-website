@@ -36,8 +36,8 @@ describe("quando il JavaScript non arriva", () => {
 
 describe("contenuti incompleti", () => {
   it("senza tema non resta un trattino appeso", () => {
-    expect(leggi("components", "projects", "ProjectsArchive.tsx")).toContain("{project.themes[0] && <>");
-    expect(leggi("components", "projects", "ProjectDetail.tsx")).toContain("{project.themes[0] && <>");
+    expect(leggi("components", "projects", "ProjectsArchive.tsx")).toContain("{Boolean(project.themes[0]) && <>");
+    expect(leggi("components", "projects", "ProjectDetail.tsx")).toContain("{Boolean(project.themes[0]) && <>");
   });
 
   it("il collage delle persone regge più di tre ritratti", () => {
@@ -47,3 +47,16 @@ describe("contenuti incompleti", () => {
     expect(hero).not.toContain("foregroundOffsets[index].x");
   });
 });
+
+describe("sezioni senza contenuto", () => {
+  it("non restano in pagina con le etichette vuote", () => {
+    const dettaglio = leggi("components", "projects", "ProjectDetail.tsx");
+    // un array vuoto è comunque vero: senza la lunghezza restavano «Con .» e «Sostenuto da .»
+    expect(dettaglio).toContain("project.partners?.length ?");
+    expect(dettaglio).toContain("project.funders?.length ?");
+    expect(dettaglio).toContain("{project.outcomes.length > 0 &&");
+    expect(dettaglio).toContain("project.cta && project.cta.label.trim() && project.cta.href.trim() ?");
+    expect(dettaglio).not.toContain("{project.partners && <p>Con");
+  });
+});
+

@@ -478,10 +478,37 @@ function ProjectStory({ value, set, blocchiIncompleti }: { value: ProjectContent
   </section>;
 }
 
+
+/**
+ * Elenco scritto una riga per voce.
+ *
+ * Il testo digitato resta com'è finché si scrive: ripulendolo a ogni battitura, gli spazi
+ * verrebbero mangiati appena inseriti e l'a capo sparirebbe prima di poter scrivere la riga
+ * nuova. La ripulitura vale solo per quello che finisce nel contenuto salvato.
+ */
+function RigheField({ label, description, values, onChange, maxLength, minRows = 4 }: { label: string; description?: string; values: string[]; onChange: (values: string[]) => void; maxLength?: number; minRows?: number }) {
+  const [testo, setTesto] = useState(() => values.join("\n"));
+
+  // aggiornamenti che arrivano da fuori: ripristino di una revisione, cambio di contenuto
+  useEffect(() => {
+    setTesto((corrente) => lines(corrente).join("\n") === values.join("\n") ? corrente : values.join("\n"));
+  }, [values]);
+
+  return <Textarea
+    label={label}
+    description={description}
+    maxLength={maxLength}
+    autosize
+    minRows={minRows}
+    value={testo}
+    onChange={(event) => { setTesto(event.currentTarget.value); onChange(lines(event.currentTarget.value)); }}
+  />;
+}
+
 function ProjectOutcomes({ value, set }: { value: ProjectContent; set: FieldSetter<ProjectContent> }) {
   return <section className="form-section">
     <SectionHeading title="Cosa abbiamo attivato" hint="Sul sito diventano un elenco numerato: 01, 02, 03…" shape="outcomes" />
-    <Textarea label="Risultati" description="Una riga per risultato" maxLength={contentLimits.project.outcome * 12} autosize minRows={4} value={value.outcomes.join("\n")} onChange={(event) => set("outcomes", lines(event.currentTarget.value))} />
+    <RigheField label="Risultati" description="Una riga per risultato" maxLength={contentLimits.project.outcome * 12} values={value.outcomes} onChange={(next) => set("outcomes", next)} />
   </section>;
 }
 
@@ -838,7 +865,7 @@ function BlocksEditor({ blocks, onChange, incompleti = [] }: { blocks: ProjectBl
             <ActionIcon aria-label={`Elimina il blocco ${index + 1}`} variant="subtle" color="red" onClick={() => remove(index, block.type)}><IconTrash size={16} stroke={1.7} /></ActionIcon>
           </Group>
         </div>
-        {!isClosed && <div className="block-body">{block.type === "paragraph" && <RichTextField label="Testo" maxLength={contentLimits.project.paragraph} value={block.text} onChange={(text) => update(index, { ...block, text })} />}{block.type === "quote" && <Stack><RichTextField label="Citazione" maxLength={contentLimits.project.quote} value={block.text} onChange={(text) => update(index, { ...block, text })} /><TextInput label="Fonte" maxLength={contentLimits.project.quoteSource} value={block.source ?? ""} onChange={(event) => update(index, { ...block, source: event.currentTarget.value || undefined })} /></Stack>}{block.type === "list" && <Stack><TextInput label="Titolo elenco" maxLength={contentLimits.project.listTitle} value={block.title} onChange={(event) => update(index, { ...block, title: event.currentTarget.value })} /><Textarea label="Voci" description="Una riga per voce" maxLength={contentLimits.project.listItem * 12} autosize minRows={3} value={block.items.join("\n")} onChange={(event) => update(index, { ...block, items: lines(event.currentTarget.value) })} /></Stack>}{block.type === "image" && <Stack><MediaPicker label="Immagine" required error={incompleti.includes(index + 1) ? "Scegli la foto: senza immagine il blocco non si può salvare." : undefined} value={{ url: block.src ?? "", alt: block.alt, assetId: block.assetId }} onChange={(next) => update(index, { ...block, src: next.url, alt: next.alt, assetId: next.assetId })} /><Textarea label="Didascalia" maxLength={contentLimits.project.imageCaption} autosize minRows={2} value={block.caption ?? ""} onChange={(event) => update(index, { ...block, caption: event.currentTarget.value || undefined })} /></Stack>}{block.type === "stat" && <div className="form-grid"><TextInput label="Valore" maxLength={contentLimits.project.statValue} value={block.value} onChange={(event) => update(index, { ...block, value: event.currentTarget.value })} /><TextInput label="Etichetta" maxLength={contentLimits.project.statLabel} value={block.label} onChange={(event) => update(index, { ...block, label: event.currentTarget.value })} /></div>}</div>}
+        {!isClosed && <div className="block-body">{block.type === "paragraph" && <RichTextField label="Testo" maxLength={contentLimits.project.paragraph} value={block.text} onChange={(text) => update(index, { ...block, text })} />}{block.type === "quote" && <Stack><RichTextField label="Citazione" maxLength={contentLimits.project.quote} value={block.text} onChange={(text) => update(index, { ...block, text })} /><TextInput label="Fonte" maxLength={contentLimits.project.quoteSource} value={block.source ?? ""} onChange={(event) => update(index, { ...block, source: event.currentTarget.value || undefined })} /></Stack>}{block.type === "list" && <Stack><TextInput label="Titolo elenco" maxLength={contentLimits.project.listTitle} value={block.title} onChange={(event) => update(index, { ...block, title: event.currentTarget.value })} /><RigheField label="Voci" description="Una riga per voce" maxLength={contentLimits.project.listItem * 12} minRows={3} values={block.items} onChange={(items) => update(index, { ...block, items })} /></Stack>}{block.type === "image" && <Stack><MediaPicker label="Immagine" required error={incompleti.includes(index + 1) ? "Scegli la foto: senza immagine il blocco non si può salvare." : undefined} value={{ url: block.src ?? "", alt: block.alt, assetId: block.assetId }} onChange={(next) => update(index, { ...block, src: next.url, alt: next.alt, assetId: next.assetId })} /><Textarea label="Didascalia" maxLength={contentLimits.project.imageCaption} autosize minRows={2} value={block.caption ?? ""} onChange={(event) => update(index, { ...block, caption: event.currentTarget.value || undefined })} /></Stack>}{block.type === "stat" && <div className="form-grid"><TextInput label="Valore" maxLength={contentLimits.project.statValue} value={block.value} onChange={(event) => update(index, { ...block, value: event.currentTarget.value })} /><TextInput label="Etichetta" maxLength={contentLimits.project.statLabel} value={block.label} onChange={(event) => update(index, { ...block, label: event.currentTarget.value })} /></div>}</div>}
       </div>;
     })}
   </section>;
