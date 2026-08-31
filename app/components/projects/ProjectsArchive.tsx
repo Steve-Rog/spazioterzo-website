@@ -20,7 +20,7 @@ function ProjectRow({ project, index, featured = false }: { project: Project; in
           <figcaption>{project.status}</figcaption>
         </motion.figure>
         <div className="projects-row-copy">
-          <p className="projects-row-meta">{project.themes[0] && <>{project.themes[0]} <span>—</span> </>}{project.location}</p>
+          <p className="projects-row-meta">{Boolean(project.themes[0]) && <>{project.themes[0]} <span>—</span> </>}{project.location}</p>
           <h2>{project.title}</h2>
           <p className="projects-row-subtitle">{project.subtitle}</p>
           <span className="projects-row-action">Scopri il progetto <Arrow /></span>
