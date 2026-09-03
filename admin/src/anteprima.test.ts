@@ -33,7 +33,7 @@ describe("patto fra sito e anteprima", () => {
 
   it("la home ha una composizione sola, usata dalla rotta e dall'anteprima", () => {
     const rotta = readFileSync(join(radice, "app", "routes", "home.tsx"), "utf8");
-    const anteprima = readFileSync(join(import.meta.dirname, "App.tsx"), "utf8");
+    const anteprima = readFileSync(join(import.meta.dirname, "components", "PublicPreviews.tsx"), "utf8");
     expect(rotta).toContain("<HomePage site={site} />");
     expect(anteprima).toContain("<HomePage site={site} />");
 
@@ -52,7 +52,7 @@ describe("patto fra sito e anteprima", () => {
     expect(cornice).toContain("<SiteFooter");
 
     const rottaRadice = readFileSync(join(radice, "app", "root.tsx"), "utf8");
-    const anteprima = readFileSync(join(import.meta.dirname, "App.tsx"), "utf8");
+    const anteprima = readFileSync(join(import.meta.dirname, "components", "PublicPreviews.tsx"), "utf8");
     expect(rottaRadice).toContain("<PublicPageShell site={site} currentPage={currentPage}>");
     expect(anteprima).toContain('<PublicPageShell site={site} currentPage="home">');
     expect(anteprima).toContain('<PublicPageShell site={site} currentPage="projects">');
@@ -61,7 +61,7 @@ describe("patto fra sito e anteprima", () => {
   it("l'indice della home nel back office elenca le stesse sezioni della pagina", () => {
     const composizione = readFileSync(join(cartellaComponenti, "home", "HomePage.tsx"), "utf8");
     const ordineSito = [...composizione.matchAll(/<(\w+) content=\{site\} \/>/g)].map((match) => match[1]);
-    const pannello = readFileSync(join(import.meta.dirname, "App.tsx"), "utf8");
+    const pannello = readFileSync(join(import.meta.dirname, "editors", "SiteEditor.tsx"), "utf8");
     const elenco = pannello.slice(pannello.indexOf("const homeSections"), pannello.indexOf("function HomeEditor"));
     const ordinePannello = [...elenco.matchAll(/key: "(\w+)"/g)].map((match) => match[1]);
 
@@ -91,12 +91,13 @@ describe("patto fra sito e anteprima", () => {
   });
 
   it("ogni scheda dell'editor e ogni sezione della home hanno un bersaglio nell'anteprima", () => {
-    const pannello = readFileSync(join(import.meta.dirname, "App.tsx"), "utf8");
-    const schede = [...pannello.matchAll(/<Tabs\.Tab value="(\w+)"/g)].map((match) => match[1]);
+    const editorProgetti = readFileSync(join(import.meta.dirname, "editors", "ProjectEditor.tsx"), "utf8");
+    const editorSito = readFileSync(join(import.meta.dirname, "editors", "SiteEditor.tsx"), "utf8");
+    const schede = [...editorProgetti.matchAll(/<Tabs\.Tab value="(\w+)"/g)].map((match) => match[1]);
     expect(schede.length).toBeGreaterThan(0);
     for (const scheda of schede) expect(Object.keys(fuocoProgetto), `la scheda ${scheda} non sa dove far guardare l'anteprima`).toContain(scheda);
 
-    const elenco = pannello.slice(pannello.indexOf("const homeSections"), pannello.indexOf("function HomeEditor"));
+    const elenco = editorSito.slice(editorSito.indexOf("const homeSections"), editorSito.indexOf("function HomeEditor"));
     const ancore = [...elenco.matchAll(/anchor: "([\w-]+)"/g)].map((match) => match[1]);
     for (const ancora of ancore) expect(Object.keys(fuocoHome), `la sezione ${ancora} non sa dove far guardare l'anteprima`).toContain(ancora);
   });
@@ -116,14 +117,14 @@ describe("patto fra sito e anteprima", () => {
     expect(contenuti).toContain("getRelatedProjects(project: Project, catalog: Project[])");
     // rotta pubblica e anteprima passano entrambe un catalogo: senza, la sezione resterebbe vuota o falsa
     expect(readFileSync(join(radice, "app", "routes", "project-detail.tsx"), "utf8")).toContain("getRelatedProjects(project, catalog)");
-    expect(readFileSync(join(import.meta.dirname, "App.tsx"), "utf8")).toContain("getRelatedProjects(legacy, catalogo.map(projectToLegacy))");
+    expect(readFileSync(join(import.meta.dirname, "components", "PublicPreviews.tsx"), "utf8")).toContain("getRelatedProjects(legacy, catalogo.map(projectToLegacy))");
   });
 
   it("quello che va mostrato in anteprima non vive dentro una finestra di Mantine", () => {
     // i portali di Modal e Drawer escono dall'iframe: il contenuto va estratto in un componente riusabile
     const profilo = readFileSync(join(cartellaComponenti, "people", "TeamProfileModal.tsx"), "utf8");
     expect(profilo).toContain("export function TeamProfileContent");
-    const anteprima = readFileSync(join(import.meta.dirname, "App.tsx"), "utf8");
+    const anteprima = readFileSync(join(import.meta.dirname, "components", "PublicPreviews.tsx"), "utf8");
     expect(anteprima).toContain("<TeamProfileContent");
     expect(anteprima).not.toContain("<TeamProfileModal");
   });

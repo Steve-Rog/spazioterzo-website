@@ -36,6 +36,7 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - run: npm run lint
       - run: npm run typecheck:worker
       # i test girano anche in verify.yml, ma in parallelo: senza questo passo un push rosso verrebbe pubblicato lo stesso
       - run: npm test

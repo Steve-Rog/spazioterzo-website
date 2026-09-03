@@ -9,13 +9,19 @@ import { describe, expect, it } from "vitest";
  */
 
 const pannello = readFileSync(join(import.meta.dirname, "App.tsx"), "utf8");
+const archivio = readFileSync(join(import.meta.dirname, "components", "ArchiveView.tsx"), "utf8");
+const editorProgetti = readFileSync(join(import.meta.dirname, "editors", "ProjectEditor.tsx"), "utf8");
+const editorPersone = readFileSync(join(import.meta.dirname, "editors", "TeamEditor.tsx"), "utf8");
+const editorSito = readFileSync(join(import.meta.dirname, "editors", "SiteEditor.tsx"), "utf8");
+const frameEditor = readFileSync(join(import.meta.dirname, "components", "EditorFrame.tsx"), "utf8");
+const campiRipetibili = readFileSync(join(import.meta.dirname, "components", "RepeatableFields.tsx"), "utf8");
 const client = readFileSync(join(import.meta.dirname, "api.ts"), "utf8");
 const worker = readFileSync(join(import.meta.dirname, "..", "..", "cloudflare", "src", "index.ts"), "utf8");
 
 describe("ripristino di una revisione", () => {
   it("ricarica i contenuti e fa ripartire l'editor", () => {
     // senza, l'editor resta sui valori di prima e il salvataggio successivo cancella il ripristino
-    expect(pannello).toContain("await onRestored?.()");
+    expect(frameEditor).toContain("await onRestored?.()");
     expect(pannello).toContain("const restored = async () => { setDirty(false); await reload(); setVersioneEditor");
     for (const editor of ["ProjectEditor", "TeamEditor", "SiteEditor"]) {
       expect(pannello, `${editor} non riparte dopo un ripristino`).toContain(`<${editor} onRestored={restored} key={`);
@@ -25,8 +31,8 @@ describe("ripristino di una revisione", () => {
 
 describe("ordine dei contenuti", () => {
   it("sposta rispetto a quello che l'utente vede, non alla lista intera", () => {
-    expect(pannello).toContain("onMove(item, visible[index - 1])");
-    expect(pannello).toContain("onMove(item, visible[index + 1])");
+    expect(archivio).toContain("onMove(item, visible[index - 1])");
+    expect(archivio).toContain("onMove(item, visible[index + 1])");
   });
 
   it("scambia le posizioni in una richiesta sola", () => {
@@ -41,7 +47,7 @@ describe("ordine dei contenuti", () => {
 describe("scritture concorrenti", () => {
   it("il salvataggio dichiara da quale versione parte", () => {
     expect(client).toContain("expectedUpdatedAt");
-    const salvataggi = [...pannello.matchAll(/adminApi\.save\((.*?)\);/g)].map((match) => match[1]);
+    const salvataggi = [...`${editorProgetti}\n${editorPersone}\n${editorSito}`.matchAll(/adminApi\.save\((.*?)\);/g)].map((match) => match[1]);
     expect(salvataggi.length).toBeGreaterThan(0);
     for (const salvataggio of salvataggi) expect(salvataggio, `un salvataggio non manda la versione: ${salvataggio}`).toContain("entity?.updatedAt");
   });
@@ -72,9 +78,8 @@ describe("le risposte del back office non finiscono in cache", () => {
 describe("elenchi scritti una riga per voce", () => {
   it("non ripuliscono il testo mentre si scrive", () => {
     // ripulendo a ogni battitura, lo spazio sparisce appena digitato e l'a capo non si può fare
-    expect(pannello).toContain("function RigheField");
-    expect(pannello).not.toContain('value={value.outcomes.join("\\n")}');
-    expect(pannello).not.toContain('value={block.items.join("\\n")}');
+    expect(campiRipetibili).toContain("function LinesField");
+    expect(campiRipetibili).toContain('const [text, setText] = useState(() => values.join("\\n"))');
+    expect(campiRipetibili).not.toContain('value={values.join("\\n")}');
   });
 });
-
