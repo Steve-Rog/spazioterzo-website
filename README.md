@@ -15,18 +15,19 @@ eseguire `nvm use`: il file `.nvmrc` seleziona la versione corretta.
 
 Le rotte sono dichiarate in `app/routes.ts`; ogni voce punta al rispettivo route module in `app/routes/`.
 
-## Deploy su Vercel
+## Deploy su Cloudflare
 
-Il progetto usa il preset ufficiale `@vercel/react-router` con rendering server-side.
-Vercel rileva React Router automaticamente: non servono `vercel.json`, rewrite manuali
-o una cartella di output configurata a mano.
+Il sito pubblico, le API, il back office e i media vivono tutti su Cloudflare.
+React Router viene renderizzato da un Cloudflare Worker, mentre gli asset statici
+sono serviti dalla stessa infrastruttura: non esistono configurazioni, redirect o
+variabili d'ambiente da mantenere su piattaforme esterne.
 
-- Usa Node `20.19+` oppure `22.12+`, già dichiarato in `package.json`.
-- Collega il repository a Vercel e lascia il Framework Preset su **React Router**.
-- Il comando di build è `npm run build`; Vercel genera autonomamente le funzioni e
-  gli asset pubblici.
-- Le variabili d'ambiente future vanno configurate nel dashboard Vercel per
-  Development, Preview e Production: non inserire segreti nel repository.
+- `development` pubblica il sito su `dev.spazioterzo.it` e l'API su
+  `api.dev.spazioterzo.it`.
+- La produzione è pronta su `anteprima.spazioterzo.it`; il dominio principale si
+  collega al Worker solo al momento della pubblicazione ufficiale.
+- I dettagli di ambienti, domini, segreti e deploy sono in
+  [cloudflare/README.md](cloudflare/README.md).
 
 ## Aggiungere pagine
 
@@ -47,10 +48,10 @@ necessario aggiungere contenuti dinamici, form o regole di caching.
 
 ## Back office e contenuti
 
-Il back office è sviluppato separatamente dal sito pubblico: Vercel continua a
-servire l'interfaccia esistente, mentre API, database e media usano Cloudflare.
-Senza `VITE_CONTENT_API_URL` il sito mantiene i contenuti presenti nel repository;
-quando l'API è configurata legge esclusivamente le revisioni pubblicate.
+Il back office è una parte separata dell'applicazione Cloudflare, con API,
+database e media nello stesso ecosistema. Senza `VITE_CONTENT_API_URL` il sito
+mantiene i contenuti presenti nel repository; quando l'API è configurata legge
+esclusivamente le revisioni pubblicate.
 
 ### Avvio locale
 
@@ -80,17 +81,14 @@ Apri l'admin all'indirizzo indicato da Vite. L'utente locale iniziale è
 Cloudflare Access con codice monouso e JWT validato dal Worker.
 
 Prima del deploy l'associazione deve creare le risorse D1/R2, configurare le
-variabili Access indicate in [cloudflare/README.md](cloudflare/README.md) e
-impostare `VITE_CONTENT_API_URL` nel progetto Vercel.
+variabili Access indicate in [cloudflare/README.md](cloudflare/README.md).
 
 ## Automazioni GitHub e ambienti
 
-Il sito pubblico su Vercel resta indipendente da queste automazioni: nessun push
-invia il frontend pubblico a Cloudflare.
-
 - Pull request e push su `main`: verifiche automatiche (tipi, test, build sito e build admin).
-- Push sul branch `development`: applica le migrazioni al D1 di sviluppo e pubblica il Worker di sviluppo, che serve anche il back office su `admin.dev.spazioterzo.it`.
-- Produzione: non parte mai da un push. Si avvia manualmente da GitHub Actions, richiede la parola `DEPLOY` e va protetta con approvazione GitHub Environment.
+- Push sul branch `development`: applica le migrazioni al D1 di sviluppo e pubblica sito, API e back office Cloudflare.
+- Produzione: non parte mai da un push. Si avvia manualmente da GitHub Actions,
+  richiede la parola `DEPLOY` e va protetta con approvazione GitHub Environment.
 
 Prima di attivare il deploy di sviluppo, in GitHub apri **Settings → Secrets and
 variables → Actions** e crea la variabile `CLOUDFLARE_ACCOUNT_ID`. Poi crea gli

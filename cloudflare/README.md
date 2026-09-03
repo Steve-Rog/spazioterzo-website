@@ -1,8 +1,8 @@
 # Backend Cloudflare
 
-Il backend resta indipendente da Vercel. Il sito pubblico non viene spostato né
-interrotto: finché `VITE_CONTENT_API_URL` non viene impostata su Vercel, continua
-a usare i contenuti nel repository.
+Sito pubblico, API, back office, database e media vivono su Cloudflare. Il sito
+legge le revisioni pubblicate dall'API Cloudflare; in assenza dell'URL API usa i
+contenuti presenti nel repository solo per lo sviluppo locale.
 
 ## Sviluppo locale
 
@@ -31,7 +31,7 @@ Le risorse sono già separate:
 L’admin è un asset statico nello stesso Worker, ma viene servito solo da
 `admin.dev.spazioterzo.it` / `admin.spazioterzo.it`. Le API pubbliche stanno su
 `api…`, i media su `media…/media/`: questo rende l’admin same-origin con le sue API
-e lascia l’API pubblica accessibile al sito Vercel. I domini vengono creati dal deploy
+e lascia l’API pubblica accessibile al sito. I domini vengono creati dal deploy
 come Custom Domains; configurali solo dopo che la zona Cloudflare è **Active**.
 
 ## CI/CD GitHub
@@ -49,13 +49,14 @@ Per ogni token Cloudflare, seleziona l’account dell’associazione e assegna s
 - **Account → D1 → Edit**
 - **Zone → Workers Routes → Edit** (solo sulla zona `spazioterzo.it`)
 
-Non servono permessi DNS, Zone o accesso al sito Vercel per i workflow attuali.
+Non servono permessi DNS o accesso a servizi esterni a Cloudflare per i workflow
+attuali.
 Il token di produzione va conservato esclusivamente nell’Environment `production`.
 
-Il branch `development` effettua il deploy automatico del solo backend di sviluppo.
-`main` esegue soltanto le verifiche. Il workflow di produzione si può avviare
-manualmente da **Actions → Deploy API to production** e richiede di digitare
-`DEPLOY`; non collegarlo a `main` fino alla migrazione esplicita del frontend.
+Il branch `development` effettua il deploy automatico di API, back office e sito
+di sviluppo. `main` esegue soltanto le verifiche. Il workflow di produzione si
+può avviare manualmente da **Actions → Deploy to production** e richiede di
+digitare `DEPLOY`; non collegarlo a `main` senza l'approvazione dell'associazione.
 
 ## Segreti del Worker
 

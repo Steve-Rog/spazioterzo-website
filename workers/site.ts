@@ -17,8 +17,8 @@ export default {
   async fetch(request) {
     const risposta = await handler(request);
 
-    // dev.spazioterzo.it e anteprima.spazioterzo.it servono gli stessi testi del sito vero:
-    // senza questo finirebbero nei motori di ricerca come doppioni, rubandogli posizioni
+    // Il dominio di sviluppo serve gli stessi testi del sito vero: senza questo header
+    // finirebbe nei motori di ricerca come un doppione, rubandogli posizioni.
     if (!domìniPubblici.has(new URL(request.url).hostname)) {
       const intestazioni = new Headers(risposta.headers);
       intestazioni.set("X-Robots-Tag", "noindex, nofollow");

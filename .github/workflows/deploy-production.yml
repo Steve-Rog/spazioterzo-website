@@ -41,6 +41,5 @@ jobs:
       - run: npm test
       - run: npm run db:migrate:production
       - run: npm run deploy:worker:production
-      # il sito pubblico è un Worker a parte: oggi risponde su anteprima.spazioterzo.it,
-      # il dominio vero si aggiunge in wrangler.jsonc il giorno del passaggio
+      # il sito pubblico è un Worker separato, pubblicato sull'ambiente di produzione.
       - run: npm run deploy:site:prod
