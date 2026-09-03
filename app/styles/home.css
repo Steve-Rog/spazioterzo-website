@@ -26,7 +26,6 @@ h2 { font-size: clamp(42px, 5.5vw, 79px); line-height: .98; margin: 0; }
 .vertical-word { position: absolute; z-index: 1; top: 35px; right: clamp(13px, 2vw, 28px); writing-mode: vertical-rl; color: #fff; font: 500 11px 'DM Mono', monospace; letter-spacing: .32em; }
 
 .origin-story { padding: clamp(92px, 10vw, 166px) clamp(24px, 9vw, 150px); position: relative; overflow: hidden; background: var(--ink); color: var(--paper); }
-.origin-story:before { content: '03'; position: absolute; right: -1vw; top: -9vw; color: rgba(244,241,233,.045); font: 600 min(42vw, 620px)/.8 'DM Sans', sans-serif; letter-spacing: -.1em; pointer-events: none; }
 .origin-story mark { padding: 0; background: transparent; color: var(--sun); }
 .origin-intro { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(235px, .43fr) minmax(0, 1fr); align-items: end; gap: clamp(46px, 8vw, 145px); padding-bottom: clamp(68px, 9vw, 136px); }
 .origin-intro .section-label { color: #a9bfbd; margin-bottom: 29px; }
@@ -103,7 +102,6 @@ h2 { font-size: clamp(42px, 5.5vw, 79px); line-height: .98; margin: 0; }
   .manifesto-aside { margin-top: 42px; max-width: 390px; }
   .image-statement { height: 127vw; min-height: 0; margin: 0 12px; }
   .origin-story { padding: 86px 24px 82px; }
-  .origin-story:before { right: -22vw; top: -16vw; font-size: 82vw; }
   .origin-intro { display: block; padding-bottom: 57px; }
   .origin-intro .section-label { margin-bottom: 27px; }
   .origin-prelude { font-size: 17px; }
