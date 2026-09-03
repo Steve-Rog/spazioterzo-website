@@ -9,6 +9,11 @@ h1, h2, h3, p { margin-top: 0; }
 h1, h2, h3 { letter-spacing: -.055em; font-weight: 500; }
 h1 em, h2 em { font-family: 'Playfair Display', Georgia, serif; font-weight: 500; }
 
+/* Maschera delle parole dei titoli: il padding allarga il ritaglio quanto basta a non tagliare
+   le discendenti e i corsivi, il margine negativo lo restituisce all'interlinea. */
+.parola { display: inline-block; overflow: hidden; vertical-align: bottom; padding: .16em .04em .18em; margin: -.16em -.04em -.18em; }
+.parola > span { display: inline-block; }
+
 .site-header-slot { height: 92px; }
 .site-header { width: 100%; height: 92px; display: flex; align-items: center; justify-content: space-between; padding: 18px clamp(24px, 5vw, 76px); position: fixed; top: 0; right: 0; left: 0; z-index: 100; }
 .brand { display: inline-flex; align-items: center; width: 114px; }

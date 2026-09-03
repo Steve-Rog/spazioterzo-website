@@ -28,9 +28,31 @@ describe("quando i contenuti non arrivano", () => {
 describe("quando il JavaScript non arriva", () => {
   it("il contenuto non resta invisibile", () => {
     const reveal = leggi("components", "ui", "Reveal.tsx");
-    // l'effetto si accende dopo l'idratazione: altrimenti l'HTML esce con opacity 0
-    expect(reveal).toContain("initial={anima ? { opacity: 0, y: 26 } : false}");
+    // lo stato nascosto arriva dopo l'idratazione: altrimenti l'HTML esce con opacity 0
+    expect(reveal).toContain("animate={anima ? (inVista ? { opacity: 1, y: 0 } : { opacity: 0, y: 26 }) : undefined}");
     expect(leggi("root.tsx")).toContain("<noscript>");
+  });
+
+  it("i titoli non restano sotto la loro maschera", () => {
+    const titolo = leggi("components", "ui", "SplitHeading.tsx");
+    // stessa regola del Reveal: senza `anima` nessuna parola viene spostata
+    expect(titolo).toContain("animate={anima ? (inVista ? aperta : chiusa) : undefined}");
+    expect(titolo).toContain("initial={anima ? chiusa : false}");
+  });
+
+  it("la fascia fotografica non resta ritagliata", () => {
+    const fascia = leggi("components", "home", "ImageStatement.tsx");
+    expect(fascia).toContain('animate={anima ? { clipPath: inVista ? "inset(0% 0% 0% 0%)" : "inset(16% 9% 16% 9%)" } : undefined}');
+  });
+
+  it("un initial che compare dopo l'idratazione porta con sé una key", () => {
+    // framer-motion legge `initial` solo quando l'elemento compare: senza rimontaggio
+    // l'entrata non parte mai. È il difetto che teneva ferme le animazioni.
+    for (const parti of [["components", "home", "Hero.tsx"], ["components", "ui", "SplitHeading.tsx"]]) {
+      const sorgente = leggi(...parti);
+      expect(sorgente).toMatch(/initial=\{anima/);
+      expect(sorgente).toMatch(/key=\{/);
+    }
   });
 });
 
