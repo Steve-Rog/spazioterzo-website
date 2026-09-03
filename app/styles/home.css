@@ -67,15 +67,16 @@ h2 { font-size: clamp(42px, 5.5vw, 79px); line-height: .98; margin: 0; }
 .button-dark { background: var(--ink); color: var(--paper); display: inline-flex; align-items: center; gap: 25px; padding: 17px 20px; font: 500 11px 'DM Mono', monospace; letter-spacing: .04em; text-transform: uppercase; transition: transform .25s; }
 .button-dark:hover { transform: translateY(-4px); }
 .button-dark span { font-size: 18px; }
-.territory-orbit { width: min(57vw, 790px); aspect-ratio: 1; position: absolute; right: -8vw; top: 50%; transform: translateY(-50%) rotate(-15deg); border: 1px solid rgba(19,43,53,.45); border-radius: 50%; animation: drift 14s ease-in-out infinite alternate; }
-.territory-orbit:before, .territory-orbit:after { content: ''; border: 1px solid rgba(19,43,53,.45); border-radius: 50%; position: absolute; inset: 12%; }
-.territory-orbit:after { inset: 27%; }
-.territory-orbit span { position: absolute; font: 500 10px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .12em; }
-.territory-orbit span:nth-child(1) { top: -7px; left: 22%; }
-.territory-orbit span:nth-child(2) { right: -13px; top: 33%; }
-.territory-orbit span:nth-child(3) { bottom: 10%; left: 9%; }
-.territory-orbit span:nth-child(4) { left: 40%; bottom: 12%; }
-@keyframes drift { to { transform: translateY(-53%) rotate(10deg); } }
+.territory-orbit { width: min(52vw, 740px); aspect-ratio: 1; position: absolute; right: clamp(-44px, 1vw, 18px); top: 50%; transform: translateY(-50%); border: 1px solid rgba(19,43,53,.43); border-radius: 50%; background: radial-gradient(circle at center, rgba(244,241,233,.14) 0 5%, transparent 5.4%); box-shadow: inset 0 0 0 1px rgba(244,241,233,.12), 0 0 0 22px rgba(19,43,53,.035); animation: territory-breathe 10s ease-in-out infinite alternate; }
+.territory-orbit:before, .territory-orbit:after { content: ''; position: absolute; border: 1px solid rgba(19,43,53,.43); border-radius: 50%; }
+.territory-orbit:before { inset: 15%; box-shadow: inset 0 0 0 1px rgba(244,241,233,.1); }
+.territory-orbit:after { inset: 32%; background: rgba(244,241,233,.055); }
+.territory-orbit span { position: absolute; z-index: 1; color: #172e37; font: 500 10px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .12em; white-space: nowrap; }
+.territory-orbit-community { top: 18%; left: 17%; }
+.territory-orbit-group { top: 21%; right: 18%; }
+.territory-orbit-individual { top: 50%; left: 50%; padding: 7px 8px; color: var(--paper) !important; background: #172e37; border-radius: 50%; font-size: 8px !important; letter-spacing: .08em !important; transform: translate(-50%, -50%); }
+@keyframes territory-breathe { to { transform: translateY(calc(-50% - 11px)) scale(1.018); } }
+@keyframes territory-breathe-mobile { to { transform: translateY(-7px) scale(1.018); } }
 
 .contact { position: relative; isolation: isolate; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(330px, .95fr); gap: clamp(54px, 9vw, 170px); min-height: 650px; padding: clamp(108px, 12vw, 188px) clamp(24px, 9vw, 150px) clamp(92px, 9vw, 138px); background: var(--paper); color: var(--ink); }
 .contact:before { content: ''; position: absolute; z-index: -1; width: min(48vw, 710px); aspect-ratio: 1; right: -16vw; bottom: -31vw; border: 1px solid rgba(19,43,53,.3); border-radius: 50%; }
@@ -122,8 +123,10 @@ h2 { font-size: clamp(42px, 5.5vw, 79px); line-height: .98; margin: 0; }
   .service-detail { grid-template-columns: 38px minmax(0, 1fr); gap: 8px; }
   .service-detail p { grid-column: 2; padding: 0 8px 29px 9px; font-size: 17px; line-height: 1.35; }
   .service-detail a { display: none; }
-  .territory { min-height: 670px; padding: 90px 24px; }
-  .territory-orbit { width: 115vw; right: -53vw; top: 59%; }
+  .territory { min-height: 920px; align-items: flex-start; padding: 90px 24px 78px; }
+  .territory-orbit { width: 94vw; right: -8vw; top: auto; bottom: 36px; transform: none; animation-name: territory-breathe-mobile; }
+  .territory-orbit-community { top: 16%; left: 14%; }
+  .territory-orbit-group { right: 23%; }
   .contact { display: block; min-height: 620px; padding: 91px 24px 102px; }
   .contact:before { width: 110vw; right: -62vw; bottom: -43vw; }
   .contact:after { width: 65vw; right: -41vw; bottom: -29vw; }
