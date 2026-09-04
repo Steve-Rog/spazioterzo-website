@@ -1,4 +1,4 @@
-import type { ProjectContent } from "../../shared/content-schema";
+import { contentLimits, type ProjectContent } from "../../shared/content-schema";
 
 export type ProjectFieldName = "title" | "slug" | "subtitle" | "cover" | "coverAlt" | "intro" | "dateRange" | "location" | "audience";
 
@@ -44,3 +44,25 @@ export const emptyImageBlocks = (project: ProjectContent) => project.blocks
 export const mainTheme = (themes: string[]) => themes[0] ?? "";
 export const otherThemes = (themes: string[]) => themes.slice(1);
 export const composeThemes = (main: string, others: string[]) => [main.trim(), ...others].filter(Boolean);
+
+/**
+ * Ripulitura leggera mentre si scrive l'indirizzo: toglie accenti e caratteri non ammessi,
+ * ma lascia stare i trattini ai bordi. Rimuovendoli a ogni battitura, «laboratorio-di-quartiere»
+ * diventerebbe «laboratoriodiquartiere»: il trattino sparirebbe un istante dopo averlo digitato.
+ * La normalizzazione completa (normaliseProjectSlug) va fatta quando il campo perde il fuoco.
+ */
+export const slugWhileTyping = (input: string) => input
+  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  .toLowerCase()
+  .replace(/[^a-z0-9-]+/g, "-")
+  .slice(0, contentLimits.project.slug);
+
+/** Un invito a metà: lo schema pretende sia il testo sia la destinazione, o niente del tutto. */
+export const incompleteCta = (project: ProjectContent) => {
+  const cta = project.cta;
+  if (!cta) return null;
+  if (!cta.label.trim() && !cta.href.trim()) return null;
+  if (!cta.label.trim()) return "L’invito finale ha una destinazione ma non il testo: scrivilo o svuota anche il collegamento.";
+  if (!cta.href.trim()) return "L’invito finale ha un testo ma non porta da nessuna parte: aggiungi l’indirizzo o svuota anche il testo.";
+  return null;
+};

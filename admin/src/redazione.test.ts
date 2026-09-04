@@ -83,3 +83,31 @@ describe("elenchi scritti una riga per voce", () => {
     expect(campiRipetibili).not.toContain('value={values.join("\\n")}');
   });
 });
+
+describe("campi che non vanno ripuliti mentre si scrive", () => {
+  it("l'indirizzo si normalizza quando il campo perde il fuoco", () => {
+    expect(editorProgetti).toContain("slugWhileTyping(slug)");
+    expect(editorProgetti).toContain("onSlugBlur={finishSlug}");
+    expect(editorProgetti).not.toContain('set("slug", normaliseProjectSlug(slug))');
+  });
+
+  it("il blocco segnalato non riporta la pagina su a ogni battitura", () => {
+    expect(editorProgetti).toContain("}, [incompleti]);");
+    expect(editorProgetti).not.toContain("}, [blocks, incompleti]);");
+  });
+
+  it("gli indirizzi mostrati usano il dominio vero", () => {
+    expect(editorProgetti).not.toContain("spazioterzo.org");
+    expect(readFileSync(join(import.meta.dirname, "seo.ts"), "utf8")).not.toContain("spazioterzo.org");
+  });
+});
+
+describe("liste ripetibili", () => {
+  it("non usano come chiave il testo che si sta scrivendo", () => {
+    // con una chiave che cambia a ogni lettera React ricrea la riga: il campo perde il fuoco
+    // e il resto di quello che si sta digitando finisce altrove
+    for (const sorgente of [editorProgetti, editorSito]) {
+      expect(sorgente).not.toMatch(/key=\{`\$\{(link\.href|phone)\}/);
+    }
+  });
+});

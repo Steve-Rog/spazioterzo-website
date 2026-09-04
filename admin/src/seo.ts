@@ -6,7 +6,7 @@ const GOOGLE_DESCRIPTION_CHARS = 155;
 
 export const clampSnippet = (value: string, max: number) => value.length <= max ? value : `${value.slice(0, max - 1).trimEnd()}…`;
 
-export function projectSnippet({ slug, title, subtitle, seoTitle, seoDescription, suffix, origin = "spazioterzo.org" }: {
+export function projectSnippet({ slug, title, subtitle, seoTitle, seoDescription, suffix, origin = "spazioterzo.it" }: {
   slug: string; title: string; subtitle: string; seoTitle?: string; seoDescription?: string; suffix: string; origin?: string;
 }): SeoSnippet {
   const chosenTitle = seoTitle?.trim() || title.trim() || "Titolo progetto";
@@ -20,7 +20,7 @@ export function projectSnippet({ slug, title, subtitle, seoTitle, seoDescription
   };
 }
 
-export function siteSnippet({ suffix, description, origin = "spazioterzo.org" }: { suffix: string; description: string; origin?: string }): SeoSnippet {
+export function siteSnippet({ suffix, description, origin = "spazioterzo.it" }: { suffix: string; description: string; origin?: string }): SeoSnippet {
   const pageTitle = "Psicologia, psicoterapia, comunità";
   return {
     title: clampSnippet(suffix.trim() ? `${pageTitle} — ${suffix.trim()}` : pageTitle, GOOGLE_TITLE_CHARS),

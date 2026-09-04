@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { asRichText, validateProject, type ProjectContent } from "../../shared/content-schema";
-import { composeThemes, emptyImageBlocks, mainTheme, missingInStep, missingProjectFields, otherThemes } from "./project-fields";
+import { composeThemes, emptyImageBlocks, incompleteCta, mainTheme, missingInStep, missingProjectFields, otherThemes, slugWhileTyping } from "./project-fields";
 
 const vuoto: ProjectContent = {
   slug: "", title: "", subtitle: "", statusLabel: "In corso", dateRange: "", location: "", audience: "", themes: [],
@@ -78,5 +78,36 @@ describe("blocchi immagine incompleti", () => {
     const progetto = conBlocchi([{ id: "b", type: "image", src: "  ", alt: "Spazi" }]);
     expect(emptyImageBlocks(progetto)).toEqual([1]);
     expect(validateProject(progetto)).toBe(false);
+  });
+});
+
+describe("indirizzo della pagina mentre si scrive", () => {
+  it("non mangia il trattino appena digitato", () => {
+    // normaliseProjectSlug toglie i trattini ai bordi: applicata a ogni lettera renderebbe
+    // impossibile comporre un indirizzo di più parole
+    expect(slugWhileTyping("laboratorio-")).toBe("laboratorio-");
+    expect(slugWhileTyping("laboratorio-di-")).toBe("laboratorio-di-");
+    expect(slugWhileTyping("laboratorio-di-quartiere")).toBe("laboratorio-di-quartiere");
+  });
+
+  it("ripulisce comunque quello che il server rifiuterebbe", () => {
+    expect(slugWhileTyping("Città Aperta")).toBe("citta-aperta");
+    expect(slugWhileTyping("spazio/terzo?")).toBe("spazio-terzo-");
+  });
+});
+
+describe("invito finale", () => {
+  const conCta = (cta?: { label: string; href: string }): ProjectContent => ({ ...completo, cta });
+
+  it("segnala l'invito lasciato a metà, che il server rifiuterebbe senza spiegazioni", () => {
+    expect(incompleteCta(conCta({ label: "Parliamone", href: "" }))).toContain("non porta da nessuna parte");
+    expect(incompleteCta(conCta({ label: "", href: "/contatti" }))).toContain("non il testo");
+    expect(validateProject(conCta({ label: "Parliamone", href: "" }))).toBe(false);
+  });
+
+  it("tace quando l'invito è completo o assente del tutto", () => {
+    expect(incompleteCta(conCta({ label: "Parliamone", href: "/contatti" }))).toBeNull();
+    expect(incompleteCta(conCta(undefined))).toBeNull();
+    expect(incompleteCta(conCta({ label: "", href: "" }))).toBeNull();
   });
 });

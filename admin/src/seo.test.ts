@@ -7,7 +7,7 @@ describe("projectSnippet", () => {
   it("compone titolo e indirizzo come il sito", () => {
     const snippet = projectSnippet(base);
     expect(snippet.title).toBe("Parole in comune — Spazio Terzo");
-    expect(snippet.url).toBe("spazioterzo.org/progetti/parole-in-comune");
+    expect(snippet.url).toBe("spazioterzo.it/progetti/parole-in-comune");
   });
 
   it("segnala quando sta usando i ripieghi", () => {
@@ -27,7 +27,7 @@ describe("projectSnippet", () => {
   it("regge i campi vuoti senza mostrare stringhe monche", () => {
     const snippet = projectSnippet({ slug: "", title: "", subtitle: "", suffix: "" });
     expect(snippet.title).toBe("Titolo progetto");
-    expect(snippet.url).toBe("spazioterzo.org/progetti/slug-del-progetto");
+    expect(snippet.url).toBe("spazioterzo.it/progetti/slug-del-progetto");
   });
 
   it("taglia come farebbe Google", () => {
@@ -43,7 +43,7 @@ describe("siteSnippet", () => {
     expect(siteSnippet({ suffix: "Spazio Terzo", description: "Associazione di promozione sociale" })).toMatchObject({
       title: "Psicologia, psicoterapia, comunità — Spazio Terzo",
       description: "Associazione di promozione sociale",
-      url: "spazioterzo.org",
+      url: "spazioterzo.it",
       usesFallbackTitle: false,
     });
   });
