@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { asRichText, validateProject, validateSiteSettings, type ProjectContent } from "../../shared/content-schema";
 import { defaultSiteSettings } from "../../shared/default-site-settings";
-import { composeThemes, dropEmptyLines, dropEmptyPairs, emptyImageBlocks, incompleteCta, incompletePair, mainTheme, missingInStep, missingProjectFields, otherThemes, slugWhileTyping } from "./project-fields";
+import { composeThemes, dropEmptyLines, dropEmptyPairs, emptyImageBlocks, incompleteCta, incompletePair, longLine, mainTheme, missingInStep, missingProjectFields, otherThemes, slugWhileTyping } from "./project-fields";
 
 const vuoto: ProjectContent = {
   slug: "", title: "", subtitle: "", statusLabel: "In corso", dateRange: "", location: "", audience: "", themes: [],
@@ -130,5 +130,20 @@ describe("righe ripetibili lasciate a metà", () => {
     const conSocialVuoto = { ...defaultSiteSettings, identity: { ...defaultSiteSettings.identity, socialLinks: [{ label: "", href: "" }] } };
     expect(validateSiteSettings(conSocialVuoto)).toBe(false);
     expect(validateSiteSettings({ ...conSocialVuoto, identity: { ...conSocialVuoto.identity, socialLinks: dropEmptyPairs(conSocialVuoto.identity.socialLinks) } })).toBe(true);
+  });
+});
+
+describe("righe più lunghe di quanto lo schema accetti", () => {
+  it("dice quale riga e quanto è lunga, invece di lasciar rispondere il server", () => {
+    const messaggio = longLine(["breve", "x".repeat(300)], 240, "Risultato");
+    expect(messaggio).toContain("Risultato 2");
+    expect(messaggio).toContain("300 caratteri");
+    // è davvero la condizione che il server rifiuta
+    expect(validateProject({ ...completo, outcomes: ["x".repeat(300)] })).toBe(false);
+  });
+
+  it("tace quando le righe stanno nei limiti", () => {
+    expect(longLine(["breve", "anche questa"], 240, "Risultato")).toBeNull();
+    expect(longLine([], 240, "Risultato")).toBeNull();
   });
 });

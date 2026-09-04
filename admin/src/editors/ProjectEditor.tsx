@@ -14,7 +14,7 @@ import { ProjectPreview } from "../components/PublicPreviews";
 import { LinesField } from "../components/RepeatableFields";
 import { selettoreProgetto } from "../preview-focus";
 import { sanitiseTags } from "../tags";
-import { composeThemes, dropEmptyPairs, emptyImageBlocks, incompleteCta, incompletePair, mainTheme, missingInStep, missingProjectFields, otherThemes, slugWhileTyping, type ProjectFieldName } from "../project-fields";
+import { composeThemes, dropEmptyPairs, emptyImageBlocks, incompleteCta, incompletePair, longLine, mainTheme, missingInStep, missingProjectFields, otherThemes, slugWhileTyping, type ProjectFieldName } from "../project-fields";
 import { SeoPreview } from "../SeoPreview";
 
 type FieldSetter<T> = <K extends keyof T & string>(key: K, value: T[K]) => void;
@@ -64,6 +64,14 @@ export function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedO
     const linkAMetà = incompletePair(linkPuliti, "Link del progetto");
     if (linkAMetà) { setScheda("extra"); notifications.show({ color: "orange", message: linkAMetà }); return; }
     if (linkPuliti.length !== form.values.links.length) set("links", linkPuliti);
+    // le righe troppo lunghe le rifiuta lo schema: meglio dire quale, invece del messaggio generico del server
+    const risultatoLungo = longLine(form.values.outcomes, contentLimits.project.outcome, "Risultato");
+    if (risultatoLungo) { setScheda("story"); notifications.show({ color: "orange", message: risultatoLungo }); return; }
+    for (const [indice, blocco] of form.values.blocks.entries()) {
+      if (blocco.type !== "list") continue;
+      const voceLunga = longLine(blocco.items, contentLimits.project.listItem, `Blocco ${indice + 1}, voce`);
+      if (voceLunga) { setScheda("story"); setBlocchiIncompleti([indice + 1]); notifications.show({ color: "orange", message: voceLunga }); return; }
+    }
     setBlocchiIncompleti(vuoto);
     setErrors({});
     setSaving(true);

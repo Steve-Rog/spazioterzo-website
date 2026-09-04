@@ -87,3 +87,9 @@ export function incompletePair(rows: PairRow[], singolare: string) {
     ? `${singolare} ${posizione + 1}: manca l’indirizzo. Aggiungilo oppure svuota anche il nome.`
     : `${singolare} ${posizione + 1}: manca il nome. Scrivilo oppure svuota anche l’indirizzo.`;
 }
+
+/** Righe più lunghe di quanto lo schema accetti: il server le rifiuta senza dire quale. */
+export function longLine(rows: string[], max: number, singolare: string) {
+  const posizione = rows.findIndex((row) => row.trim().length > max);
+  return posizione < 0 ? null : `${singolare} ${posizione + 1}: ${rows[posizione].trim().length} caratteri, il massimo è ${max}. Accorcialo o dividilo in due.`;
+}

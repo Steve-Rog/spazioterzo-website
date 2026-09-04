@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { validateRichText, type RichText } from "../../shared/content-schema";
-import { normaliseHref, toDocument, toRichText, truncate } from "./rich-text";
+import { plainText, validateRichText, type RichText } from "../../shared/content-schema";
+import { hasManyParagraphs, normaliseHref, toDocument, toRichText, truncate } from "./rich-text";
 
 const roundTrip = (value: RichText) => toRichText(toDocument(value));
 
@@ -71,5 +71,29 @@ describe("conversione RichText <-> tiptap", () => {
     ];
     const converted = toRichText(toDocument(value));
     expect(validateRichText(converted, 600)).toBe(true);
+  });
+});
+
+describe("testo incollato su più righe", () => {
+  const documento = (...righe: string[]) => ({ type: "doc", content: righe.map((testo) => ({ type: "paragraph", content: [{ type: "text", text: testo }] })) });
+
+  it("tiene tutte le righe invece di perdere quelle dopo la prima", () => {
+    // il campo è una riga sola, ma incollando tiptap crea un paragrafo per riga:
+    // leggendo solo il primo, il resto spariva al salvataggio senza avvisare
+    expect(plainText(toRichText(documento("prima riga", "seconda riga")))).toBe("prima riga seconda riga");
+    expect(plainText(toRichText(documento("una sola")))).toBe("una sola");
+  });
+
+  it("riconosce quando c'è da rimettere in riga", () => {
+    expect(hasManyParagraphs(documento("a", "b"))).toBe(true);
+    expect(hasManyParagraphs(documento("a"))).toBe(false);
+  });
+
+  it("conserva la formattazione delle righe successive", () => {
+    const misto = { type: "doc", content: [
+      { type: "paragraph", content: [{ type: "text", text: "prima" }] },
+      { type: "paragraph", content: [{ type: "text", text: "seconda", marks: [{ type: "italic" }] }] },
+    ] };
+    expect(toRichText(misto).at(-1)).toEqual({ text: "seconda", marks: ["italic"] });
   });
 });

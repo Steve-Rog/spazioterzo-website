@@ -21,26 +21,38 @@ export function toDocument(value: RichText): JSONContent {
   return { type: "doc", content: [{ type: "paragraph", ...(content.length ? { content } : {}) }] };
 }
 
-/** Documento tiptap -> RichText, scartando i marchi che il sito non sa rendere. */
+/**
+ * Documento tiptap -> RichText, scartando i marchi che il sito non sa rendere.
+ *
+ * Ogni campo è una riga sola, ma incollando un testo tiptap crea un paragrafo per riga:
+ * leggendo solo il primo, tutto il resto sparirebbe al salvataggio senza che nessuno se
+ * ne accorga. I paragrafi si uniscono con uno spazio.
+ */
 export function toRichText(document: JSONContent): RichText {
-  const nodes = document.content?.[0]?.content ?? [];
+  const paragrafi = (document.content ?? []).filter((nodo) => nodo.type === "paragraph");
   const spans: RichText = [];
-  for (const node of nodes) {
-    if (node.type !== "text" || !node.text) continue;
-    const marks: RichTextMark[] = [];
-    let href: string | undefined;
-    for (const mark of node.marks ?? []) {
-      if (mark.type === "italic" || mark.type === "em") { if (!marks.includes("italic")) marks.push("italic"); }
-      else if (mark.type === "highlight") { if (!marks.includes("highlight")) marks.push("highlight"); }
-      else if (mark.type === "link") { if (!marks.includes("link")) marks.push("link"); href = normaliseHref(mark.attrs?.href as string | undefined); }
+  for (const [indice, paragrafo] of paragrafi.entries()) {
+    if (indice > 0 && spans.length) spans.push({ text: " " });
+    for (const node of paragrafo.content ?? []) {
+      if (node.type !== "text" || !node.text) continue;
+      const marks: RichTextMark[] = [];
+      let href: string | undefined;
+      for (const mark of node.marks ?? []) {
+        if (mark.type === "italic" || mark.type === "em") { if (!marks.includes("italic")) marks.push("italic"); }
+        else if (mark.type === "highlight") { if (!marks.includes("highlight")) marks.push("highlight"); }
+        else if (mark.type === "link") { if (!marks.includes("link")) marks.push("link"); href = normaliseHref(mark.attrs?.href as string | undefined); }
+      }
+      const span: RichText[number] = { text: node.text };
+      if (marks.length) span.marks = marks;
+      if (marks.includes("link")) span.href = href ?? "";
+      spans.push(span);
     }
-    const span: RichText[number] = { text: node.text };
-    if (marks.length) span.marks = marks;
-    if (marks.includes("link")) span.href = href ?? "";
-    spans.push(span);
   }
   return spans.length ? spans : [{ text: "" }];
 }
+
+/** Più paragrafi in un campo che ne accetta uno: succede incollando, e va rimesso in riga. */
+export const hasManyParagraphs = (document: JSONContent) => (document.content ?? []).filter((nodo) => nodo.type === "paragraph").length > 1;
 
 export const sameContent = (a: RichText, b: RichText) => JSON.stringify(a) === JSON.stringify(b);
 

@@ -26,12 +26,14 @@ export class AccessoNegato extends Error {
 }
 
 const TIMEOUT_MS = 12_000;
+/** Caricare un'immagine da 10 MB con un upload domestico richiede molto più di dodici secondi. */
+const TIMEOUT_UPLOAD_MS = 180_000;
 
-async function request<T>(path: string, init: RequestInit = {}) {
+async function request<T>(path: string, init: RequestInit = {}, timeout = TIMEOUT_MS) {
   let response: Response;
   try {
     // senza scadenza una richiesta lasciata a metà tiene la schermata in caricamento per sempre
-    response = await fetch(`${baseUrl}${path}`, { ...init, headers: headers(init.headers), signal: AbortSignal.timeout(TIMEOUT_MS) });
+    response = await fetch(`${baseUrl}${path}`, { ...init, headers: headers(init.headers), signal: AbortSignal.timeout(timeout) });
   } catch {
     throw new ConnessioneAssente();
   }
@@ -62,7 +64,7 @@ export const adminApi = {
   deleteAsset: (id: string) => request<{ id: string }>(`/v1/admin/assets/${encodeURIComponent(id)}`, { method: "DELETE" }),
   upload: async (file: File, alt: string) => {
     const data = new FormData(); data.set("file", file); data.set("alt", alt);
-    return request<{ id: string; url: string; alt: string }>("/v1/admin/assets", { method: "POST", body: data });
+    return request<{ id: string; url: string; alt: string }>("/v1/admin/assets", { method: "POST", body: data }, TIMEOUT_UPLOAD_MS);
   },
 };
 

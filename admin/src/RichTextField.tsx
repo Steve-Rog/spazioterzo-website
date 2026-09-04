@@ -6,7 +6,7 @@ import type { EditorState } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
 import { plainText, type RichText } from "../../shared/content-schema";
-import { sameContent, toDocument, toRichText, truncate } from "./rich-text";
+import { hasManyParagraphs, sameContent, toDocument, toRichText, truncate } from "./rich-text";
 
 export function RichTextField({ label, hint, value, onChange, maxLength = 600 }: { label: string; hint?: string; value: RichText; onChange: (value: RichText) => void; maxLength?: number }) {
   const total = plainText(value).length;
@@ -38,9 +38,13 @@ export function RichTextField({ label, hint, value, onChange, maxLength = 600 }:
       },
     },
     onUpdate: ({ editor: instance }) => {
-      let next = toRichText(instance.getJSON());
-      if (plainText(next).length > maxLength) {
-        next = truncate(next, maxLength);
+      const documento = instance.getJSON();
+      let next = toRichText(documento);
+      const daRimettereInRiga = hasManyParagraphs(documento);
+      if (plainText(next).length > maxLength) next = truncate(next, maxLength);
+      // il campo è una riga sola: quello che si è incollato su più righe va ricomposto subito,
+      // altrimenti sullo schermo resta un testo che al salvataggio verrebbe unito
+      if (daRimettereInRiga || plainText(next).length >= maxLength) {
         instance.commands.setContent(toDocument(next), { emitUpdate: false });
       }
       emitted.current = next;
