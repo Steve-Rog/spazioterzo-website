@@ -5,7 +5,8 @@ import {
 import { useForm } from "@mantine/form";
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { type ContentEntity, type ProjectContent, type SiteSettingsContent, type TeamMemberContent } from "../../shared/content-schema";
+import { IconDots } from "@tabler/icons-react";
+import { contentLimits, type ContentEntity, type ProjectContent, type SiteSettingsContent, type TeamMemberContent } from "../../shared/content-schema";
 import { defaultSiteSettings } from "../../shared/default-site-settings";
 import { adminApi, AccessoNegato, ConnessioneAssente, type AdminResource, type AdminUser } from "./api";
 import { formatRoute, homeRoute, parseRoute, routeKey, sameRoute, type Route, type Section, type SitePanel } from "./routing";

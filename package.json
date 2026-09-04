@@ -20,6 +20,7 @@
     "deploy:worker:production": "npm run build:admin && wrangler deploy --keep-vars --env production --config cloudflare/wrangler.jsonc",
     "dev:admin": "vite --config admin/vite.config.ts",
     "build:admin": "vite build --config admin/vite.config.ts",
+    "typecheck:admin": "tsc -p admin/tsconfig.json",
     "typecheck:worker": "tsc -p cloudflare/tsconfig.json",
     "test": "vitest run",
     "build:site:dev": "CLOUDFLARE_ENV=development VITE_CONTENT_API_URL=https://api.dev.spazioterzo.it react-router build",
