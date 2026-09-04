@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Group, Text } from "@mantine/core";
 import { RichTextEditor, Link } from "@mantine/tiptap";
-import { useEditor, type JSONContent } from "@tiptap/react";
+import { useEditor } from "@tiptap/react";
 import type { EditorState } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";

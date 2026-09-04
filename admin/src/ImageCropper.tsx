@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import { IconPencil, IconRefresh } from "@tabler/icons-react";
 import { ActionIcon, Button, Group, Modal, Slider, Stack, Text, Tooltip } from "@mantine/core";
@@ -32,14 +32,14 @@ export function ImageCropper({ image, value, onChange, title = "Ritaglio immagin
   const [session, setSession] = useState(0);
   const areaRef = useRef<ImageCrop | undefined>(value);
 
-  const resetDraft = (nextValue = value) => {
+  const resetDraft = useCallback((nextValue = value) => {
     setCrop({ x: 0, y: 0 });
     setZoom(zoomFor(nextValue, maxZoom));
     areaRef.current = nextValue;
     setSession((current) => current + 1);
-  };
+  }, [maxZoom, value]);
 
-  useEffect(() => { resetDraft(value); }, [image]);
+  useEffect(() => { resetDraft(value); }, [image, resetDraft, value]);
 
   if (!image) return <div className="crop-empty">Dopo aver scelto l’immagine, qui potrai sistemare l’inquadratura.</div>;
 

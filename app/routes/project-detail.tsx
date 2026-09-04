@@ -1,5 +1,5 @@
 import "../styles/projects.css";
-import { data, useParams, useLoaderData } from "react-router";
+import { data, useLoaderData } from "react-router";
 import { ProjectDetail } from "../components/projects/ProjectDetail";
 import { getRelatedProjects } from "../components/projects/content";
 import { getPublicProject, getPublicProjects, getPublicSite } from "../content/public-api";
@@ -21,8 +21,7 @@ export function meta({ loaderData }: { loaderData?: { project?: Awaited<ReturnTy
 }
 
 export default function ProjectDetailRoute() {
-  const { slug } = useParams();
-  const { project, site, related } = useLoaderData<typeof loader>();
+  const { project, related } = useLoaderData<typeof loader>();
 
   if (!project) {
     return (

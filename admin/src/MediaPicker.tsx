@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AspectRatio, Button, Group, Image, Modal, SimpleGrid, Skeleton, Stack, Text, TextInput } from "@mantine/core";
 import { Dropzone } from "@mantine/dropzone";
 import { notifications } from "@mantine/notifications";
@@ -53,18 +53,22 @@ export function MediaPicker({ label, description, value, onChange, required = fa
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const searchRef = useRef(search);
+  const cursorRef = useRef(nextCursor);
+  searchRef.current = search;
+  cursorRef.current = nextCursor;
 
-  const load = async (append = false) => {
+  const load = useCallback(async (append = false) => {
     setLoading(true);
     try {
-      const page = await adminApi.assets(search, append ? nextCursor ?? undefined : undefined);
+      const page = await adminApi.assets(searchRef.current, append ? cursorRef.current ?? undefined : undefined);
       setAssets((current) => append ? [...current, ...page.items] : page.items);
       setNextCursor(page.nextCursor);
     } catch (error) {
       notifications.show({ color: "red", message: error instanceof Error ? error.message : "Archivio media non disponibile" });
     } finally { setLoading(false); }
-  };
-  useEffect(() => { if (opened) void load(); }, [opened]);
+  }, []);
+  useEffect(() => { if (opened) void load(); }, [opened, load]);
 
   const select = (asset: MediaAsset) => { onChange({ url: asset.url, alt: value.alt || asset.alt, assetId: asset.id }); setOpened(false); };
   const upload = async (files: File[]) => {

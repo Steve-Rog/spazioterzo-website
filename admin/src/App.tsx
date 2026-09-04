@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AppShell, Button, Drawer, Group, Menu, NavLink, ScrollArea, Skeleton, Text, TextInput, UnstyledButton,
 } from "@mantine/core";
@@ -40,6 +40,8 @@ export function App() {
   const [sessioneScaduta, setSessioneScaduta] = useState(false);
   /** Cambia quando una revisione viene ripristinata: entra nella key dell'editor per farlo ripartire dai dati nuovi. */
   const [versioneEditor, setVersioneEditor] = useState(0);
+  const sectionRef = useRef(section);
+  sectionRef.current = section;
   const isMobile = useMediaQuery("(max-width: 767px)");
   const isAdmin = user?.role === "admin";
   const activeTeam = team.filter((item) => item.state !== "archived");
@@ -53,7 +55,7 @@ export function App() {
   const siteContent = site?.draft ?? site?.published;
   const siteSeoDefaults = { suffix: siteContent?.seo.titleSuffix ?? defaultSiteSettings.seo.titleSuffix, shareImage: siteContent?.seo.shareImage };
 
-  const reload = async (initial = false) => {
+  const reload = useCallback(async (initial = false) => {
     if (initial) setLoading(true);
     setOffline(false);
     setSessioneScaduta(false);
@@ -64,7 +66,7 @@ export function App() {
       if (identity.role === "admin") {
         const [listedTeam, listedSite, listedUsers] = await Promise.all([adminApi.list<TeamMemberContent>("team"), adminApi.list<SiteSettingsContent>("site"), adminApi.users()]);
         setTeam(listedTeam); setSite(listedSite[0] ?? null); setUsers(listedUsers);
-      } else { setTeam([]); setSite(null); setUsers([]); if (section !== "projects") { setSection("projects"); setEditingId(null); } }
+      } else { setTeam([]); setSite(null); setUsers([]); if (sectionRef.current !== "projects") { setSection("projects"); setEditingId(null); } }
     } catch (error) {
       if (error instanceof ConnessioneAssente) { setOffline(true); }
       // in produzione l'accesso passa da Cloudflare Access: il modulo con l'email di sviluppo non servirebbe a niente
@@ -74,10 +76,10 @@ export function App() {
         if (window.localStorage.getItem("spazioterzo-dev-email")) notifications.show({ color: "red", message: error instanceof Error ? error.message : "Accesso non disponibile" });
       }
     } finally { if (initial) setLoading(false); }
-  };
-  useEffect(() => { void reload(true); }, []);
+  }, []);
+  useEffect(() => { void reload(true); }, [reload]);
 
-  const route: Route = { section, editingId, sitePanel };
+  const route = useMemo<Route>(() => ({ section, editingId, sitePanel }), [section, editingId, sitePanel]);
   const firstSync = useRef(true);
   // L'indirizzo insegue lo stato: refresh, preferiti e link condivisi tornano dove eri.
   useEffect(() => {
@@ -87,7 +89,9 @@ export function App() {
     if (firstSync.current) window.history.replaceState(null, "", next);
     else window.history.pushState(null, "", next);
     firstSync.current = false;
-  }, [section, editingId, sitePanel]);
+  }, [route]);
+
+  const confirmLeave = useCallback(() => !dirty || window.confirm("Ci sono modifiche non salvate: uscendo vanno perse. Vuoi continuare?"), [dirty]);
 
   // Indietro/avanti del browser e indirizzi scritti a mano: stesso guard delle modifiche non salvate.
   useEffect(() => {
@@ -102,7 +106,7 @@ export function App() {
     window.addEventListener("popstate", apply);
     window.addEventListener("hashchange", apply);
     return () => { window.removeEventListener("popstate", apply); window.removeEventListener("hashchange", apply); };
-  }, [section, editingId, sitePanel, dirty, user]);
+  }, [route, confirmLeave, user]);
 
   // Un indirizzo che punta a un contenuto sparito (archiviato altrove, id sbagliato) non deve lasciare la pagina vuota.
   useEffect(() => {
@@ -120,7 +124,6 @@ export function App() {
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
-  const confirmLeave = () => !dirty || window.confirm("Ci sono modifiche non salvate: uscendo vanno perse. Vuoi continuare?");
   const leaveEditor = (run: () => void) => { if (!confirmLeave()) return; setDirty(false); run(); };
   const navigate = (next: Section) => leaveEditor(() => { setSection(next); setEditingId(next === "site" ? "site" : null); setMobileNavOpened(false); });
   const navigateSite = (panel: SitePanel) => { if (section === "site") { setSitePanel(panel); setMobileNavOpened(false); return; } leaveEditor(() => { setSitePanel(panel); setSection("site"); setEditingId("site"); setMobileNavOpened(false); }); };

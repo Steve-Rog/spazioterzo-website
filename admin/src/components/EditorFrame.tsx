@@ -25,7 +25,7 @@ export type EditorFrameProps = {
   onDirtyChange?: (dirty: boolean) => void;
 };
 
-export function EditorFrame({ title, eyebrow, entity, resource, isAdmin = true, onBack, onSave, saving, dirty = false, preview, children, onPublish, onArchive, onDirtyChange, onRestored }: EditorFrameProps) {
+export function EditorFrame({ title, eyebrow: _eyebrow, entity, resource, isAdmin = true, onBack, onSave, saving, dirty = false, preview, children, onPublish, onArchive, onDirtyChange, onRestored }: EditorFrameProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [revisionsOpen, setRevisionsOpen] = useState(false);
   const notifyDirty = useRef(onDirtyChange);

@@ -39,6 +39,7 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck:admin
       - run: npm run typecheck:worker
+      - run: npm run typecheck
       # i test girano anche in verify.yml, ma in parallelo: senza questo passo un push rosso verrebbe pubblicato lo stesso
       - run: npm test
       - run: npm run db:migrate:production

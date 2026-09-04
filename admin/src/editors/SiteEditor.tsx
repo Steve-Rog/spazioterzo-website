@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActionIcon, Button, Group, Stack, Text, TextInput, Textarea, Tooltip, UnstyledButton } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
@@ -84,12 +84,12 @@ function HomeEditor({ value, update, initialAnchor, onSectionChange }: { value: 
   const scrittoDaNoi = useRef(initialAnchor);
 
   const avvisa = useRef(onSectionChange); avvisa.current = onSectionChange;
-  const segnala = (anchor: string) => {
+  const segnala = useCallback((anchor: string) => {
     setCurrent(anchor);
     avvisa.current?.(anchor);
     scrittoDaNoi.current = anchor;
     window.history.replaceState(null, "", `#/sito/home/${anchor}`);
-  };
+  }, []);
 
   // all'apertura salta alla sezione indicata dall'indirizzo
   useEffect(() => {
@@ -116,12 +116,12 @@ function HomeEditor({ value, update, initialAnchor, onSectionChange }: { value: 
     window.addEventListener("scroll", suScorrimento, { passive: true });
     window.setTimeout(calcola, 200);
     return () => { window.removeEventListener("scroll", suScorrimento); if (richiesta) window.clearTimeout(richiesta); };
-  }, []);
+  }, [segnala]);
 
-  const vai = (anchor: string) => {
+  const vai = useCallback((anchor: string) => {
     containers.current.get(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" });
     segnala(anchor);
-  };
+  }, [segnala]);
 
   // un indirizzo incollato mentre la pagina è già aperta deve comunque portare alla sezione giusta
   useEffect(() => {
@@ -132,7 +132,7 @@ function HomeEditor({ value, update, initialAnchor, onSectionChange }: { value: 
     };
     window.addEventListener("hashchange", suCambioIndirizzo);
     return () => window.removeEventListener("hashchange", suCambioIndirizzo);
-  }, []);
+  }, [vai]);
 
   return <div className="home-editor-layout">
     <nav className="section-map" aria-label="Sezioni della home">
