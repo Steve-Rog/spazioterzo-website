@@ -11,23 +11,26 @@ function TerritoryOrbit() {
   const orbitRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: orbitRef, offset: ["start end", "end start"] });
-  const spring = { stiffness: 74, damping: 24, mass: 0.45 };
+  const spring = { stiffness: 88, damping: 25, mass: 0.42 };
 
-  // Un breve arco, non un loop: lo scroll fa emergere il rapporto tra individuo,
-  // gruppo e comunità senza trasformare il diagramma in un effetto decorativo.
-  const communityX = useSpring(useTransform(scrollYProgress, [0, 0.55, 1], [-32, 14, 42]), spring);
-  const communityY = useSpring(useTransform(scrollYProgress, [0, 0.55, 1], [24, -30, 9]), spring);
-  const groupX = useSpring(useTransform(scrollYProgress, [0, 0.55, 1], [38, -15, -45]), spring);
-  const groupY = useSpring(useTransform(scrollYProgress, [0, 0.55, 1], [-22, 32, -15]), spring);
-  const individualX = useSpring(useTransform(scrollYProgress, [0, 0.55, 1], [-12, 14, 22]), spring);
-  const individualY = useSpring(useTransform(scrollYProgress, [0, 0.55, 1], [12, -15, 8]), spring);
+  // Ogni elemento percorre un arco reale del proprio anello: non è una traslazione libera,
+  // quindi il rapporto individuo → gruppo → comunità rimane leggibile durante lo scroll.
+  const communityAngle = useSpring(useTransform(scrollYProgress, [0, 1], [-76, 86]), spring);
+  const groupAngle = useSpring(useTransform(scrollYProgress, [0, 1], [36, 194]), spring);
+  const satelliteAngle = useSpring(useTransform(scrollYProgress, [0, 1], [-140, 135]), spring);
+  const communityCounterAngle = useSpring(useTransform(scrollYProgress, [0, 1], [76, -86]), spring);
+  const groupCounterAngle = useSpring(useTransform(scrollYProgress, [0, 1], [-36, -194]), spring);
 
   return (
     <motion.div ref={orbitRef} className="territory-orbit" role="img" aria-label="Individuo, gruppo e comunità: tre cerchi concentrici della cura">
-      <span className="territory-orbit-satellite" aria-hidden="true" />
-      <motion.span className="territory-orbit-community" aria-hidden="true" style={reduceMotion ? undefined : { x: communityX, y: communityY }}>Comunità</motion.span>
-      <motion.span className="territory-orbit-group" aria-hidden="true" style={reduceMotion ? undefined : { x: groupX, y: groupY }}>Gruppo</motion.span>
-      <motion.span className="territory-orbit-individual" aria-hidden="true" style={reduceMotion ? undefined : { x: individualX, y: individualY }}>Individuo</motion.span>
+      <motion.span className="territory-orbit-track territory-orbit-community-track" aria-hidden="true" style={{ rotate: reduceMotion ? -76 : communityAngle }}>
+        <motion.span className="territory-orbit-label territory-orbit-community" style={{ rotate: reduceMotion ? 76 : communityCounterAngle }}>Comunità</motion.span>
+      </motion.span>
+      <motion.span className="territory-orbit-track territory-orbit-group-track" aria-hidden="true" style={{ rotate: reduceMotion ? 36 : groupAngle }}>
+        <motion.span className="territory-orbit-label territory-orbit-group" style={{ rotate: reduceMotion ? -36 : groupCounterAngle }}>Gruppo</motion.span>
+      </motion.span>
+      <motion.span className="territory-orbit-satellite" aria-hidden="true" style={{ rotate: reduceMotion ? -140 : satelliteAngle }} />
+      <span className="territory-orbit-individual" aria-hidden="true">Individuo</span>
     </motion.div>
   );
 }

@@ -64,18 +64,17 @@ h2 { font-size: clamp(42px, 5.5vw, 79px); line-height: .98; margin: 0; }
 .button-dark { background: var(--ink); color: var(--paper); display: inline-flex; align-items: center; gap: 25px; padding: 17px 20px; font: 500 11px 'DM Mono', monospace; letter-spacing: .04em; text-transform: uppercase; transition: transform .25s; }
 .button-dark:hover { transform: translateY(-4px); }
 .button-dark span { font-size: 18px; }
-.territory-orbit { width: min(52vw, 740px); aspect-ratio: 1; position: absolute; right: clamp(-44px, 1vw, 18px); top: 50%; transform: translateY(-50%); border: 1px solid rgba(19,43,53,.43); border-radius: 50%; background: radial-gradient(circle at center, rgba(244,241,233,.14) 0 5%, transparent 5.4%); box-shadow: inset 0 0 0 1px rgba(244,241,233,.12), 0 0 0 22px rgba(19,43,53,.035); animation: territory-breathe 10s ease-in-out infinite alternate; }
+.territory-orbit { width: min(52vw, 740px); aspect-ratio: 1; position: absolute; right: clamp(-44px, 1vw, 18px); top: 50%; transform: translateY(-50%); border: 1px solid rgba(19,43,53,.5); border-radius: 50%; background: radial-gradient(circle at center, rgba(244,241,233,.16) 0 5%, transparent 5.4%); box-shadow: inset 0 0 0 1px rgba(244,241,233,.15), 0 0 0 22px rgba(19,43,53,.035); animation: territory-breathe 10s ease-in-out infinite alternate; }
 .territory-orbit:before, .territory-orbit:after { content: ''; position: absolute; border: 1px solid rgba(19,43,53,.43); border-radius: 50%; }
-/* I due anelli tratteggiati girano in senso opposto: è il tratteggio a rendere leggibile
-   la rotazione, su un cerchio pieno non si vedrebbe nulla. */
-.territory-orbit:before { inset: 15%; border-style: dashed; box-shadow: inset 0 0 0 1px rgba(244,241,233,.1); animation: orbit-spin 54s linear infinite; }
-.territory-orbit:after { inset: 32%; border-style: dashed; background: rgba(244,241,233,.055); animation: orbit-spin 38s linear infinite reverse; }
-.territory-orbit-satellite { position: absolute; inset: 15%; animation: orbit-spin 19s linear infinite; }
-.territory-orbit-satellite:before { content: ''; position: absolute; top: -6px; left: 50%; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: #172e37; box-shadow: 0 0 0 7px rgba(23,46,55,.14); }
-@keyframes orbit-spin { to { transform: rotate(360deg); } }
-.territory-orbit span { position: absolute; z-index: 1; color: #172e37; font: 500 10px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .12em; white-space: nowrap; }
-.territory-orbit-community { top: 18%; left: 17%; }
-.territory-orbit-group { top: 21%; right: 18%; }
+.territory-orbit:before { inset: 15%; border-style: dashed; box-shadow: inset 0 0 0 1px rgba(244,241,233,.12); }
+.territory-orbit:after { inset: 32%; border-color: rgba(19,43,53,.58); border-style: dashed; background: rgba(244,241,233,.06); }
+.territory-orbit-track, .territory-orbit-satellite { position: absolute; z-index: 1; transform-origin: center; }
+.territory-orbit-community-track { inset: 0; }
+.territory-orbit-group-track { inset: 15%; }
+.territory-orbit-satellite { inset: 32%; }
+.territory-orbit-satellite:before { content: ''; position: absolute; top: -7px; left: 50%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: #172e37; box-shadow: 0 0 0 7px rgba(23,46,55,.15), 0 0 0 1px rgba(244,241,233,.35); }
+.territory-orbit-label, .territory-orbit-individual { position: absolute; z-index: 1; color: #172e37; font: 500 10px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .12em; white-space: nowrap; }
+.territory-orbit-label { top: 0; left: 50%; translate: -50% -50%; padding: 6px 8px; border: 1px solid rgba(19,43,53,.28); border-radius: 999px; background: rgba(245,163,17,.86); box-shadow: 0 1px 0 rgba(244,241,233,.32); }
 .territory-orbit-individual { top: 50%; left: 50%; padding: 7px 8px; color: var(--paper) !important; background: #172e37; border-radius: 50%; font-size: 8px !important; letter-spacing: .08em !important; transform: translate(-50%, -50%); }
 @keyframes territory-breathe { to { transform: translateY(calc(-50% - 11px)) scale(1.018); } }
 @keyframes territory-breathe-mobile { to { transform: translateY(-7px) scale(1.018); } }
@@ -127,8 +126,6 @@ h2 { font-size: clamp(42px, 5.5vw, 79px); line-height: .98; margin: 0; }
   .service-detail a { display: none; }
   .territory { min-height: 920px; align-items: flex-start; padding: 90px 24px 78px; }
   .territory-orbit { width: 94vw; right: -8vw; top: auto; bottom: 36px; transform: none; animation-name: territory-breathe-mobile; }
-  .territory-orbit-community { top: 16%; left: 14%; }
-  .territory-orbit-group { right: 23%; }
   .contact { display: block; min-height: 620px; padding: 91px 24px 102px; }
   .contact:before { width: 110vw; right: -62vw; bottom: -43vw; }
   .contact:after { width: 65vw; right: -41vw; bottom: -29vw; }
