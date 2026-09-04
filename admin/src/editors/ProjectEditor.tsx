@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActionIcon, Button, Group, Menu, MultiSelect, Select, Stack, Stepper, Tabs, TagsInput, Text, TextInput, Textarea, UnstyledButton } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
@@ -10,18 +10,17 @@ import { MediaPicker } from "../MediaPicker";
 import { RichTextField } from "../RichTextField";
 import { projectSnippet } from "../seo";
 import { EditorFrame } from "../components/EditorFrame";
+import { FieldCounter, SectionHeading, SectionTitleContext } from "../components/FormParts";
+import { clone, type FieldSetter } from "../form";
 import { ProjectPreview } from "../components/PublicPreviews";
 import { LinesField } from "../components/RepeatableFields";
 import { selettoreProgetto } from "../preview-focus";
 import { sanitiseTags } from "../tags";
-import { composeThemes, dropEmptyPairs, emptyImageBlocks, incompleteCta, incompletePair, longLine, mainTheme, missingInStep, missingProjectFields, otherThemes, slugWhileTyping, type ProjectFieldName } from "../project-fields";
+import { composeThemes, dropEmptyPairs, firstProjectProblem, mainTheme, missingInStep, missingProjectFields, otherThemes, slugWhileTyping, type ProjectFieldName, type ProjectProblem, type ProjectRequirement } from "../project-fields";
 import { SeoPreview } from "../SeoPreview";
 
-type FieldSetter<T> = <K extends keyof T & string>(key: K, value: T[K]) => void;
-const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 const blankProject = (): ProjectContent => ({ slug: "", title: "", subtitle: "", statusLabel: "In corso", dateRange: "", location: "", audience: "", themes: [], cover: "", coverAlt: "", intro: asRichText(""), objective: asRichText(""), blocks: [], outcomesHeading: clone(defaultProjectOutcomesHeading), outcomes: [], links: [], partners: [], funders: [], relatedSlugs: [] });
 const vuoto: number[] = [];
-const SectionTitleContext = createContext(false);
 
 export function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedOptions, catalogo, onBack, onSaved, onPublish, onArchive, onDirtyChange, onRestored }: { onRestored?: () => Promise<void>; entity?: ContentEntity<ProjectContent>; isAdmin: boolean; siteSeo: { suffix: string; shareImage?: string }; siteSettings: SiteSettingsContent; relatedOptions: Array<{ value: string; label: string }>; catalogo: ProjectContent[]; onBack: () => void; onSaved: (entity: ContentEntity, message?: string) => Promise<void>; onPublish: (resource: AdminResource, id: string) => Promise<void>; onArchive: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {
   const form = useForm<ProjectContent>({ mode: "controlled", initialValues: clone(entity?.draft ?? entity?.published ?? blankProject()) });
@@ -35,11 +34,10 @@ export function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedO
   const newProject = !entity;
   const missing = missingProjectFields(form.values);
 
-  const showMissing = (fields: typeof missing) => {
+  const showMissing = (fields: ProjectRequirement[]) => {
     setErrors(Object.fromEntries(fields.map((requirement) => [requirement.field, requirement.message])));
     const first = fields[0];
     if (!first) return;
-    if (newProject && first.step !== step) setStep(first.step);
     window.setTimeout(() => {
       const target = document.querySelector<HTMLElement>(`[data-field="${first.field}"]`);
       const input = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement ? target : target?.querySelector<HTMLElement>("input, textarea") ?? null;
@@ -48,30 +46,21 @@ export function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedO
     }, 60);
   };
 
+  // porta dove sta il problema — passo dello stepper quando si crea, scheda quando si modifica — e lo dice
+  const segnala = (problema: ProjectProblem) => {
+    if (newProject) { if (problema.step !== step) setStep(problema.step); } else setScheda(problema.tab);
+    setBlocchiIncompleti(problema.blocks ?? vuoto);
+    if (problema.fields) showMissing(problema.fields); else setErrors({});
+    notifications.show({ color: "orange", message: problema.message });
+  };
+
   const save = async () => {
-    if (missing.length) { showMissing(missing); notifications.show({ color: "orange", message: `Manca ancora: ${missing.map((requirement) => requirement.label.toLowerCase()).join(", ")}.` }); return; }
-    const senzaFoto = emptyImageBlocks(form.values);
-    if (senzaFoto.length) {
-      setBlocchiIncompleti(senzaFoto);
-      if (newProject) setStep(2); else setScheda("story");
-      notifications.show({ color: "orange", message: senzaFoto.length === 1 ? `Il blocco ${senzaFoto[0]} del racconto è un’immagine senza foto: scegline una o elimina il blocco.` : `Blocchi ${senzaFoto.join(", ")} del racconto: sono immagini senza foto.` });
-      return;
-    }
-    const invito = incompleteCta(form.values);
-    if (invito) { setScheda("extra"); notifications.show({ color: "orange", message: invito }); return; }
-    // le righe vuote le toglie il salvataggio; quelle a metà le deve sistemare chi scrive
+    // un solo controllo prima di salvare, invece di cinque in fila: vedi firstProjectProblem
+    const problema = firstProjectProblem(form.values);
+    if (problema) { segnala(problema); return; }
+    // le righe vuote le toglie il salvataggio; quelle a metà le ha già fermate il controllo qui sopra
     const linkPuliti = dropEmptyPairs(form.values.links);
-    const linkAMetà = incompletePair(linkPuliti, "Link del progetto");
-    if (linkAMetà) { setScheda("extra"); notifications.show({ color: "orange", message: linkAMetà }); return; }
     if (linkPuliti.length !== form.values.links.length) set("links", linkPuliti);
-    // le righe troppo lunghe le rifiuta lo schema: meglio dire quale, invece del messaggio generico del server
-    const risultatoLungo = longLine(form.values.outcomes, contentLimits.project.outcome, "Risultato");
-    if (risultatoLungo) { setScheda("story"); notifications.show({ color: "orange", message: risultatoLungo }); return; }
-    for (const [indice, blocco] of form.values.blocks.entries()) {
-      if (blocco.type !== "list") continue;
-      const voceLunga = longLine(blocco.items, contentLimits.project.listItem, `Blocco ${indice + 1}, voce`);
-      if (voceLunga) { setScheda("story"); setBlocchiIncompleti([indice + 1]); notifications.show({ color: "orange", message: voceLunga }); return; }
-    }
     setBlocchiIncompleti(vuoto);
     setErrors({});
     setSaving(true);
@@ -102,7 +91,7 @@ export function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedO
 
   return <form onSubmit={(event) => { event.preventDefault(); void save(); }}><EditorFrame title={entity ? form.values.title || "Progetto senza titolo" : "Nuovo progetto"} eyebrow={entity ? "Modifica progetto" : "Crea progetto"} entity={entity} resource="projects" isAdmin={isAdmin} onBack={onBack} onSave={() => void save()} saving={saving} dirty={form.isDirty()} preview={<ProjectPreview project={form.values} site={siteSettings} catalogo={catalogo} focus={selettoreProgetto(scheda)} />} onPublish={onPublish} onArchive={onArchive} onDirtyChange={onDirtyChange} onRestored={onRestored}>
     {newProject
-      ? <><Stepper active={step} onStepClick={goToStep} allowNextStepsSelect={false} className="project-stepper"><Stepper.Step label="Copertina e apertura" description="Quello che si vede per primo">{opening}</Stepper.Step><Stepper.Step label="Il progetto" description="Frase di apertura e scheda dati">{overview}</Stepper.Step><Stepper.Step label="Il racconto" description="Intenzione e blocchi">{story}</Stepper.Step><Stepper.Completed><ReviewProject project={form.values} missing={missing} onFix={() => showMissing(missing)} /></Stepper.Completed></Stepper><Group className="stepper-actions" justify="space-between" mt="xl"><Button variant="default" disabled={step === 0} onClick={() => goToStep(step - 1)}>Indietro</Button>{step < 3 ? <Button color="orange" onClick={() => goToStep(step + 1)}>{step === 2 ? "Rivedi e salva" : "Continua"}</Button> : <Button color="orange" loading={saving} onClick={() => void save()}>Crea il progetto</Button>}</Group></>
+      ? <><Stepper active={step} onStepClick={goToStep} allowNextStepsSelect={false} className="project-stepper"><Stepper.Step label="Copertina e apertura" description="Quello che si vede per primo">{opening}</Stepper.Step><Stepper.Step label="Il progetto" description="Frase di apertura e scheda dati">{overview}</Stepper.Step><Stepper.Step label="Il racconto" description="Intenzione e blocchi">{story}</Stepper.Step><Stepper.Completed><ReviewProject project={form.values} missing={missing} onFix={() => { const problema = firstProjectProblem(form.values); if (problema) segnala(problema); }} /></Stepper.Completed></Stepper><Group className="stepper-actions" justify="space-between" mt="xl"><Button variant="default" disabled={step === 0} onClick={() => goToStep(step - 1)}>Indietro</Button>{step < 3 ? <Button color="orange" onClick={() => goToStep(step + 1)}>{step === 2 ? "Rivedi e salva" : "Continua"}</Button> : <Button color="orange" loading={saving} onClick={() => void save()}>Crea il progetto</Button>}</Group></>
       : <SectionTitleContext.Provider value><Tabs value={scheda} onChange={setScheda} className="editor-tabs"><Tabs.List><Tabs.Tab value="opening">Copertina e apertura</Tabs.Tab><Tabs.Tab value="overview">Il progetto</Tabs.Tab><Tabs.Tab value="story">Il racconto</Tabs.Tab><Tabs.Tab value="extra">Diario, reti e inviti</Tabs.Tab><Tabs.Tab value="seo">SEO</Tabs.Tab></Tabs.List><Tabs.Panel value="opening">{opening}</Tabs.Panel><Tabs.Panel value="overview">{overview}</Tabs.Panel><Tabs.Panel value="story">{story}{outcomes}</Tabs.Panel><Tabs.Panel value="extra">{diary}{network}{invite}</Tabs.Panel><Tabs.Panel value="seo">{seo}</Tabs.Panel></Tabs></SectionTitleContext.Provider>}
   </EditorFrame></form>;
 }
@@ -118,9 +107,7 @@ function ProjectOutcomes({ value, set }: { value: ProjectContent; set: FieldSett
 function ProjectDiary({ value, set }: { value: ProjectContent; set: FieldSetter<ProjectContent> }) { return <section className="form-section"><SectionHeading title="Nel diario del progetto" hint="I link che il sito mostra come aggiornamenti del progetto." shape="notes" /><LinksEditor links={value.links} onChange={(next) => set("links", next)} /></section>; }
 function ProjectNetwork({ value, set }: { value: ProjectContent; set: FieldSetter<ProjectContent> }) { return <section className="form-section"><SectionHeading title="Reti e trasparenza" hint="Chi c’è dietro il progetto e cosa dichiariamo apertamente." shape="notes" /><div className="form-grid"><TagsInput label="Partner" description="Scrivi e premi Invio per ognuno" placeholder="Aggiungi un partner" maxTags={30} value={value.partners} onChange={(next) => set("partners", sanitiseTags(next, { maxItems: 30, maxLength: contentLimits.project.partner }))} /><TagsInput label="Finanziatori" description="Scrivi e premi Invio per ognuno" placeholder="Aggiungi un finanziatore" maxTags={30} value={value.funders} onChange={(next) => set("funders", sanitiseTags(next, { maxItems: 30, maxLength: contentLimits.project.partner }))} /></div><Textarea label="Nota di visibilità" description="Cosa raccontiamo e cosa no, per rispetto delle persone coinvolte" maxLength={contentLimits.project.visibilityNote} autosize minRows={3} value={value.visibilityNote ?? ""} onChange={(event) => set("visibilityNote", event.currentTarget.value || undefined)} /></section>; }
 function ProjectInvite({ value, set, relatedOptions }: { value: ProjectContent; set: FieldSetter<ProjectContent>; relatedOptions: Array<{ value: string; label: string }> }) { return <section className="form-section"><SectionHeading title="Invito finale e altri progetti" hint="Chiudono la pagina: l’invito a partecipare e i rimandi ad altri progetti." shape="cta" /><div className="form-grid"><TextInput label="Testo dell’invito" description="Esempio: «Parliamone insieme»" maxLength={contentLimits.project.ctaLabel} value={value.cta?.label ?? ""} onChange={(event) => set("cta", { label: event.currentTarget.value, href: value.cta?.href ?? "" })} /><TextInput label="Dove porta l’invito" placeholder="/contatti" maxLength={2_000} value={value.cta?.href ?? ""} onChange={(event) => set("cta", { label: value.cta?.label ?? "", href: event.currentTarget.value })} /></div><MultiSelect label="Progetti correlati" description="Scegli fra i progetti esistenti" placeholder={value.relatedSlugs.length ? undefined : "Nessun progetto collegato"} searchable clearable maxValues={20} data={[...relatedOptions, ...value.relatedSlugs.filter((slug) => !relatedOptions.some((option) => option.value === slug)).map((slug) => ({ value: slug, label: `${slug} — non trovato` }))]} value={value.relatedSlugs} onChange={(next) => set("relatedSlugs", next)} /></section>; }
-function SectionHeading({ title, hint, shape }: { title: string; hint: string; shape: "hero" | "overview" | "story" | "outcomes" | "notes" | "cta" }) { const compatta = useContext(SectionTitleContext); return <div className="section-heading section-heading-mapped"><div>{!compatta && <h2>{title}</h2>}<p>{hint}</p></div><span className={`page-shape page-shape-${shape}`} aria-hidden="true" /></div>; }
 function ProjectSeo({ value, set, suffix, shareImage }: { value: ProjectContent; set: FieldSetter<ProjectContent>; suffix: string; shareImage?: string }) { const snippet = projectSnippet({ slug: value.slug, title: value.title, subtitle: value.subtitle, seoTitle: value.seoTitle, seoDescription: value.seoDescription, suffix }); return <section className="form-section"><div className="section-heading"><h2>SEO</h2><p>Compila solo se il progetto deve comparire in ricerca con parole diverse dal titolo e dal sottotitolo.</p></div><div className="seo-layout"><div className="seo-fields"><TextInput label="Titolo SEO" description={`Consigliati meno di 60 caratteri, suffisso «${suffix}» incluso`} maxLength={contentLimits.project.seoTitle} value={value.seoTitle ?? ""} onChange={(event) => set("seoTitle", event.currentTarget.value || undefined)} /><FieldCounter length={(value.seoTitle ?? "").length} max={contentLimits.project.seoTitle} /><Textarea label="Descrizione SEO" description="Consigliati 120-155 caratteri" maxLength={contentLimits.project.seoDescription} autosize minRows={3} value={value.seoDescription ?? ""} onChange={(event) => set("seoDescription", event.currentTarget.value || undefined)} /><FieldCounter length={(value.seoDescription ?? "").length} max={contentLimits.project.seoDescription} /></div><SeoPreview snippet={snippet} shareImage={shareImage ?? value.cover} shareAlt={value.coverAlt} /></div></section>; }
-function FieldCounter({ length, max }: { length: number; max: number }) { return <Text size="xs" ta="right" c={length > max * .9 ? "orange" : "dimmed"} aria-live="polite">{length}/{max}</Text>; }
 
 const blockLabels: Record<ProjectBlock["type"], string> = { paragraph: "Testo", quote: "Citazione", list: "Elenco", image: "Immagine", stat: "Dato" };
 function blockSummary(block: ProjectBlock): string { if (block.type === "paragraph" || block.type === "quote") return plainText(block.text).trim() || "Testo da scrivere"; if (block.type === "list") return [block.title.trim(), block.items.length ? `${block.items.length} ${block.items.length === 1 ? "voce" : "voci"}` : "nessuna voce"].filter(Boolean).join(" · "); if (block.type === "image") return block.caption?.trim() || block.alt.trim() || "Immagine da scegliere"; return [block.value.trim(), block.label.trim()].filter(Boolean).join(" ") || "Dato da compilare"; }

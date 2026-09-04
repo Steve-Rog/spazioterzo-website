@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { asRichText, validateProject, validateSiteSettings, type ProjectContent } from "../../shared/content-schema";
 import { defaultSiteSettings } from "../../shared/default-site-settings";
-import { composeThemes, dropEmptyLines, dropEmptyPairs, emptyImageBlocks, incompleteCta, incompletePair, longLine, mainTheme, missingInStep, missingProjectFields, otherThemes, slugWhileTyping } from "./project-fields";
+import { composeThemes, dropEmptyLines, dropEmptyPairs, emptyImageBlocks, firstProjectProblem, incompleteCta, incompletePair, longLine, mainTheme, missingInStep, missingProjectFields, otherThemes, slugWhileTyping } from "./project-fields";
 
 const vuoto: ProjectContent = {
   slug: "", title: "", subtitle: "", statusLabel: "In corso", dateRange: "", location: "", audience: "", themes: [],
@@ -145,5 +145,60 @@ describe("righe più lunghe di quanto lo schema accetti", () => {
   it("tace quando le righe stanno nei limiti", () => {
     expect(longLine(["breve", "anche questa"], 240, "Risultato")).toBeNull();
     expect(longLine([], 240, "Risultato")).toBeNull();
+  });
+});
+
+describe("un solo controllo prima di salvare", () => {
+  it("tace quando il progetto è salvabile: quello che passa di qui lo accetta anche il server", () => {
+    expect(firstProjectProblem(completo)).toBeNull();
+    expect(validateProject(completo)).toBe(true);
+  });
+
+  it("parte dai campi obbligatori e indica dove sistemarli", () => {
+    const problema = firstProjectProblem(vuoto);
+    expect(problema?.message).toContain("Manca ancora: titolo");
+    expect(problema?.fields?.map((requirement) => requirement.field)).toEqual(["title", "slug", "subtitle", "cover", "coverAlt", "dateRange", "location", "audience"]);
+    expect(problema).toMatchObject({ tab: "opening", step: 0 });
+  });
+
+  it("porta nella scheda del campo mancante, non sempre nella prima", () => {
+    expect(firstProjectProblem({ ...completo, location: "" })).toMatchObject({ tab: "overview", step: 1 });
+  });
+
+  it("segnala il blocco immagine senza foto, dicendo quale aprire", () => {
+    const progetto = { ...completo, blocks: [{ id: "a", type: "image", src: "", alt: "Senza foto" }] as ProjectContent["blocks"] };
+    expect(firstProjectProblem(progetto)).toMatchObject({ tab: "story", step: 2, blocks: [1] });
+  });
+
+  it("segnala la voce d'elenco troppo lunga indicando il suo blocco", () => {
+    const progetto = { ...completo, blocks: [{ id: "a", type: "list", title: "Elenco", items: ["x".repeat(400)] }] as ProjectContent["blocks"] };
+    const problema = firstProjectProblem(progetto);
+    expect(problema?.message).toContain("Blocco 1, voce 1");
+    expect(problema).toMatchObject({ tab: "story", blocks: [1] });
+    expect(validateProject(progetto)).toBe(false);
+  });
+
+  it("numera i link a metà come si vedono nell'editor, righe vuote comprese", () => {
+    // il controllo guarda l'elenco così com'è: se contasse solo le righe piene, la posizione
+    // nel messaggio non corrisponderebbe a quella sullo schermo
+    const progetto = { ...completo, links: [{ label: "", href: "", kind: "website" as const }, { label: "Instagram", href: "", kind: "website" as const }] };
+    expect(firstProjectProblem(progetto)).toMatchObject({ tab: "extra", message: expect.stringContaining("Link del progetto 2") });
+  });
+
+  it("segnala l'invito finale lasciato a metà", () => {
+    const progetto = { ...completo, cta: { label: "Parliamone", href: "" } };
+    expect(firstProjectProblem(progetto)).toMatchObject({ tab: "extra" });
+    expect(validateProject(progetto)).toBe(false);
+  });
+
+  it("riporta al problema più in alto nella pagina quando ce n'è più d'uno", () => {
+    const progetto: ProjectContent = {
+      ...completo, title: "",
+      blocks: [{ id: "a", type: "image", src: "", alt: "Senza foto" }],
+      cta: { label: "Parliamone", href: "" },
+    };
+    expect(firstProjectProblem(progetto)?.fields?.[0].field).toBe("title");
+    expect(firstProjectProblem({ ...progetto, title: "Titolo" })).toMatchObject({ blocks: [1] });
+    expect(firstProjectProblem({ ...progetto, title: "Titolo", blocks: [] })).toMatchObject({ tab: "extra" });
   });
 });

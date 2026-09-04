@@ -9,11 +9,10 @@ import { ImageCropper } from "../ImageCropper";
 import { MediaPicker } from "../MediaPicker";
 import { RichTextField } from "../RichTextField";
 import { EditorFrame } from "../components/EditorFrame";
+import { clone, type FieldSetter } from "../form";
 import { RichTextList } from "../components/RepeatableFields";
 import { TeamPreview } from "../components/PublicPreviews";
 
-type FieldSetter<T> = <K extends keyof T & string>(key: K, value: T[K]) => void;
-const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 const blankTeamMember = (): TeamMemberContent => ({ name: "", role: "", image: "", bio: [asRichText("")], quote: asRichText("") });
 
 export function TeamEditor({ entity, teamCount, teamIndex, onBack, onSaved, onPublish, onArchive, onDirtyChange, onRestored }: { onRestored?: () => Promise<void>; entity?: ContentEntity<TeamMemberContent>; teamCount: number; teamIndex: number; onBack: () => void; onSaved: (entity: ContentEntity, message?: string) => Promise<void>; onPublish: (resource: AdminResource, id: string) => Promise<void>; onArchive: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {

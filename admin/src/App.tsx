@@ -9,6 +9,7 @@ import { IconDots } from "@tabler/icons-react";
 import { contentLimits, type ContentEntity, type ProjectContent, type SiteSettingsContent, type TeamMemberContent } from "../../shared/content-schema";
 import { defaultSiteSettings } from "../../shared/default-site-settings";
 import { adminApi, AccessoNegato, ConnessioneAssente, type AdminResource, type AdminUser } from "./api";
+import { clone } from "./form";
 import { formatRoute, homeRoute, parseRoute, routeKey, sameRoute, type Route, type Section, type SitePanel } from "./routing";
 import { ArchiveView } from "./components/ArchiveView";
 import { ProjectEditor } from "./editors/ProjectEditor";
@@ -17,7 +18,6 @@ import { TeamEditor } from "./editors/TeamEditor";
 import { UserManagement } from "./components/UserManagement";
 
 type User = { email: string; role: "admin" | "editor" };
-const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 const resourceFor = (section: Section): AdminResource => section === "projects" ? "projects" : section === "team" ? "team" : "site";
 
 function saveLocalEmail(email: string) { window.localStorage.setItem("spazioterzo-dev-email", email.trim().toLowerCase()); window.location.reload(); }

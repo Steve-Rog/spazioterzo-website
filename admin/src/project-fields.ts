@@ -93,3 +93,59 @@ export function longLine(rows: string[], max: number, singolare: string) {
   const posizione = rows.findIndex((row) => row.trim().length > max);
   return posizione < 0 ? null : `${singolare} ${posizione + 1}: ${rows[posizione].trim().length} caratteri, il massimo è ${max}. Accorcialo o dividilo in due.`;
 }
+
+/** Dove sta il problema, per portare l'editor nel punto giusto: scheda (progetto esistente) o passo (creazione). */
+export type ProjectProblem = {
+  message: string;
+  tab: "opening" | "overview" | "story" | "extra";
+  step: 0 | 1 | 2;
+  /** Campi da segnare in rosso, con il messaggio accanto a ognuno. */
+  fields?: ProjectRequirement[];
+  /** Blocchi del racconto da aprire e portare in vista (posizioni 1, 2, 3… come nell'editor). */
+  blocks?: number[];
+};
+
+const problem = (message: string, tab: ProjectProblem["tab"], step: ProjectProblem["step"], extra: Partial<ProjectProblem> = {}): ProjectProblem => ({ message, tab, step, ...extra });
+
+/**
+ * Il primo problema che impedisce il salvataggio, e dove sistemarlo.
+ *
+ * Il server rifiuta tutte queste condizioni con un unico messaggio generico di contenuto non
+ * valido: chi scrive resterebbe senza sapere quale campo guardare. I controlli sono in un posto
+ * solo — invece che in fila dentro save() — e nell'ordine in cui si legge la pagina, così ogni
+ * salvataggio riporta al punto più in alto rimasto indietro.
+ */
+export function firstProjectProblem(project: ProjectContent): ProjectProblem | null {
+  const mancanti = missingProjectFields(project);
+  if (mancanti.length) {
+    const elenco = mancanti.map((requirement) => requirement.label.toLowerCase()).join(", ");
+    return problem(`Manca ancora: ${elenco}.`, mancanti[0].step === 0 ? "opening" : "overview", mancanti[0].step, { fields: mancanti });
+  }
+
+  const senzaFoto = emptyImageBlocks(project);
+  if (senzaFoto.length) {
+    const messaggio = senzaFoto.length === 1
+      ? `Il blocco ${senzaFoto[0]} del racconto è un’immagine senza foto: scegline una o elimina il blocco.`
+      : `Blocchi ${senzaFoto.join(", ")} del racconto: sono immagini senza foto.`;
+    return problem(messaggio, "story", 2, { blocks: senzaFoto });
+  }
+
+  for (const [indice, blocco] of project.blocks.entries()) {
+    if (blocco.type !== "list") continue;
+    const voceLunga = longLine(blocco.items, contentLimits.project.listItem, `Blocco ${indice + 1}, voce`);
+    if (voceLunga) return problem(voceLunga, "story", 2, { blocks: [indice + 1] });
+  }
+
+  const risultatoLungo = longLine(project.outcomes, contentLimits.project.outcome, "Risultato");
+  if (risultatoLungo) return problem(risultatoLungo, "story", 2);
+
+  // le righe del tutto vuote le toglie il salvataggio: qui contano solo quelle a metà,
+  // numerate come si vedono nell'editor (comprese le vuote in mezzo)
+  const linkAMetà = incompletePair(project.links, "Link del progetto");
+  if (linkAMetà) return problem(linkAMetà, "extra", 2);
+
+  const invito = incompleteCta(project);
+  if (invito) return problem(invito, "extra", 2);
+
+  return null;
+}

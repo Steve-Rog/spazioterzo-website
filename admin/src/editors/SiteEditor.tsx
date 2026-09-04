@@ -15,9 +15,9 @@ import { inFondoAllaPagina, sezioneCorrente } from "../home-sections";
 import { selettoreHome, selettoreSito } from "../preview-focus";
 import { parseRoute, type SitePanel } from "../routing";
 import { EditorFrame } from "../components/EditorFrame";
+import { FieldCounter, SectionHeading } from "../components/FormParts";
+import { clone } from "../form";
 import { SitePreview } from "../components/PublicPreviews";
-
-const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 export function SiteEditor({ entity, activePanel, anchor, onSaved, onPublish, onDirtyChange, onRestored }: { onRestored?: () => Promise<void>; entity?: ContentEntity<SiteSettingsContent>; activePanel: SitePanel; anchor?: string; onSaved: (entity: ContentEntity, message?: string) => Promise<void>; onPublish: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {
   const form = useForm<SiteSettingsContent>({ mode: "controlled", initialValues: clone(entity?.draft ?? entity?.published ?? defaultSiteSettings) });
@@ -188,14 +188,6 @@ function SiteSeo({ value, update }: { value: SiteSettingsContent; update: (recip
     <FieldCounter length={value.seo.defaultDescription.length} max={contentLimits.site.description} />
     <MediaPicker label="Immagine di condivisione" description="Usata sulle pagine generiche; i progetti usano questa immagine se presente, altrimenti la loro copertina." value={{ url: value.seo.shareImage ?? "", alt: "Immagine di condivisione" }} onChange={(next) => update((draft) => { draft.seo.shareImage = next.url || undefined; })} />
   </section>;
-}
-
-function SectionHeading({ title, hint, shape }: { title: string; hint: string; shape: "hero" | "overview" | "story" | "outcomes" | "notes" | "cta" }) {
-  return <div className="section-heading section-heading-mapped"><div><h2>{title}</h2><p>{hint}</p></div><span className={`page-shape page-shape-${shape}`} aria-hidden="true" /></div>;
-}
-
-function FieldCounter({ length, max }: { length: number; max: number }) {
-  return <Text size="xs" ta="right" c={length > max * .9 ? "orange" : "dimmed"} aria-live="polite">{length}/{max}</Text>;
 }
 
 function SocialLinks({ value, onChange }: { value: SiteSettingsContent["identity"]["socialLinks"]; onChange: (value: SiteSettingsContent["identity"]["socialLinks"]) => void }) { return <section className="repeatable-section"><Group justify="space-between"><Text fw={700}>Social</Text><Button variant="subtle" color="dark" size="xs" leftSection={<IconPlus size={15} stroke={1.8} />} onClick={() => onChange([...value, { label: "", href: "" }])}>Aggiungi social</Button></Group>{value.map((link, index) => <div className="activity-edit" key={index}><div className="form-grid"><TextInput label="Nome" maxLength={contentLimits.site.socialLabel} value={link.label} onChange={(event) => onChange(value.map((entry, itemIndex) => itemIndex === index ? { ...entry, label: event.currentTarget.value } : entry))} /><TextInput label="URL" maxLength={2_000} value={link.href} onChange={(event) => onChange(value.map((entry, itemIndex) => itemIndex === index ? { ...entry, href: event.currentTarget.value } : entry))} /></div><Button variant="subtle" color="red" size="xs" leftSection={<IconTrash size={15} stroke={1.8} />} onClick={() => onChange(value.filter((_, itemIndex) => itemIndex !== index))}>Rimuovi social</Button></div>)}</section>; }
