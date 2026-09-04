@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { Arrow } from "../ui/Arrow";
 import { Reveal } from "../ui/Reveal";
 import { SectionLabel } from "../ui/SectionLabel";
+import { SplitHeading } from "../ui/SplitHeading";
 import { RichText } from "../ui/RichText";
 import type { SiteSettingsContent } from "../../../shared/content-schema";
 
@@ -23,6 +24,7 @@ function TerritoryOrbit() {
 
   return (
     <motion.div ref={orbitRef} className="territory-orbit" role="img" aria-label="Individuo, gruppo e comunità: tre cerchi concentrici della cura">
+      <span className="territory-orbit-satellite" aria-hidden="true" />
       <motion.span className="territory-orbit-community" aria-hidden="true" style={reduceMotion ? undefined : { x: communityX, y: communityY }}>Comunità</motion.span>
       <motion.span className="territory-orbit-group" aria-hidden="true" style={reduceMotion ? undefined : { x: groupX, y: groupY }}>Gruppo</motion.span>
       <motion.span className="territory-orbit-individual" aria-hidden="true" style={reduceMotion ? undefined : { x: individualX, y: individualY }}>Individuo</motion.span>
@@ -34,12 +36,14 @@ export function Territory({ content }: { content: SiteSettingsContent }) {
   return (
     <section className="territory" id="territorio">
       <TerritoryOrbit />
-      <Reveal className="territory-copy">
-        <SectionLabel>Sul territorio</SectionLabel>
-        <h2><RichText value={content.home.territory.heading} /></h2>
-        <p><RichText value={content.home.territory.body} /></p>
-        <a className="button-dark" href={content.home.territory.ctaHref}>{content.home.territory.ctaLabel} <Arrow /></a>
-      </Reveal>
+      <div className="territory-copy">
+        <Reveal><SectionLabel>Sul territorio</SectionLabel></Reveal>
+        <SplitHeading value={content.home.territory.heading} />
+        <Reveal delay={0.16}>
+          <p><RichText value={content.home.territory.body} /></p>
+          <a className="button-dark" href={content.home.territory.ctaHref}>{content.home.territory.ctaLabel} <Arrow /></a>
+        </Reveal>
+      </div>
     </section>
   );
 }

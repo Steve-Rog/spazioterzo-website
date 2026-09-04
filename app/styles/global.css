@@ -9,6 +9,11 @@ h1, h2, h3, p { margin-top: 0; }
 h1, h2, h3 { letter-spacing: -.055em; font-weight: 500; }
 h1 em, h2 em { font-family: 'Playfair Display', Georgia, serif; font-weight: 500; }
 
+/* Maschera delle parole dei titoli: il padding allarga il ritaglio quanto basta a non tagliare
+   le discendenti e i corsivi, il margine negativo lo restituisce all'interlinea. */
+.parola { display: inline-block; overflow: hidden; vertical-align: bottom; padding: .16em .04em .18em; margin: -.16em -.04em -.18em; }
+.parola > span { display: inline-block; }
+
 .site-header-slot { height: 92px; }
 .site-header { width: 100%; height: 92px; display: flex; align-items: center; justify-content: space-between; padding: 18px clamp(24px, 5vw, 76px); position: fixed; top: 0; right: 0; left: 0; z-index: 100; }
 .brand { display: inline-flex; align-items: center; width: 114px; }
@@ -68,6 +73,17 @@ h1 em, h2 em { font-family: 'Playfair Display', Georgia, serif; font-weight: 500
   .site-nav { position: absolute; inset: 0; min-height: 100svh; background: var(--ink); display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 22px; padding: 82px 24px 45px; opacity: 0; pointer-events: none; transition: opacity .3s; }
   .site-nav.open { opacity: 1; pointer-events: auto; }
   .site-nav a { font: 500 28px 'Playfair Display', serif; text-transform: none; letter-spacing: -.04em; }
+  .site-nav.open a { animation: menu-link-in .42s cubic-bezier(.22,1,.36,1) both; }
+  .site-nav.open a:nth-child(2) { animation-delay: .04s; }
+  .site-nav.open a:nth-child(3) { animation-delay: .08s; }
+  .site-nav.open a:nth-child(4) { animation-delay: .12s; }
+  .site-nav.open a:nth-child(5) { animation-delay: .16s; }
+  .site-nav.open a:nth-child(6) { animation-delay: .20s; }
+}
+
+@keyframes menu-link-in {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {

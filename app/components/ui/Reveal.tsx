@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useRef, type ReactNode } from "react";
+import { motion, useInView } from "framer-motion";
+import { durata, useEntrata } from "./use-entrata";
 
 type RevealProps = {
   children: ReactNode;
@@ -11,35 +12,20 @@ type RevealProps = {
 /**
  * Comparsa graduale dei blocchi mentre si scorre.
  *
- * L'effetto si accende solo dopo l'idratazione: se partisse dal server, l'HTML conterrebbe
- * `opacity: 0` e un visitatore che non riceve il JavaScript vedrebbe pagine mezze vuote,
- * con il testo presente nel sorgente ma invisibile. E si accende solo per ciò che è ancora
- * fuori schermo, altrimenti quello che si sta già leggendo sparirebbe per riapparire.
+ * L'effetto si accende solo dopo l'idratazione e solo per ciò che è ancora fuori schermo:
+ * le due condizioni stanno in useEntrata, insieme alle ragioni.
  */
 export function Reveal({ children, className, delay = 0, amount = 0.2 }: RevealProps) {
-  const reduceMotion = useReducedMotion();
   const elemento = useRef<HTMLDivElement>(null);
-  const [anima, setAnima] = useState(false);
-
-  useEffect(() => {
-    if (reduceMotion) return;
-    const riquadro = elemento.current?.getBoundingClientRect();
-    if (riquadro && riquadro.top < window.innerHeight) return;
-    setAnima(true);
-  }, [reduceMotion]);
+  const { anima, reduceMotion } = useEntrata(elemento);
+  const inVista = useInView(elemento, { once: true, amount });
 
   return (
     <motion.div
       ref={elemento}
       className={className}
-      initial={anima ? { opacity: 0, y: 26 } : false}
-      whileInView={anima ? { opacity: 1, y: 0 } : undefined}
-      viewport={{ once: true, amount }}
-      transition={{
-        duration: reduceMotion ? 0 : 0.7,
-        delay: reduceMotion ? 0 : delay,
-        ease: [0.22, 1, 0.36, 1],
-      }}
+      animate={anima ? (inVista ? { opacity: 1, y: 0 } : { opacity: 0, y: 26 }) : undefined}
+      transition={durata(inVista, reduceMotion ? 0 : 0.7, reduceMotion ? 0 : delay)}
     >
       {children}
     </motion.div>
