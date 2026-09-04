@@ -70,6 +70,22 @@ describe("contenuti incompleti", () => {
   });
 });
 
+describe("contenuti a metà, mentre si scrive", () => {
+  it("le liste non usano il testo come key", () => {
+    // l'anteprima del back office ridisegna queste liste a ogni battitura: due righe uguali
+    // (o due righe ancora vuote) darebbero la stessa key, e React salta o duplica gli elementi
+    const perPosizione = [
+      { file: ["components", "projects", "ProjectDetail.tsx"], vietate: ["key={item}", "key={outcome}", "key={link.href}"] },
+      { file: ["components", "layout", "SiteFooter.tsx"], vietate: ["key={phone}", "key={link.href}"] },
+    ];
+    for (const { file, vietate } of perPosizione) {
+      const sorgente = leggi(...file);
+      for (const key of vietate) expect(sorgente).not.toContain(key);
+      expect(sorgente).toMatch(/key=\{`\$\{index\}-\$\{/);
+    }
+  });
+});
+
 describe("sezioni senza contenuto", () => {
   it("non restano in pagina con le etichette vuote", () => {
     const dettaglio = leggi("components", "projects", "ProjectDetail.tsx");

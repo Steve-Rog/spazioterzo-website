@@ -14,7 +14,7 @@ function ProjectBlockView({ block }: { block: ProjectBlock }) {
     return <blockquote className="project-detail-quote"><p>{block.text}</p>{block.source && <cite>{block.source}</cite>}</blockquote>;
   }
   if (block.type === "list") {
-    return <section className="project-detail-list"><h3>{block.title}</h3><ul>{block.items.map((item) => <li key={item}>{item}</li>)}</ul></section>;
+    return <section className="project-detail-list"><h3>{block.title}</h3><ul>{block.items.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}</ul></section>;
   }
   if (block.type === "image") {
     return <figure className="project-detail-image"><div className="project-detail-image-media"><img src={block.src} alt={block.alt} loading="lazy" style={imageCropStyle(block.crop)} /></div>{block.caption && <figcaption>{block.caption}</figcaption>}</figure>;
@@ -100,13 +100,13 @@ export function ProjectDetail({ project, related = [] }: { project: Project; rel
       {project.outcomes.length > 0 && (
         <section className="project-outcomes">
           <Reveal><p className="section-label">Cosa abbiamo attivato</p><h2><RichText value={project.outcomesHeading ?? defaultProjectOutcomesHeading} /></h2></Reveal>
-          <Reveal className="project-outcomes-list" delay={0.1}><ol>{project.outcomes.map((outcome, index) => <li key={outcome}><span>0{index + 1}</span>{outcome}</li>)}</ol></Reveal>
+          <Reveal className="project-outcomes-list" delay={0.1}><ol>{project.outcomes.map((outcome, index) => <li key={`${index}-${outcome}`}><span>0{index + 1}</span>{outcome}</li>)}</ol></Reveal>
         </section>
       )}
 
       {Boolean(project.links?.length || project.partners?.length || project.funders?.length || project.visibilityNote?.trim()) && (
         <section className="project-detail-notes">
-          {project.links?.length ? <div><p className="section-label">Nel diario del progetto</p>{project.links.map((link) => <a key={link.href} href={link.href} target="_blank" rel="noreferrer">{link.label} <Arrow /></a>)}</div> : null}
+          {project.links?.length ? <div><p className="section-label">Nel diario del progetto</p>{project.links.map((link, index) => <a key={`${index}-${link.href}`} href={link.href} target="_blank" rel="noreferrer">{link.label} <Arrow /></a>)}</div> : null}
           {(project.partners?.length || project.funders?.length || project.visibilityNote?.trim()) ? <div><p className="section-label">Reti e trasparenza</p>{project.partners?.length ? <p>Con {project.partners.join(", ")}.</p> : null}{project.funders?.length ? <p>Sostenuto da {project.funders.join(", ")}.</p> : null}{project.visibilityNote?.trim() ? <p>{project.visibilityNote}</p> : null}</div> : null}
         </section>
       )}

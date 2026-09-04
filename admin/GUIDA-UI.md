@@ -148,6 +148,24 @@ Playfair grande (39–64px) resta solo dove serve richiamare l'aspetto pubblico:
   `MultiSelect` e le etichette vere, mai slug da ricordare a memoria.
 - **Segnaposto d'esempio** sui campi liberi (`2025 — in corso`, `Catania`): dicono il formato atteso senza spiegarlo.
 
+### Mentre si scrive
+
+Chi scrive è a metà di una parola, di una riga, di un elenco: l'interfaccia deve reggere lo stato incompleto
+invece di correggerlo. Sono tre regole nate ognuna da un difetto vero.
+
+- **Non normalizzare durante la digitazione.** La ripulitura completa va sull'uscita dal campo (`onBlur`), non a
+  ogni battitura. `normaliseProjectSlug` toglie i trattini ai bordi: applicata a ogni lettera, «laboratorio-di-»
+  perdeva il trattino appena digitato e l'indirizzo diventava una parola sola. Mentre si scrive vale solo la
+  ripulitura che non può dare fastidio (`slugWhileTyping`). Stessa regola per il testo formattato: nessun
+  `setContent` sull'editor a ogni carattere, o il cursore torna indietro.
+- **Le `key` delle liste non sono il contenuto.** L'anteprima ridisegna gli elenchi a ogni battitura: due righe
+  ancora vuote, o due voci uguali, danno la stessa `key` e React salta o duplica gli elementi. Usa la posizione
+  (``key={`${index}-${valore}`}``), anche nei componenti del sito, perché sono gli stessi che disegnano l'anteprima.
+- **Un solo controllo prima di salvare.** Le condizioni che il server rifiuterebbe con un messaggio generico
+  stanno in `firstProjectProblem` (`admin/src/project-fields.ts`): restituisce il primo problema, il messaggio da
+  mostrare e dove sistemarlo (scheda o passo, campi da segnare, blocchi da aprire). Non aggiungere un sesto
+  controllo in fila dentro `save`: aggiungilo lì, con il suo test.
+
 ## 6. Navigazione e indirizzi
 
 - **Ogni schermata ha un indirizzo.** Sezione, contenuto aperto e pannello attivo stanno nell'URL

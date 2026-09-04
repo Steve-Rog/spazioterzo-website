@@ -25,11 +25,11 @@ export function SiteFooter({ identity }: { identity: SiteSettingsContent["identi
           <section>
             <p className="site-footer-label">Contatti</p>
             <a className="site-footer-value site-footer-email" href={`mailto:${identity.email}`}>{identity.email}</a>
-            {phones.length > 0 && <div className="site-footer-phones">{phones.map((phone) => <a key={phone} href={`tel:${phone.replace(/[^\d+]/g, "")}`}>{phone}</a>)}</div>}
+            {phones.length > 0 && <div className="site-footer-phones">{phones.map((phone, index) => <a key={`${index}-${phone}`} href={`tel:${phone.replace(/[^\d+]/g, "")}`}>{phone}</a>)}</div>}
           </section>
           {identity.socialLinks.length > 0 && <section>
             <p className="site-footer-label">Social</p>
-            <nav className="footer-socials" aria-label="Social network">{identity.socialLinks.map((link) => <a key={link.href} href={link.href} target="_blank" rel="noreferrer">{link.label} ↗</a>)}</nav>
+            <nav className="footer-socials" aria-label="Social network">{identity.socialLinks.map((link, index) => <a key={`${index}-${link.href}`} href={link.href} target="_blank" rel="noreferrer">{link.label} ↗</a>)}</nav>
           </section>}
         </div>
       </div>
