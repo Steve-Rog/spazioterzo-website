@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { motion, useReducedMotion } from "framer-motion";
 import { Arrow } from "../ui/Arrow";
 import { imageCropStyle } from "../ui/image-crop";
+import { foto, fotoSrcSet } from "../ui/image-source";
 import { RichText } from "../ui/RichText";
 import { Reveal } from "../ui/Reveal";
 import { type Project, type ProjectBlock } from "./content";
@@ -17,7 +18,7 @@ function ProjectBlockView({ block }: { block: ProjectBlock }) {
     return <section className="project-detail-list"><h3>{block.title}</h3><ul>{block.items.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}</ul></section>;
   }
   if (block.type === "image") {
-    return <figure className="project-detail-image"><div className="project-detail-image-media"><img src={block.src} alt={block.alt} loading="lazy" style={imageCropStyle(block.crop)} /></div>{block.caption && <figcaption>{block.caption}</figcaption>}</figure>;
+    return <figure className="project-detail-image"><div className="project-detail-image-media"><img src={foto(block.src ?? "", 1024)} srcSet={fotoSrcSet(block.src ?? "", 1024)} sizes="(max-width: 813px) 100vw, 765px" alt={block.alt} loading="lazy" style={imageCropStyle(block.crop)} /></div>{block.caption && <figcaption>{block.caption}</figcaption>}</figure>;
   }
   return <p className="project-detail-stat"><strong>{block.value}</strong><span>{block.label}</span></p>;
 }
@@ -43,7 +44,7 @@ function ProjectVideo({ project }: { project: Project }) {
         <iframe src={source} title={`Video: ${project.title}`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
       ) : (
         <button type="button" onClick={() => setIsPlaying(true)}>
-          <img src={thumbnail} alt={video.alt || project.coverAlt} loading="lazy" />
+          <img src={foto(thumbnail, 1440)} srcSet={fotoSrcSet(thumbnail, 1440)} sizes="(max-width: 1100px) 100vw, 1052px" alt={video.alt || project.coverAlt} loading="lazy" />
           <span><PlayIcon /> Guarda il video</span>
         </button>
       )}
@@ -64,7 +65,7 @@ export function ProjectDetail({ project, related = [] }: { project: Project; rel
           initial={reduceMotion ? false : { opacity: 0, scale: 1.07 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: reduceMotion ? 0 : 1.1, ease: [0.22, 1, 0.36, 1] }}
-        ><img src={project.cover} alt={project.coverAlt} style={imageCropStyle(project.coverCrop)} /></motion.div>
+        ><img src={foto(project.cover, 1440)} srcSet={fotoSrcSet(project.cover)} sizes="100vw" fetchPriority="high" alt={project.coverAlt} style={imageCropStyle(project.coverCrop)} /></motion.div>
         <div className="project-detail-hero-shade" />
         <div className="project-detail-hero-content">
           <Link className="project-back" to="/progetti">← Tutti i progetti</Link>
@@ -113,7 +114,7 @@ export function ProjectDetail({ project, related = [] }: { project: Project; rel
 
       {project.cta && project.cta.label.trim() && project.cta.href.trim() ? <section className="project-detail-cta"><p>Questo progetto può diventare anche uno spazio per te.</p><Link to={project.cta.href}>{project.cta.label} <Arrow /></Link></section> : null}
 
-      {related.length > 0 && <section className="project-related"><p className="section-label">Altri progetti</p><div>{related.map((altro) => <Link key={altro.slug} to={`/progetti/${altro.slug}`}><div className="project-related-image"><img src={altro.cover} alt="" loading="lazy" style={imageCropStyle(altro.coverCrop)} /></div>{Boolean(altro.themes[0]) && <span>{altro.themes[0]}</span>}<h2>{altro.title}</h2><p>{altro.subtitle}</p><b>Scopri <Arrow /></b></Link>)}</div></section>}
+      {related.length > 0 && <section className="project-related"><p className="section-label">Altri progetti</p><div>{related.map((altro) => <Link key={altro.slug} to={`/progetti/${altro.slug}`}><div className="project-related-image"><img src={foto(altro.cover, 768)} srcSet={fotoSrcSet(altro.cover, 1024)} sizes="(max-width: 900px) 100vw, 45vw" alt="" loading="lazy" style={imageCropStyle(altro.coverCrop)} /></div>{Boolean(altro.themes[0]) && <span>{altro.themes[0]}</span>}<h2>{altro.title}</h2><p>{altro.subtitle}</p><b>Scopri <Arrow /></b></Link>)}</div></section>}
     </main>
   );
 }

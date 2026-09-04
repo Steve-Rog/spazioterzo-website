@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useInView, useScroll, useSpring, useTransform } from "framer-motion";
 import { durata, useEntrata } from "../ui/use-entrata";
+import { fotoDiSfondo } from "../ui/image-source";
 import type { SiteSettingsContent } from "../../../shared/content-schema";
 
 export function ImageStatement({ content }: { content: SiteSettingsContent }) {
@@ -10,7 +11,7 @@ export function ImageStatement({ content }: { content: SiteSettingsContent }) {
   const inVista = useInView(statementRef, { once: true, amount: 0.3 });
   const { scrollYProgress } = useScroll({ target: statementRef, offset: ["start end", "end start"] });
   const imageY = useSpring(useTransform(scrollYProgress, [0, 1], [-58, 58]), { stiffness: 82, damping: 24, mass: 0.45 });
-  const imageStyle = content.home.imageStatement.image ? { "--statement-image": `url(${content.home.imageStatement.image})` } as React.CSSProperties : undefined;
+  const imageStyle = content.home.imageStatement.image ? { "--statement-image": fotoDiSfondo(content.home.imageStatement.image) } as React.CSSProperties : undefined;
 
   useEffect(() => {
     const query = window.matchMedia("(min-width: 721px) and (pointer: fine)");

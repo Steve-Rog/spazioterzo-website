@@ -1,0 +1,14 @@
+# Regole applicate ai file statici dal Worker che serve il sito (non alle pagine, che le costruisce
+# React Router). I percorsi seguono la cartella di build del client.
+
+# JavaScript e CSS compilati portano il contenuto nel nome (`root-DM41l9HT.css`): quando cambia il
+# contenuto cambia il nome, quindi il browser può tenerseli per sempre invece di chiedere conferma
+# per una ventina di file a ogni visita, che è il comportamento predefinito di Cloudflare.
+#
+# La regola si ferma a .js e .css apposta: in /assets stanno anche i loghi, che il nome ce l'hanno
+# fisso. Congelarli per un anno vorrebbe dire non poterli più cambiare.
+/assets/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*.css
+  Cache-Control: public, max-age=31536000, immutable
