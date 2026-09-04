@@ -24,8 +24,8 @@ variabili d'ambiente da mantenere su piattaforme esterne.
 
 - `development` pubblica il sito su `dev.spazioterzo.it` e l'API su
   `api.dev.spazioterzo.it`.
-- La produzione è pronta su `anteprima.spazioterzo.it`; il dominio principale si
-  collega al Worker solo al momento della pubblicazione ufficiale.
+- La produzione pubblica il sito su `spazioterzo.it`; `www.spazioterzo.it`
+  reindirizza in modo permanente all'indirizzo canonico.
 - I dettagli di ambienti, domini, segreti e deploy sono in
   [cloudflare/README.md](cloudflare/README.md).
 

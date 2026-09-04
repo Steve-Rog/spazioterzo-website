@@ -32,9 +32,12 @@
         "binding": "ASSETS",
         "not_found_handling": "none"
       },
-      // Finché il dominio principale serve il vecchio sito, il sito nuovo vive qui con i contenuti
-      // veri: il giorno del passaggio si aggiunge spazioterzo.it (e www) a questo elenco.
-      "routes": [{ "pattern": "anteprima.spazioterzo.it", "custom_domain": true }]
+      // I custom domain lasciano a Cloudflare DNS e certificati: `www` converge poi
+      // verso l'apex direttamente nel Worker, così l'indirizzo pubblico resta uno solo.
+      "routes": [
+        { "pattern": "spazioterzo.it", "custom_domain": true },
+        { "pattern": "www.spazioterzo.it", "custom_domain": true }
+      ]
     }
   }
 }
