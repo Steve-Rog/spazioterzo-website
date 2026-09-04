@@ -14,7 +14,7 @@ import { ProjectPreview } from "../components/PublicPreviews";
 import { LinesField } from "../components/RepeatableFields";
 import { selettoreProgetto } from "../preview-focus";
 import { sanitiseTags } from "../tags";
-import { composeThemes, emptyImageBlocks, incompleteCta, mainTheme, missingInStep, missingProjectFields, otherThemes, slugWhileTyping, type ProjectFieldName } from "../project-fields";
+import { composeThemes, dropEmptyPairs, emptyImageBlocks, incompleteCta, incompletePair, mainTheme, missingInStep, missingProjectFields, otherThemes, slugWhileTyping, type ProjectFieldName } from "../project-fields";
 import { SeoPreview } from "../SeoPreview";
 
 type FieldSetter<T> = <K extends keyof T & string>(key: K, value: T[K]) => void;
@@ -59,11 +59,16 @@ export function ProjectEditor({ entity, isAdmin, siteSeo, siteSettings, relatedO
     }
     const invito = incompleteCta(form.values);
     if (invito) { setScheda("extra"); notifications.show({ color: "orange", message: invito }); return; }
+    // le righe vuote le toglie il salvataggio; quelle a metà le deve sistemare chi scrive
+    const linkPuliti = dropEmptyPairs(form.values.links);
+    const linkAMetà = incompletePair(linkPuliti, "Link del progetto");
+    if (linkAMetà) { setScheda("extra"); notifications.show({ color: "orange", message: linkAMetà }); return; }
+    if (linkPuliti.length !== form.values.links.length) set("links", linkPuliti);
     setBlocchiIncompleti(vuoto);
     setErrors({});
     setSaving(true);
     try {
-      const saved = await adminApi.save("projects", entity?.id, form.values, entity?.displayOrder, entity?.updatedAt);
+      const saved = await adminApi.save("projects", entity?.id, { ...form.values, links: linkPuliti }, entity?.displayOrder, entity?.updatedAt);
       form.resetDirty(form.values);
       await onSaved(saved, entity ? "Bozza salvata." : "Progetto creato: ora puoi completarlo.");
     } catch (error) { notifications.show({ color: "red", message: error instanceof Error ? error.message : "Bozza non salvata" }); }

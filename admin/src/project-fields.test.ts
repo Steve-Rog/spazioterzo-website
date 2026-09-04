@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { asRichText, validateProject, type ProjectContent } from "../../shared/content-schema";
-import { composeThemes, emptyImageBlocks, incompleteCta, mainTheme, missingInStep, missingProjectFields, otherThemes, slugWhileTyping } from "./project-fields";
+import { asRichText, validateProject, validateSiteSettings, type ProjectContent } from "../../shared/content-schema";
+import { defaultSiteSettings } from "../../shared/default-site-settings";
+import { composeThemes, dropEmptyLines, dropEmptyPairs, emptyImageBlocks, incompleteCta, incompletePair, mainTheme, missingInStep, missingProjectFields, otherThemes, slugWhileTyping } from "./project-fields";
 
 const vuoto: ProjectContent = {
   slug: "", title: "", subtitle: "", statusLabel: "In corso", dateRange: "", location: "", audience: "", themes: [],
@@ -109,5 +110,25 @@ describe("invito finale", () => {
     expect(incompleteCta(conCta({ label: "Parliamone", href: "/contatti" }))).toBeNull();
     expect(incompleteCta(conCta(undefined))).toBeNull();
     expect(incompleteCta(conCta({ label: "", href: "" }))).toBeNull();
+  });
+});
+
+describe("righe ripetibili lasciate a metà", () => {
+  it("toglie quelle vuote, che il server rifiuterebbe senza spiegazioni", () => {
+    expect(dropEmptyPairs([{ label: "Instagram", href: "https://esempio.it" }, { label: "", href: "" }])).toHaveLength(1);
+    expect(dropEmptyPairs([{ label: " ", href: " " }])).toHaveLength(0);
+    expect(dropEmptyLines(["333 1234567", "", "  "])).toEqual(["333 1234567"]);
+  });
+
+  it("segnala quelle compilate a metà, dicendo quale riga", () => {
+    expect(incompletePair([{ label: "Instagram", href: "" }], "Social")).toContain("Social 1: manca l’indirizzo");
+    expect(incompletePair([{ label: "ok", href: "https://esempio.it" }, { label: "", href: "https://altro.it" }], "Social")).toContain("Social 2: manca il nome");
+    expect(incompletePair([{ label: "ok", href: "https://esempio.it" }], "Social")).toBeNull();
+  });
+
+  it("una riga vuota basta a far rifiutare il contenuto dal server", () => {
+    const conSocialVuoto = { ...defaultSiteSettings, identity: { ...defaultSiteSettings.identity, socialLinks: [{ label: "", href: "" }] } };
+    expect(validateSiteSettings(conSocialVuoto)).toBe(false);
+    expect(validateSiteSettings({ ...conSocialVuoto, identity: { ...conSocialVuoto.identity, socialLinks: dropEmptyPairs(conSocialVuoto.identity.socialLinks) } })).toBe(true);
   });
 });

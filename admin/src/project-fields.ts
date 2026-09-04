@@ -66,3 +66,24 @@ export const incompleteCta = (project: ProjectContent) => {
   if (!cta.href.trim()) return "L’invito finale ha un testo ma non porta da nessuna parte: aggiungi l’indirizzo o svuota anche il testo.";
   return null;
 };
+
+/**
+ * Righe ripetibili lasciate a metà.
+ *
+ * I pulsanti «Aggiungi» creano righe vuote, che lo schema rifiuta: senza questi controlli
+ * il salvataggio fallisce con il messaggio generico di contenuto non valido, e chi scrive
+ * non ha modo di sapere quale riga guardare. Le righe del tutto vuote si tolgono in silenzio
+ * (nessuno vuole salvarle), quelle a metà vanno segnalate.
+ */
+export type PairRow = { label: string; href: string };
+export const dropEmptyPairs = <T extends PairRow>(rows: T[]) => rows.filter((row) => row.label.trim() || row.href.trim());
+export const dropEmptyLines = (rows: string[]) => rows.filter((row) => row.trim());
+
+export function incompletePair(rows: PairRow[], singolare: string) {
+  const posizione = rows.findIndex((row) => Boolean(row.label.trim()) !== Boolean(row.href.trim()));
+  if (posizione < 0) return null;
+  const riga = rows[posizione];
+  return riga.label.trim()
+    ? `${singolare} ${posizione + 1}: manca l’indirizzo. Aggiungilo oppure svuota anche il nome.`
+    : `${singolare} ${posizione + 1}: manca il nome. Scrivilo oppure svuota anche l’indirizzo.`;
+}

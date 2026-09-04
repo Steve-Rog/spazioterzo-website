@@ -34,10 +34,15 @@ export function EditorFrame({ title, eyebrow: _eyebrow, entity, resource, isAdmi
 
   const salva = useRef(onSave);
   salva.current = onSave;
+  // il pulsante è disabilitato quando non c'è niente da salvare: senza lo stesso controllo qui,
+  // ogni Cmd+S a vuoto creerebbe una revisione identica e sposterebbe la data dell'ultimo salvataggio
+  const daSalvare = useRef(true);
+  daSalvare.current = !entity || dirty;
   useEffect(() => {
     const scorciatoia = (event: KeyboardEvent) => {
       if (event.key !== "s" || !(event.metaKey || event.ctrlKey)) return;
       event.preventDefault();
+      if (!daSalvare.current) return;
       salva.current();
     };
     window.addEventListener("keydown", scorciatoia);
@@ -63,7 +68,7 @@ export function EditorFrame({ title, eyebrow: _eyebrow, entity, resource, isAdmi
         <Button className="solo-schermi-stretti" variant="default" size="sm" onClick={() => setPreviewOpen(true)}>Anteprima</Button>
         <Button color="orange" variant={readyToPublish ? "default" : "filled"} size="sm" onClick={onSave} loading={saving} disabled={Boolean(entity) && !dirty}>{dirty ? "Salva bozza" : entity ? "Bozza salvata" : "Salva bozza"}</Button>
         {readyToPublish && <Button color="orange" size="sm" onClick={() => void onPublish?.(resource, entity!.id)}>Pubblica modifiche</Button>}
-        {entity && isAdmin && <Menu position="bottom-end"><Menu.Target><ActionIcon aria-label="Altre azioni" variant="default" size="lg"><IconDots size={18} stroke={1.7} /></ActionIcon></Menu.Target><Menu.Dropdown><Menu.Item onClick={() => setRevisionsOpen(true)}>Cronologia revisioni</Menu.Item><Menu.Divider /><Menu.Item color="red" onClick={() => void onArchive?.(resource, entity.id)}>Archivia</Menu.Item></Menu.Dropdown></Menu>}
+        {entity && isAdmin && <Menu position="bottom-end"><Menu.Target><ActionIcon aria-label="Altre azioni" variant="default" size="lg"><IconDots size={18} stroke={1.7} /></ActionIcon></Menu.Target><Menu.Dropdown><Menu.Item onClick={() => setRevisionsOpen(true)}>Cronologia revisioni</Menu.Item>{onArchive && <><Menu.Divider /><Menu.Item color="red" onClick={() => void onArchive(resource, entity.id)}>Archivia</Menu.Item></>}</Menu.Dropdown></Menu>}
       </Group>
     </header>
     <div className="editor-surface"><div className="editor-main">{children}</div><aside className="editor-preview" aria-label="Anteprima della bozza"><div className="editor-preview-head"><Text size="xs" fw={600}>Anteprima della bozza</Text><Button variant="subtle" color="dark" size="xs" onClick={() => setPreviewOpen(true)}>Ingrandisci</Button></div><div className="editor-preview-frame"><div className="public-preview">{preview}</div></div></aside></div>
@@ -77,7 +82,7 @@ function RevisionDrawer({ opened, onClose, resource, entity, onRestored }: { ope
   const [error, setError] = useState("");
   const [openDiff, setOpenDiff] = useState<string | null>(null);
   const [changes, setChanges] = useState<FieldChange[] | null>(null);
-  useEffect(() => { if (opened) void adminApi.revisions(resource, entity.id).then(setRevisions).catch((reason) => setError(reason instanceof Error ? reason.message : "Revisioni non disponibili")); }, [opened, resource, entity.id]);
+  useEffect(() => { if (!opened) return; setError(""); void adminApi.revisions(resource, entity.id).then(setRevisions).catch((reason) => setError(reason instanceof Error ? reason.message : "Revisioni non disponibili")); }, [opened, resource, entity.id]);
   const current = (entity.draft ?? entity.published) as Record<string, unknown> | undefined;
   const compare = async (revisionId: string) => {
     if (openDiff === revisionId) { setOpenDiff(null); return; }

@@ -6,6 +6,7 @@ import { IconChevronRight, IconPlus, IconTrash } from "@tabler/icons-react";
 import { asRichText, contentLimits, MAX_HOME_ACTIVITIES, plainText, type ContentEntity, type SiteSettingsContent } from "../../../shared/content-schema";
 import { defaultSiteSettings } from "../../../shared/default-site-settings";
 import { adminApi, type AdminResource } from "../api";
+import { dropEmptyLines, dropEmptyPairs, incompletePair } from "../project-fields";
 import { MediaPicker } from "../MediaPicker";
 import { RichTextField } from "../RichTextField";
 import { SeoPreview } from "../SeoPreview";
@@ -23,7 +24,12 @@ export function SiteEditor({ entity, activePanel, anchor, onSaved, onPublish, on
   const [saving, setSaving] = useState(false);
   const [sezioneHome, setSezioneHome] = useState<string | null>(anchor ?? "apertura");
   const update = (recipe: (draft: SiteSettingsContent) => void) => { const next = clone(form.values); recipe(next); form.setValues(next); };
-  const save = form.onSubmit(async (values) => { setSaving(true); try { const saved = await adminApi.save("site", entity?.id, values, undefined, entity?.updatedAt); form.resetDirty(values); await onSaved(saved); } catch (error) { notifications.show({ color: "red", message: error instanceof Error ? error.message : "Bozza non salvata" }); } finally { setSaving(false); } });
+  const save = form.onSubmit(async (values) => {
+    const socialPuliti = dropEmptyPairs(values.identity.socialLinks);
+    const social = incompletePair(socialPuliti, "Social");
+    if (social) { notifications.show({ color: "orange", message: social }); return; }
+    const contenuto = { ...values, identity: { ...values.identity, socialLinks: socialPuliti, phones: values.identity.phones ? dropEmptyLines(values.identity.phones) : undefined } };
+    setSaving(true); try { const saved = await adminApi.save("site", entity?.id, contenuto, undefined, entity?.updatedAt); form.setValues(contenuto); form.resetDirty(contenuto); await onSaved(saved); } catch (error) { notifications.show({ color: "red", message: error instanceof Error ? error.message : "Bozza non salvata" }); } finally { setSaving(false); } });
   const panelTitle = activePanel === "identity" ? "Identità del sito" : activePanel === "home" ? "Home" : "SEO e condivisione";
   const previewFocus = activePanel === "home" ? selettoreHome(sezioneHome) : selettoreSito(activePanel);
   return <form onSubmit={save}><EditorFrame title={panelTitle} eyebrow="Sito" entity={entity} resource="site" onSave={() => save()} saving={saving} dirty={form.isDirty()} preview={<SitePreview site={form.values} focus={previewFocus} />} onPublish={onPublish} onDirtyChange={onDirtyChange} onRestored={onRestored}>{activePanel === "identity" ? <SiteIdentity value={form.values} update={update} /> : activePanel === "home" ? <HomeEditor value={form.values} update={update} initialAnchor={anchor} onSectionChange={setSezioneHome} /> : <SiteSeo value={form.values} update={update} />}</EditorFrame></form>;
