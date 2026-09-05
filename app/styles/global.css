@@ -10,8 +10,11 @@ h1, h2, h3 { letter-spacing: -.055em; font-weight: 500; }
 h1 em, h2 em { font-family: 'Playfair Display', Georgia, serif; font-weight: 500; }
 
 /* Maschera delle parole dei titoli: il padding allarga il ritaglio quanto basta a non tagliare
-   le discendenti e i corsivi, il margine negativo lo restituisce all'interlinea. */
-.parola { display: inline-block; overflow: hidden; vertical-align: bottom; padding: .16em .04em .18em; margin: -.16em -.04em -.18em; }
+   le discendenti e i corsivi, il margine negativo lo restituisce all'interlinea, così la parola
+   resta dov'era. Ai lati serve più spazio di quanto sembri: un corsivo dipinge oltre la propria
+   larghezza — «spazio?» in Playfair Display sborda di .042em — e con .04em il punto interrogativo
+   finiva tagliato a metà. */
+.parola { display: inline-block; overflow: hidden; vertical-align: bottom; padding: .16em .12em .18em; margin: -.16em -.12em -.18em; }
 .parola > span { display: inline-block; }
 
 .site-header-slot { height: 92px; }

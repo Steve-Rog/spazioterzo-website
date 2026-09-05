@@ -70,6 +70,20 @@ describe("contenuti incompleti", () => {
   });
 });
 
+describe("la maschera dei titoli", () => {
+  it("lascia ai lati più spazio di quanto il corsivo occupi", () => {
+    // il ritaglio delle parole taglia quello che esce dalla scatola, e un corsivo dipinge oltre
+    // la propria larghezza: «spazio?» in Playfair Display sborda di .042em, e con .04em il punto
+    // interrogativo restava mozzato. Il margine negativo deve restare uguale al padding, o la
+    // parola si sposta.
+    const regola = readFileSync(join(app, "styles", "global.css"), "utf8").split("\n").find((riga) => riga.startsWith(".parola {"))!;
+    const [, padding] = regola.match(/padding: [\d.]+em ([\d.]+)em/)!;
+    const [, margine] = regola.match(/margin: -[\d.]+em -([\d.]+)em/)!;
+    expect(Number(padding)).toBeGreaterThanOrEqual(0.1);
+    expect(margine).toBe(padding);
+  });
+});
+
 describe("contenuti a metà, mentre si scrive", () => {
   it("le liste non usano il testo come key", () => {
     // l'anteprima del back office ridisegna queste liste a ogni battitura: due righe uguali
