@@ -1,5 +1,25 @@
-import { useEffect, useState, type RefObject } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useContext, useEffect, useState, type RefObject } from "react";
+import { MotionConfigContext, useReducedMotion } from "framer-motion";
+
+/**
+ * Chi decide se il movimento va tolto: la preferenza di sistema del visitatore, oppure il
+ * contenitore, che può solo aggiungere. L'anteprima del back office spegne tutto con
+ * `<MotionConfig reducedMotion="always">`, perché in un riquadro che nessuno scorre un blocco
+ * in attesa di entrare resterebbe invisibile per sempre.
+ *
+ * Le due strade servono entrambe: `useReducedMotion` di framer-motion guarda solo il sistema e
+ * non sente MotionConfig, mentre il suo `useReducedMotionConfig` parte da un contesto che vale
+ * "never" — sul sito, dove nessuno lo imposta, tradirebbe la preferenza di chi ha chiesto meno
+ * animazioni.
+ */
+export const motoRidotto = (preferenzaDiSistema: boolean | null, contenitore: "user" | "always" | "never") =>
+  contenitore === "always" || Boolean(preferenzaDiSistema);
+
+export function useMotoRidotto() {
+  const preferenza = useReducedMotion();
+  const { reducedMotion } = useContext(MotionConfigContext);
+  return motoRidotto(preferenza, reducedMotion ?? "user");
+}
 
 /**
  * Decide se un blocco può animare la propria entrata.
@@ -17,7 +37,7 @@ import { useReducedMotion } from "framer-motion";
  * scorrendo pilota `animate` con useInView, chi entra subito rimonta l'elemento con una `key`.
  */
 export function useEntrata(elemento: RefObject<Element | null>, attesa: "subito" | "inQuadro" = "inQuadro") {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useMotoRidotto();
   const [anima, setAnima] = useState(false);
 
   useEffect(() => {

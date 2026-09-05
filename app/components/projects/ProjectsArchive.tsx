@@ -1,13 +1,14 @@
 import { Link } from "react-router";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Arrow } from "../ui/Arrow";
 import { imageCropStyle } from "../ui/image-crop";
 import { foto, fotoSrcSet } from "../ui/image-source";
 import { Reveal } from "../ui/Reveal";
 import { type Project } from "./content";
+import { useMotoRidotto } from "../ui/use-entrata";
 
 function ProjectRow({ project, index, featured = false }: { project: Project; index: number; featured?: boolean }) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useMotoRidotto();
 
   return (
     <Reveal className={`projects-row${featured ? " projects-row-featured" : ""} projects-row-${index}`} delay={index * 0.08} amount={0.1}>
@@ -33,7 +34,7 @@ function ProjectRow({ project, index, featured = false }: { project: Project; in
 }
 
 export function ProjectsArchive({ projects }: { projects: Project[] }) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useMotoRidotto();
   const [featured, ...remainingProjects] = projects;
 
   return (

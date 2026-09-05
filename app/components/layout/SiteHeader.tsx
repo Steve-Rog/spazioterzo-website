@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion, useScroll } from "framer-motion";
+import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion";
 import { Arrow } from "../ui/Arrow";
 import { BrandLogo } from "../ui/BrandLogo";
 import type { SiteSettingsContent } from "../../../shared/content-schema";
+import { useMotoRidotto } from "../ui/use-entrata";
 
 type SiteHeaderProps = {
   currentPage?: "home" | "people" | "projects";
@@ -21,7 +22,7 @@ export function SiteHeader({ currentPage = "home", identity }: SiteHeaderProps) 
   const [menuOpen, setMenuOpen] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [pinThreshold, setPinThreshold] = useState(0);
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useMotoRidotto();
   const { scrollY } = useScroll();
   useEffect(() => {
     const updatePinThreshold = () => {

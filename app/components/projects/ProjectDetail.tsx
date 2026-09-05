@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Arrow } from "../ui/Arrow";
 import { imageCropStyle } from "../ui/image-crop";
 import { foto, fotoSrcSet } from "../ui/image-source";
@@ -8,6 +8,7 @@ import { RichText } from "../ui/RichText";
 import { Reveal } from "../ui/Reveal";
 import { type Project, type ProjectBlock } from "./content";
 import { defaultProjectOutcomesHeading } from "../../../shared/content-schema";
+import { useMotoRidotto } from "../ui/use-entrata";
 
 function ProjectBlockView({ block }: { block: ProjectBlock }) {
   if (block.type === "paragraph") return <p className="project-detail-paragraph">{block.text}</p>;
@@ -54,7 +55,7 @@ function ProjectVideo({ project }: { project: Project }) {
 }
 
 export function ProjectDetail({ project, related = [] }: { project: Project; related?: Project[] }) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useMotoRidotto();
 
   return (
     <main className="project-detail-page">

@@ -1,4 +1,4 @@
-import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
+import { motion, useScroll, useSpring, useTransform } from "framer-motion";
 import { useRef } from "react";
 import { Arrow } from "../ui/Arrow";
 import { Reveal } from "../ui/Reveal";
@@ -6,10 +6,11 @@ import { SectionLabel } from "../ui/SectionLabel";
 import { SplitHeading } from "../ui/SplitHeading";
 import { RichText } from "../ui/RichText";
 import type { SiteSettingsContent } from "../../../shared/content-schema";
+import { useMotoRidotto } from "../ui/use-entrata";
 
 function TerritoryOrbit() {
   const orbitRef = useRef<HTMLDivElement>(null);
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useMotoRidotto();
   const { scrollYProgress } = useScroll({ target: orbitRef, offset: ["start end", "end start"] });
   const spring = { stiffness: 88, damping: 25, mass: 0.42 };
 

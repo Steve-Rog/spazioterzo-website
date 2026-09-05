@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { motoRidotto } from "../app/components/ui/use-entrata";
 
 /**
  * Il sito deve reggere anche quando qualcosa non funziona: senza contenuti, senza JavaScript,
@@ -67,6 +68,27 @@ describe("contenuti incompleti", () => {
     expect(hero).toContain("index % foregroundOffsets.length");
     expect(hero).toContain("index % portraitRotation.length");
     expect(hero).not.toContain("foregroundOffsets[index].x");
+  });
+});
+
+describe("chi spegne le animazioni", () => {
+  it("ascolta il visitatore, e lascia che l'anteprima aggiunga senza togliere", () => {
+    // "never" è il valore predefinito del contesto di framer-motion: sul sito, dove nessuno lo
+    // imposta, non deve poter cancellare la preferenza di chi ha chiesto meno animazioni
+    expect(motoRidotto(true, "never")).toBe(true);
+    expect(motoRidotto(false, "never")).toBe(false);
+    // l'anteprima del back office invece le spegne per tutti
+    expect(motoRidotto(false, "always")).toBe(true);
+    expect(motoRidotto(null, "user")).toBe(false);
+  });
+
+  it("nessun componente chiede la preferenza a framer-motion per conto proprio", () => {
+    // useReducedMotion legge solo l'impostazione di sistema e non sente <MotionConfig>: usandolo
+    // direttamente, nell'anteprima i blocchi fuori vista restavano invisibili e l'immagine
+    // manifesto ferma nel suo stato chiuso
+    for (const file of ["home/Territory.tsx", "layout/SiteHeader.tsx", "people/PeopleHero.tsx", "people/TeamProfileModal.tsx", "projects/ProjectDetail.tsx", "projects/ProjectsArchive.tsx", "ui/Reveal.tsx", "ui/SplitHeading.tsx", "home/ImageStatement.tsx"]) {
+      expect(leggi("components", ...file.split("/"))).not.toContain("useReducedMotion");
+    }
   });
 });
 

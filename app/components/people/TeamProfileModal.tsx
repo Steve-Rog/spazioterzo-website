@@ -1,8 +1,9 @@
 import { Modal } from "@mantine/core";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import type { TeamMember } from "./content";
 import { foto, fotoSrcSet } from "../ui/image-source";
 import { portraitCropStyle } from "./image-crop";
+import { useMotoRidotto } from "../ui/use-entrata";
 
 type TeamProfileModalProps = {
   teamMembers: TeamMember[];
@@ -12,7 +13,7 @@ type TeamProfileModalProps = {
 };
 
 export function TeamProfileModal({ teamMembers, activeMemberIndex, onClose, onActiveMemberChange }: TeamProfileModalProps) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useMotoRidotto();
   const selectedIndex = activeMemberIndex ?? 0;
   const activeMember = activeMemberIndex === null ? null : teamMembers[selectedIndex];
   const previousIndex = (selectedIndex - 1 + teamMembers.length) % teamMembers.length;
@@ -56,7 +57,7 @@ type TeamProfileContentProps = {
 
 /** Corpo del profilo: dentro la finestra sul sito, da solo nell'anteprima del back office. */
 export function TeamProfileContent({ member, index, total, previous, next, onClose, onPrevious, onNext }: TeamProfileContentProps) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useMotoRidotto();
   return (
     <div className="profile-modal-shell">
       {onClose && (

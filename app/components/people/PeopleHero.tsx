@@ -1,10 +1,11 @@
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "@mantine/hooks";
 import { type TeamMember } from "./content";
 import { TeamProfileModal } from "./TeamProfileModal";
 import { foto, fotoSrcSet } from "../ui/image-source";
 import { portraitCropStyle } from "./image-crop";
+import { useMotoRidotto } from "../ui/use-entrata";
 
 function teamHeroCopy(count: number) {
   if (count === 0) return { heading: "Le persone.", intro: "I profili del team saranno disponibili a breve." };
@@ -15,7 +16,7 @@ function teamHeroCopy(count: number) {
 }
 
 export function PeopleHero({ teamMembers }: { teamMembers: TeamMember[] }) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useMotoRidotto();
   const isMobile = useMediaQuery("(max-width: 760px)");
   const canHover = useMediaQuery("(hover: hover) and (pointer: fine)");
   const [activeMemberIndex, setActiveMemberIndex] = useState<number | null>(null);
