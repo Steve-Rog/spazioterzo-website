@@ -120,6 +120,26 @@ describe("patto fra sito e anteprima", () => {
     expect(readFileSync(join(import.meta.dirname, "components", "PublicPreviews.tsx"), "utf8")).toContain("getRelatedProjects(legacy, catalogo.map(projectToLegacy))");
   });
 
+  it("nell'anteprima nessuno scorre, quindi le entrate si spengono da un punto solo", () => {
+    // Un blocco che si nasconde in attesa di entrare in vista resta invisibile per sempre in un
+    // riquadro che nessuno scorre: era il difetto per cui, cambiando immagine, l'anteprima
+    // mostrava un vuoto al posto di copertina, titolo e sottotitolo.
+    //
+    // L'interruttore è uno: PreviewFrame dichiara reducedMotion="always" e useEntrata lo ascolta
+    // leggendo il contesto di framer-motion. Vale però solo se nessun componente si arrangia:
+    // useReducedMotion guarda unicamente l'impostazione di sistema e non sente MotionConfig.
+    expect(readFileSync(join(import.meta.dirname, "PreviewFrame.tsx"), "utf8")).toContain('reducedMotion="always"');
+    const entrata = readFileSync(join(cartellaComponenti, "ui", "use-entrata.ts"), "utf8");
+    expect(entrata).toContain("MotionConfigContext");
+
+    for (const percorso of fileRicorsivi(cartellaComponenti)) {
+      const sorgente = readFileSync(percorso, "utf8");
+      // chi decide la visibilità guardando lo schermo deve passare dall'interruttore
+      if (sorgente.includes("useInView")) expect(sorgente, percorso).toContain("useEntrata");
+      expect(sorgente, percorso).not.toContain("useReducedMotion");
+    }
+  });
+
   it("quello che va mostrato in anteprima non vive dentro una finestra di Mantine", () => {
     // i portali di Modal e Drawer escono dall'iframe: il contenuto va estratto in un componente riusabile
     const profilo = readFileSync(join(cartellaComponenti, "people", "TeamProfileModal.tsx"), "utf8");

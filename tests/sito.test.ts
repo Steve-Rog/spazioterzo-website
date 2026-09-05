@@ -82,14 +82,8 @@ describe("chi spegne le animazioni", () => {
     expect(motoRidotto(null, "user")).toBe(false);
   });
 
-  it("nessun componente chiede la preferenza a framer-motion per conto proprio", () => {
-    // useReducedMotion legge solo l'impostazione di sistema e non sente <MotionConfig>: usandolo
-    // direttamente, nell'anteprima i blocchi fuori vista restavano invisibili e l'immagine
-    // manifesto ferma nel suo stato chiuso
-    for (const file of ["home/Territory.tsx", "layout/SiteHeader.tsx", "people/PeopleHero.tsx", "people/TeamProfileModal.tsx", "projects/ProjectDetail.tsx", "projects/ProjectsArchive.tsx", "ui/Reveal.tsx", "ui/SplitHeading.tsx", "home/ImageStatement.tsx"]) {
-      expect(leggi("components", ...file.split("/"))).not.toContain("useReducedMotion");
-    }
-  });
+  // che nessun componente si arrangi da solo lo controlla il patto con l'anteprima, in
+  // admin/src/anteprima.test.ts: là l'elenco dei file non è scritto a mano
 });
 
 describe("la maschera dei titoli", () => {

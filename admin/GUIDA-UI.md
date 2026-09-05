@@ -298,7 +298,7 @@ L'anteprima non è una copia del sito: **è il sito**, disegnato con gli stessi 
 stile. Perciò una modifica al frontend — markup, classi, testi, spaziature, animazioni, responsive — non richiede
 alcun intervento sul back office: l'anteprima cambia da sola.
 
-Perché resti così valgono quattro impegni, tutti verificati da `admin/src/anteprima.test.ts`:
+Perché resti così valgono sei impegni, tutti verificati da `admin/src/anteprima.test.ts`:
 
 1. **I componenti di pagina ricevono i dati dalle proprietà.** Niente `useLoaderData` o `useParams` dentro
    `app/components/`: chi carica i dati è la rotta.
@@ -311,6 +311,14 @@ Perché resti così valgono quattro impegni, tutti verificati da `admin/src/ante
    e che i selettori esistano davvero nel markup del sito.
 5. **Quello che deve comparire in anteprima non vive dentro un `Modal` o un `Drawer`.** I loro portali escono
    dall'iframe: estrai il contenuto in un componente riusabile, come `TeamProfileContent`.
+6. **Nell'anteprima nessuno scorre, quindi le entrate si spengono da un punto solo.** Un blocco che si nasconde
+   aspettando di entrare in vista, in un riquadro che nessuno scorre resta invisibile per sempre — e lascia al
+   suo posto un vuoto. L'interruttore è `PreviewFrame`, che dichiara `reducedMotion="always"`; l'unico che lo
+   ascolta è `useEntrata`, tramite `useMotoRidotto`. Attenzione: `useReducedMotion` di framer-motion guarda solo
+   l'impostazione di sistema e **non** sente `MotionConfig`, mentre il suo `useReducedMotionConfig` parte da un
+   contesto che vale `"never"` e sul sito calpesterebbe la preferenza di chi ha chiesto meno animazioni. Perciò
+   nessun componente chiede per conto proprio: chi usa `useInView` passa da `useEntrata`, e un test cammina su
+   tutti i file per verificarlo.
 
 Se qualcuno rompe uno di questi punti il test fallisce subito, invece di lasciarlo scoprire mesi dopo a chi apre
 l'anteprima e la trova diversa dal sito. Non serve congelare la UI del sito: serve rispettare il patto.
