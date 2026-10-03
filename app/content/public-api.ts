@@ -1,4 +1,4 @@
-import { plainText, type ProjectContent, type SiteSettingsContent, type TeamMemberContent } from "../../shared/content-schema";
+import type { ProjectContent, SiteSettingsContent, TeamMemberContent } from "../../shared/content-schema";
 import { defaultSiteSettings } from "../../shared/default-site-settings";
 import { projects, type Project } from "../components/projects/content";
 import { teamMembers, type TeamMember } from "../components/people/content";
@@ -11,10 +11,10 @@ export function projectToLegacy(project: ProjectContent): Project {
   return {
     slug: project.slug, title: project.title, subtitle: project.subtitle, status: project.statusLabel, dateRange: project.dateRange,
     location: project.location, audience: project.audience, themes: project.themes, cover: project.cover, coverAlt: project.coverAlt, coverCrop: project.coverCrop,
-    intro: plainText(project.intro), objective: plainText(project.objective),
+    intro: project.intro, objective: project.objective,
     blocks: project.blocks.map((block) => {
-      if (block.type === "paragraph") return { type: "paragraph" as const, text: plainText(block.text) };
-      if (block.type === "quote") return { type: "quote" as const, text: plainText(block.text), source: block.source };
+      if (block.type === "paragraph") return { type: "paragraph" as const, text: block.text };
+      if (block.type === "quote") return { type: "quote" as const, text: block.text, source: block.source };
       if (block.type === "list") return { type: "list" as const, title: block.title, items: block.items };
       if (block.type === "image") return { type: "image" as const, src: block.src ?? "", alt: block.alt, caption: block.caption, crop: block.crop };
       return { type: "stat" as const, value: block.value, label: block.label };
@@ -25,7 +25,7 @@ export function projectToLegacy(project: ProjectContent): Project {
 }
 
 export function teamToLegacy(member: TeamMemberContent): TeamMember {
-  return { name: member.name, role: member.role, image: member.image, imagePosition: member.imagePosition, imageCrop: member.imageCrop, bio: member.bio.map(plainText), quote: plainText(member.quote), quoteAuthor: member.quoteAuthor };
+  return { name: member.name, role: member.role, image: member.image, imagePosition: member.imagePosition, imageCrop: member.imageCrop, bio: member.bio, quote: member.quote, quoteAuthor: member.quoteAuthor };
 }
 
 async function read<T>(path: string): Promise<T | null> {

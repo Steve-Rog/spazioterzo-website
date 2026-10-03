@@ -11,11 +11,10 @@ type SiteHeaderProps = {
 };
 
 const navigation = [
-  { href: "/#chi-siamo", label: "Associazione", page: "home" },
-  { href: "/#percorsi", label: "Cosa facciamo", page: "home" },
+  { href: "/#chi-siamo", label: "Associazione" },
+  { href: "/#percorsi", label: "Cosa facciamo" },
   { href: "/progetti", label: "Progetti", page: "projects" },
-  { href: "/persone", label: "Le persone", page: "people" },
-  { href: "/#territorio", label: "Sul territorio", page: "home" },
+  { href: "/persone", label: "Persone", page: "people" },
 ];
 
 export function SiteHeader({ currentPage = "home", identity }: SiteHeaderProps) {
@@ -73,7 +72,7 @@ export function SiteHeader({ currentPage = "home", identity }: SiteHeaderProps) 
           {navigation.map((item) => (
             <a
               key={item.href}
-              aria-current={currentPage === item.page ? "page" : undefined}
+              aria-current={item.page && currentPage === item.page ? "page" : undefined}
               href={item.href}
               onClick={closeMenu}
             >

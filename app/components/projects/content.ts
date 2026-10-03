@@ -1,8 +1,11 @@
 export type ProjectStatus = "In corso" | "Concluso";
+import type { RichText } from "../../../shared/content-schema";
+
+export type FormattedText = RichText | string;
 
 export type ProjectBlock =
-  | { type: "paragraph"; text: string }
-  | { type: "quote"; text: string; source?: string }
+  | { type: "paragraph"; text: FormattedText }
+  | { type: "quote"; text: FormattedText; source?: string }
   | { type: "list"; title: string; items: string[] }
   | { type: "image"; src: string; alt: string; caption?: string; crop?: { x: number; y: number; width: number; height: number } }
   | { type: "stat"; value: string; label: string };
@@ -33,8 +36,8 @@ export type Project = {
   cover: string;
   coverAlt: string;
   coverCrop?: { x: number; y: number; width: number; height: number };
-  intro: string;
-  objective: string;
+  intro: FormattedText;
+  objective: FormattedText;
   blocks: ProjectBlock[];
   outcomes: string[];
   outcomesHeading?: import("../../../shared/content-schema").RichText;

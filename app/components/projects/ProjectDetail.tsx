@@ -11,9 +11,9 @@ import { defaultProjectOutcomesHeading } from "../../../shared/content-schema";
 import { useMotoRidotto } from "../ui/use-entrata";
 
 function ProjectBlockView({ block }: { block: ProjectBlock }) {
-  if (block.type === "paragraph") return <p className="project-detail-paragraph">{block.text}</p>;
+  if (block.type === "paragraph") return <p className="project-detail-paragraph"><RichText value={block.text} /></p>;
   if (block.type === "quote") {
-    return <blockquote className="project-detail-quote"><p>{block.text}</p>{block.source && <cite>{block.source}</cite>}</blockquote>;
+    return <blockquote className="project-detail-quote"><p><RichText value={block.text} /></p>{block.source && <cite>{block.source}</cite>}</blockquote>;
   }
   if (block.type === "list") {
     return <section className="project-detail-list"><h3>{block.title}</h3><ul>{block.items.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}</ul></section>;
@@ -83,7 +83,7 @@ export function ProjectDetail({ project, related = [] }: { project: Project; rel
       </section>
 
       <section className="project-detail-overview">
-        <Reveal className="project-detail-intro"><p className="section-label">Il progetto</p><h2>{project.intro}</h2></Reveal>
+        <Reveal className="project-detail-intro"><p className="section-label">Il progetto</p><h2><RichText value={project.intro} /></h2></Reveal>
         <Reveal className="project-detail-facts" delay={0.1}>
           <p><span>Periodo</span>{project.dateRange}</p>
           <p><span>Luogo</span>{project.location}</p>
@@ -93,7 +93,7 @@ export function ProjectDetail({ project, related = [] }: { project: Project; rel
       </section>
 
       <section className="project-detail-story">
-        <Reveal className="project-detail-objective"><p className="section-label">L’intenzione</p><p>{project.objective}</p></Reveal>
+        <Reveal className="project-detail-objective"><p className="section-label">L’intenzione</p><p><RichText value={project.objective} /></p></Reveal>
         <div className="project-detail-blocks">{project.blocks.map((block, index) => <Reveal key={`${block.type}-${index}`} delay={index * 0.04}><ProjectBlockView block={block} /></Reveal>)}</div>
       </section>
 

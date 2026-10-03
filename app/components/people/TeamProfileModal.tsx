@@ -3,7 +3,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { TeamMember } from "./content";
 import { foto, fotoSrcSet } from "../ui/image-source";
 import { portraitCropStyle } from "./image-crop";
+import { RichText } from "../ui/RichText";
 import { useMotoRidotto } from "../ui/use-entrata";
+import { plainText } from "../../../shared/content-schema";
 
 type TeamProfileModalProps = {
   teamMembers: TeamMember[];
@@ -58,6 +60,7 @@ type TeamProfileContentProps = {
 /** Corpo del profilo: dentro la finestra sul sito, da solo nell'anteprima del back office. */
 export function TeamProfileContent({ member, index, total, previous, next, onClose, onPrevious, onNext }: TeamProfileContentProps) {
   const reduceMotion = useMotoRidotto();
+  const hasQuote = (typeof member.quote === "string" ? member.quote : plainText(member.quote)).trim().length > 0;
   return (
     <div className="profile-modal-shell">
       {onClose && (
@@ -95,11 +98,11 @@ export function TeamProfileContent({ member, index, total, previous, next, onClo
               <h2>{member.name}</h2>
               <p className="profile-modal-role">{member.role}</p>
               <div className="profile-modal-bio">
-                {member.bio.map((paragraph, posizione) => <p key={`${posizione}-${paragraph.slice(0, 12)}`}>{paragraph}</p>)}
+                {member.bio.map((paragraph, posizione) => <p key={posizione}><RichText value={paragraph} /></p>)}
               </div>
-              {member.quote && (
+              {hasQuote && (
                 <blockquote>
-                  <p>“{member.quote}”</p>
+                  <p>“<RichText value={member.quote} />”</p>
                   {member.quoteAuthor && <cite>— {member.quoteAuthor}</cite>}
                 </blockquote>
               )}

@@ -1,6 +1,7 @@
 import { HomePage } from "../../../app/components/home/HomePage";
 import { TeamProfileContent } from "../../../app/components/people/TeamProfileModal";
 import { ProjectDetail } from "../../../app/components/projects/ProjectDetail";
+import { ProjectsArchive } from "../../../app/components/projects/ProjectsArchive";
 import { getRelatedProjects } from "../../../app/components/projects/content";
 import { PublicPageShell } from "../../../app/components/layout/PublicPageShell";
 import { projectToLegacy, teamToLegacy } from "../../../app/content/public-api";
@@ -20,4 +21,8 @@ export function TeamPreview({ member, height, index, total }: { member: TeamMemb
 
 export function SitePreview({ site, height, focus }: { site: SiteSettingsContent; height?: number; focus?: string }) {
   return <PreviewFrame height={height} focus={focus}><PublicPageShell site={site} currentPage="home"><HomePage site={site} /></PublicPageShell></PreviewFrame>;
+}
+
+export function ProjectsPagePreview({ site, projects, height }: { site: SiteSettingsContent; projects: ProjectContent[]; height?: number }) {
+  return <PreviewFrame height={height} focus=".projects-hero"><PublicPageShell site={site} currentPage="projects"><ProjectsArchive site={site} projects={projects.map(projectToLegacy)} /></PublicPageShell></PreviewFrame>;
 }

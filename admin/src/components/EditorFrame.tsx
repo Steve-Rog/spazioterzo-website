@@ -54,7 +54,7 @@ export function EditorFrame({ title, eyebrow: _eyebrow, entity, resource, isAdmi
   const publicationMessage = !entity ? (dirty ? "Salva per creare la bozza" : "Bozza non ancora salvata") : dirty ? "Salva la bozza prima di pubblicare" : changedSincePublication(entity) ? entity.published ? "La bozza più recente non è ancora online" : "Questa bozza non è ancora online" : entity.published ? "Versione online aggiornata" : "Tutto salvato";
 
   return <section className="editor-view">
-    <div className="editor-back"><Button variant="subtle" color="dark" size="xs" leftSection={<IconArrowLeft size={15} stroke={1.8} />} onClick={onBack}>Archivio</Button></div>
+    {onBack && <div className="editor-back"><Button variant="subtle" color="dark" size="xs" leftSection={<IconArrowLeft size={15} stroke={1.8} />} onClick={onBack}>Archivio</Button></div>}
     <header className="editor-header">
       <div className="editor-identity">
         <h1>{title}</h1>

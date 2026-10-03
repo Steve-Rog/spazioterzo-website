@@ -15,6 +15,6 @@ export function meta({ loaderData }: { loaderData?: { site?: Awaited<ReturnType<
 }
 
 export default function Projects() {
-  const { projects } = useLoaderData<typeof loader>();
-  return <ProjectsArchive projects={projects} />;
+  const { projects, site } = useLoaderData<typeof loader>();
+  return <ProjectsArchive projects={projects} site={site} />;
 }

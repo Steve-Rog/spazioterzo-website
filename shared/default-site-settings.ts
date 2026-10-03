@@ -36,4 +36,11 @@ export const defaultSiteSettings: SiteSettingsContent = {
     imageStatement: { caption: "Ogni incontro può aprire una possibilità.", verticalWord: "ASCOLTO" },
     contact: { heading: [{ text: "Facciamo " }, { text: "spazio?", marks: ["italic"] }], body: asRichText("Raccontaci di cosa hai bisogno. Ti risponderemo con cura."), emailLabel: "info@spazioterzo.it" },
   },
+  projects: {
+    hero: {
+      eyebrow: "03 — Progetti",
+      headline: [{ text: "Dove la cura diventa " }, { text: "azione comune.", marks: ["italic"] }],
+      intro: asRichText("Esperienze, incontri e pratiche che prendono forma con le persone e nel territorio."),
+    },
+  },
 };

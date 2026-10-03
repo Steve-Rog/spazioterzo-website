@@ -5,7 +5,7 @@ export const ACCEPTED_MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp"] as
 export const contentLimits = {
   project: { slug: 80, title: 72, subtitle: 180, dateRange: 80, location: 90, audience: 240, theme: 48, coverAlt: 180, intro: 420, objective: 600, paragraph: 1_200, quote: 320, quoteSource: 100, listTitle: 80, listItem: 220, imageAlt: 180, imageCaption: 180, statValue: 48, statLabel: 160, outcome: 240, outcomesHeading: 180, linkLabel: 90, videoAlt: 180, videoCaption: 180, ctaLabel: 64, partner: 90, visibilityNote: 360, seoTitle: 70, seoDescription: 160 },
   team: { name: 72, role: 110, bioParagraph: 1_200, quote: 320, quoteAuthor: 80 },
-  site: { organizationName: 80, legalForm: 110, taxId: 64, footerTagline: 160, city: 80, address: 180, country: 80, phone: 60, mapUrl: 2_000, socialLabel: 40, titleSuffix: 70, description: 160, heroHeadline: 150, heroMeta: 80, ctaLabel: 64, associationHeading: 170, associationBody: 700, originEyebrow: 80, originPrelude: 220, originHeading: 180, originStatement: 700, originIdentity: 420, activitiesHeading: 160, activityTitle: 90, activityDescription: 320, territoryHeading: 170, territoryBody: 420, imageCaption: 180, verticalWord: 40, contactHeading: 150, contactBody: 320, emailLabel: 100 },
+  site: { organizationName: 80, legalForm: 110, taxId: 64, footerTagline: 160, city: 80, address: 180, country: 80, phone: 60, mapUrl: 2_000, socialLabel: 40, titleSuffix: 70, description: 160, heroHeadline: 150, heroMeta: 80, ctaLabel: 64, associationHeading: 170, associationBody: 700, originEyebrow: 80, originPrelude: 220, originHeading: 180, originStatement: 700, originIdentity: 420, activitiesHeading: 160, activityTitle: 90, activityDescription: 320, territoryHeading: 170, territoryBody: 420, imageCaption: 180, verticalWord: 40, contactHeading: 150, contactBody: 320, emailLabel: 100, projectsEyebrow: 80, projectsHeadline: 180, projectsIntro: 320 },
 } as const;
 
 export type RichTextMark = "italic" | "highlight" | "link";
@@ -52,6 +52,12 @@ export function imageCropFocus(crop: ImageCrop) {
   return { x: crop.x + crop.width / 2, y: crop.y + crop.height / 2 };
 }
 
+/** Ancora lo zoom al bordo scelto, così un ritaglio spostato non scivola verso il centro. */
+export function imageCropOrigin(crop: ImageCrop) {
+  const axis = (start: number, size: number) => size >= 99.999 ? 50 : Math.max(0, Math.min(100, start / (100 - size) * 100));
+  return { x: axis(crop.x, crop.width), y: axis(crop.y, crop.height) };
+}
+
 export type TeamMemberContent = { name: string; role: string; imageAssetId?: string; image: string; imagePosition?: string; imageCrop?: ImageCrop; bio: RichText[]; quote: RichText; quoteAuthor?: string };
 export type Activity = { id: string; title: string; description: RichText };
 export type SiteSettingsContent = {
@@ -66,6 +72,7 @@ export type SiteSettingsContent = {
     imageStatement: { image?: string; caption: string; verticalWord: string };
     contact: { heading: RichText; body: RichText; emailLabel?: string };
   };
+  projects?: { hero: { eyebrow: string; headline: RichText; intro: RichText } };
 };
 
 export type EntityType = "project" | "team_member" | "site";
@@ -156,6 +163,10 @@ export function validateSiteSettings(value: unknown): value is SiteSettingsConte
   const validIdentity = string(identity.organizationName, contentLimits.site.organizationName) && string(identity.legalForm, contentLimits.site.legalForm) && optionalString(identity.taxId, contentLimits.site.taxId) && optionalString(identity.footerTagline, contentLimits.site.footerTagline) && string(identity.city, contentLimits.site.city) && optionalString(identity.address, contentLimits.site.address) && string(identity.country, contentLimits.site.country) && optionalString(identity.mapUrl, contentLimits.site.mapUrl) && (identity.mapUrl === undefined || safeUrl(identity.mapUrl)) && safeEmail(identity.email) && optionalString(identity.phone, contentLimits.site.phone) && (identity.phones === undefined || strings(identity.phones, 6, contentLimits.site.phone))
     && [identity.logoLight, identity.logoDark, identity.favicon].every((url) => url === undefined || safeImageUrl(url)) && Array.isArray(identity.socialLinks) && identity.socialLinks.length <= 12 && identity.socialLinks.every((link) => isRecord(link) && string(link.label, contentLimits.site.socialLabel) && safeUrl(link.href));
   const validSeo = string(seo.titleSuffix, contentLimits.site.titleSuffix) && string(seo.defaultDescription, contentLimits.site.description) && (seo.shareImage === undefined || safeImageUrl(seo.shareImage));
+  const validProjects = value.projects === undefined || (isRecord(value.projects) && isRecord(value.projects.hero)
+    && string(value.projects.hero.eyebrow, contentLimits.site.projectsEyebrow)
+    && validateRichText(value.projects.hero.headline, contentLimits.site.projectsHeadline)
+    && validateRichText(value.projects.hero.intro, contentLimits.site.projectsIntro));
   const validHome = isRecord(home.hero) && validateRichText(home.hero.headline, contentLimits.site.heroHeadline) && string(home.hero.meta, contentLimits.site.heroMeta) && string(home.hero.ctaLabel, contentLimits.site.ctaLabel) && (home.hero.heroImage === undefined || safeImageUrl(home.hero.heroImage))
     && isRecord(home.association) && validateRichText(home.association.heading, contentLimits.site.associationHeading) && validateRichText(home.association.body, contentLimits.site.associationBody) && string(home.association.ctaLabel, contentLimits.site.ctaLabel) && safeUrl(home.association.ctaHref)
     && isRecord(home.origin) && string(home.origin.eyebrow, contentLimits.site.originEyebrow) && validateRichText(home.origin.prelude, contentLimits.site.originPrelude) && validateRichText(home.origin.heading, contentLimits.site.originHeading) && validateRichText(home.origin.statement, contentLimits.site.originStatement) && validateRichText(home.origin.identity, contentLimits.site.originIdentity)
@@ -163,7 +174,7 @@ export function validateSiteSettings(value: unknown): value is SiteSettingsConte
     && isRecord(home.territory) && validateRichText(home.territory.heading, contentLimits.site.territoryHeading) && validateRichText(home.territory.body, contentLimits.site.territoryBody) && string(home.territory.ctaLabel, contentLimits.site.ctaLabel) && safeUrl(home.territory.ctaHref)
     && isRecord(home.imageStatement) && (home.imageStatement.image === undefined || safeImageUrl(home.imageStatement.image)) && string(home.imageStatement.caption, contentLimits.site.imageCaption) && string(home.imageStatement.verticalWord, contentLimits.site.verticalWord)
     && isRecord(home.contact) && validateRichText(home.contact.heading, contentLimits.site.contactHeading) && validateRichText(home.contact.body, contentLimits.site.contactBody) && optionalString(home.contact.emailLabel, contentLimits.site.emailLabel);
-  return validIdentity && validSeo && validHome;
+  return validIdentity && validSeo && validHome && validProjects;
 }
 
 export function validateContent(type: EntityType, value: unknown): boolean {
@@ -198,6 +209,10 @@ export function publicationReadinessError(type: EntityType, value: unknown): str
   requiredText("Territorio — testo", home.territory.body);
   requiredText("Contatti — titolo", home.contact.heading);
   requiredText("Contatti — testo", home.contact.body);
+  if (site.projects) {
+    requiredText("Progetti — titolo hero", site.projects.hero.headline);
+    requiredText("Progetti — testo hero", site.projects.hero.intro);
+  }
 
   return missing.length ? `Completa prima di pubblicare: ${missing.join("; ")}.` : null;
 }

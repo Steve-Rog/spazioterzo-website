@@ -6,6 +6,9 @@ import { foto, fotoSrcSet } from "../ui/image-source";
 import { Reveal } from "../ui/Reveal";
 import { type Project } from "./content";
 import { useMotoRidotto } from "../ui/use-entrata";
+import { RichText } from "../ui/RichText";
+import type { SiteSettingsContent } from "../../../shared/content-schema";
+import { defaultSiteSettings } from "../../../shared/default-site-settings";
 
 function ProjectRow({ project, index, featured = false }: { project: Project; index: number; featured?: boolean }) {
   const reduceMotion = useMotoRidotto();
@@ -33,9 +36,10 @@ function ProjectRow({ project, index, featured = false }: { project: Project; in
   );
 }
 
-export function ProjectsArchive({ projects }: { projects: Project[] }) {
+export function ProjectsArchive({ projects, site }: { projects: Project[]; site?: SiteSettingsContent }) {
   const reduceMotion = useMotoRidotto();
   const [featured, ...remainingProjects] = projects;
+  const hero = site?.projects?.hero ?? defaultSiteSettings.projects!.hero;
 
   return (
     <main className="projects-page">
@@ -49,14 +53,14 @@ export function ProjectsArchive({ projects }: { projects: Project[] }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: reduceMotion ? 0 : 0.55, ease: [0.22, 1, 0.36, 1] }}
           >
-            03 — Progetti
+            {hero.eyebrow}
           </motion.p>
           <motion.h1
             initial={reduceMotion ? false : { opacity: 0, y: 38 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: reduceMotion ? 0 : 0.82, delay: reduceMotion ? 0 : 0.11, ease: [0.22, 1, 0.36, 1] }}
           >
-            Dove la cura<br />diventa <em>azione comune.</em>
+            <RichText value={hero.headline} />
           </motion.h1>
           <motion.p
             className="projects-hero-intro"
@@ -64,7 +68,7 @@ export function ProjectsArchive({ projects }: { projects: Project[] }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: reduceMotion ? 0 : 0.7, delay: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
           >
-            Esperienze, incontri e pratiche che prendono forma con le persone e nel territorio.
+            <RichText value={hero.intro} />
           </motion.p>
         </div>
       </section>
@@ -74,7 +78,7 @@ export function ProjectsArchive({ projects }: { projects: Project[] }) {
           <p className="section-label">Progetti in corso</p>
           <p>Ogni progetto è un punto di partenza: una pratica condivisa, costruita dentro relazioni reali.</p>
         </div>
-        <ProjectRow project={featured} index={0} featured />
+        {featured && <ProjectRow project={featured} index={0} featured />}
         <div className="projects-archive-secondary">
           {remainingProjects.map((project, index) => <ProjectRow key={project.slug} project={project} index={index + 1} />)}
         </div>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from "re
 import Cropper, { type Area } from "react-easy-crop";
 import { IconPencil, IconRefresh } from "@tabler/icons-react";
 import { ActionIcon, Button, Group, Modal, Slider, Stack, Text, Tooltip } from "@mantine/core";
-import { imageCropFocus, imageCropZoom, type ImageCrop } from "../../shared/content-schema";
+import { imageCropFocus, imageCropOrigin, imageCropZoom, type ImageCrop } from "../../shared/content-schema";
 
 const round = (value: number) => Math.round(value * 100) / 100;
 const normalise = (area: Area): ImageCrop => ({ x: round(area.x), y: round(area.y), width: round(area.width), height: round(area.height) });
@@ -10,7 +10,8 @@ const zoomFor = (value?: ImageCrop, maxZoom = 3) => imageCropZoom(value, maxZoom
 const cropStyle = (value?: ImageCrop): CSSProperties | undefined => {
   if (!value) return undefined;
   const focus = imageCropFocus(value);
-  return { objectPosition: `${focus.x}% ${focus.y}%`, transform: `scale(${zoomFor(value)})`, transformOrigin: `${focus.x}% ${focus.y}%` };
+  const origin = imageCropOrigin(value);
+  return { objectPosition: `${focus.x}% ${focus.y}%`, transform: `scale(${zoomFor(value)})`, transformOrigin: `${origin.x}% ${origin.y}%` };
 };
 
 type ImageCropperProps = {
@@ -32,12 +33,12 @@ export function ImageCropper({ image, value, onChange, title = "Ritaglio immagin
   const [session, setSession] = useState(0);
   const areaRef = useRef<ImageCrop | undefined>(value);
 
-  const resetDraft = useCallback((nextValue = value) => {
+  const resetDraft = useCallback((nextValue: ImageCrop | undefined) => {
     setCrop({ x: 0, y: 0 });
     setZoom(zoomFor(nextValue, maxZoom));
     areaRef.current = nextValue;
     setSession((current) => current + 1);
-  }, [maxZoom, value]);
+  }, [maxZoom]);
 
   useEffect(() => { resetDraft(value); }, [image, resetDraft, value]);
 

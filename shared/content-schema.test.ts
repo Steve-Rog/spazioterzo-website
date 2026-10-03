@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asRichText, contentLimits, imageCropZoom, normaliseProjectSlug, publicationReadinessError, validateProject, validateSiteSettings, validateTeamMember } from "./content-schema";
+import { asRichText, contentLimits, imageCropOrigin, imageCropZoom, normaliseProjectSlug, publicationReadinessError, validateProject, validateSiteSettings, validateTeamMember } from "./content-schema";
 import { defaultSiteSettings } from "./default-site-settings";
 
 describe("content schema", () => {
@@ -23,6 +23,8 @@ describe("content schema", () => {
     // inferiore a 100 già a zoom 1: usare Math.min qui ingrandirebbe per errore.
     expect(imageCropZoom({ x: 0, y: 8.33, width: 100, height: 83.33 })).toBe(1);
     expect(imageCropZoom({ x: 25, y: 30, width: 50, height: 40 })).toBe(2);
+    expect(imageCropOrigin({ x: 0, y: 25, width: 50, height: 50 })).toEqual({ x: 0, y: 50 });
+    expect(imageCropOrigin({ x: 50, y: 50, width: 50, height: 50 })).toEqual({ x: 100, y: 100 });
   });
 
   it("rejects incomplete public content", () => {

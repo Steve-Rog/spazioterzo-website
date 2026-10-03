@@ -3,7 +3,7 @@ import { ActionIcon, Button, Group, Stack, Text, TextInput, Textarea, Tooltip, U
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import { IconChevronRight, IconPlus, IconTrash } from "@tabler/icons-react";
-import { asRichText, contentLimits, MAX_HOME_ACTIVITIES, plainText, type ContentEntity, type SiteSettingsContent } from "../../../shared/content-schema";
+import { asRichText, contentLimits, MAX_HOME_ACTIVITIES, plainText, type ContentEntity, type ProjectContent, type SiteSettingsContent } from "../../../shared/content-schema";
 import { defaultSiteSettings } from "../../../shared/default-site-settings";
 import { adminApi, type AdminResource } from "../api";
 import { dropEmptyLines, dropEmptyPairs, incompletePair } from "../project-fields";
@@ -17,10 +17,12 @@ import { parseRoute, type SitePanel } from "../routing";
 import { EditorFrame } from "../components/EditorFrame";
 import { FieldCounter, SectionHeading } from "../components/FormParts";
 import { clone } from "../form";
-import { SitePreview } from "../components/PublicPreviews";
+import { ProjectsPagePreview, SitePreview } from "../components/PublicPreviews";
 
-export function SiteEditor({ entity, activePanel, anchor, onSaved, onPublish, onDirtyChange, onRestored }: { onRestored?: () => Promise<void>; entity?: ContentEntity<SiteSettingsContent>; activePanel: SitePanel; anchor?: string; onSaved: (entity: ContentEntity, message?: string) => Promise<void>; onPublish: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {
-  const form = useForm<SiteSettingsContent>({ mode: "controlled", initialValues: clone(entity?.draft ?? entity?.published ?? defaultSiteSettings) });
+export function SiteEditor({ entity, projects, activePanel, anchor, onSaved, onPublish, onDirtyChange, onRestored }: { onRestored?: () => Promise<void>; entity?: ContentEntity<SiteSettingsContent>; projects: ProjectContent[]; activePanel: SitePanel; anchor?: string; onSaved: (entity: ContentEntity, message?: string) => Promise<void>; onPublish: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {
+  const initialValues = clone(entity?.draft ?? entity?.published ?? defaultSiteSettings);
+  initialValues.projects ??= clone(defaultSiteSettings.projects!);
+  const form = useForm<SiteSettingsContent>({ mode: "controlled", initialValues });
   const [saving, setSaving] = useState(false);
   const [sezioneHome, setSezioneHome] = useState<string | null>(anchor ?? "apertura");
   const update = (recipe: (draft: SiteSettingsContent) => void) => { const next = clone(form.values); recipe(next); form.setValues(next); };
@@ -30,9 +32,24 @@ export function SiteEditor({ entity, activePanel, anchor, onSaved, onPublish, on
     if (social) { notifications.show({ color: "orange", message: social }); return; }
     const contenuto = { ...values, identity: { ...values.identity, socialLinks: socialPuliti, phones: values.identity.phones ? dropEmptyLines(values.identity.phones) : undefined } };
     setSaving(true); try { const saved = await adminApi.save("site", entity?.id, contenuto, undefined, entity?.updatedAt); form.setValues(contenuto); form.resetDirty(contenuto); await onSaved(saved); } catch (error) { notifications.show({ color: "red", message: error instanceof Error ? error.message : "Bozza non salvata" }); } finally { setSaving(false); } });
-  const panelTitle = activePanel === "identity" ? "Identità del sito" : activePanel === "home" ? "Home" : "SEO e condivisione";
+  const panelTitle = activePanel === "identity" ? "Identità del sito" : activePanel === "home" ? "Home" : activePanel === "projects" ? "Pagina Progetti" : "SEO e condivisione";
   const previewFocus = activePanel === "home" ? selettoreHome(sezioneHome) : selettoreSito(activePanel);
-  return <form onSubmit={save}><EditorFrame title={panelTitle} eyebrow="Sito" entity={entity} resource="site" onSave={() => save()} saving={saving} dirty={form.isDirty()} preview={<SitePreview site={form.values} focus={previewFocus} />} onPublish={onPublish} onDirtyChange={onDirtyChange} onRestored={onRestored}>{activePanel === "identity" ? <SiteIdentity value={form.values} update={update} /> : activePanel === "home" ? <HomeEditor value={form.values} update={update} initialAnchor={anchor} onSectionChange={setSezioneHome} /> : <SiteSeo value={form.values} update={update} />}</EditorFrame></form>;
+  const preview = activePanel === "projects" ? <ProjectsPagePreview site={form.values} projects={projects} /> : <SitePreview site={form.values} focus={previewFocus} />;
+  return <form onSubmit={save}><EditorFrame title={panelTitle} eyebrow="Sito" entity={entity} resource="site" onSave={() => save()} saving={saving} dirty={form.isDirty()} preview={preview} onPublish={onPublish} onDirtyChange={onDirtyChange} onRestored={onRestored}>{activePanel === "identity" ? <SiteIdentity value={form.values} update={update} /> : activePanel === "home" ? <HomeEditor value={form.values} update={update} initialAnchor={anchor} onSectionChange={setSezioneHome} /> : activePanel === "projects" ? <ProjectsSettings value={form.values} update={update} /> : <SiteSeo value={form.values} update={update} />}</EditorFrame></form>;
+}
+
+function ProjectsSettings({ value, update }: { value: SiteSettingsContent; update: (recipe: (draft: SiteSettingsContent) => void) => void }) {
+  const hero = value.projects?.hero ?? defaultSiteSettings.projects!.hero;
+  const edit = (recipe: (draft: NonNullable<SiteSettingsContent["projects"]>["hero"]) => void) => update((draft) => {
+    draft.projects ??= clone(defaultSiteSettings.projects!);
+    recipe(draft.projects.hero);
+  });
+  return <section className="form-section">
+    <SectionHeading title="Hero Progetti" hint="L’apertura della pagina /progetti. Le modifiche diventano online insieme agli altri contenuti del sito." shape="hero" />
+    <TextInput label="Etichetta" maxLength={contentLimits.site.projectsEyebrow} value={hero.eyebrow} onChange={(event) => edit((draft) => { draft.eyebrow = event.currentTarget.value; })} />
+    <RichTextField label="Titolo" maxLength={contentLimits.site.projectsHeadline} value={hero.headline} onChange={(headline) => edit((draft) => { draft.headline = headline; })} />
+    <RichTextField label="Testo introduttivo" maxLength={contentLimits.site.projectsIntro} value={hero.intro} onChange={(intro) => edit((draft) => { draft.intro = intro; })} />
+  </section>;
 }
 function SiteIdentity({ value, update }: { value: SiteSettingsContent; update: (recipe: (draft: SiteSettingsContent) => void) => void }) {
   const phones = value.identity.phones ?? (value.identity.phone ? [value.identity.phone] : []);

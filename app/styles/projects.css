@@ -5,7 +5,7 @@
 .projects-hero-visual:after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, var(--ink) 1%, rgba(19,43,53,.74) 20%, rgba(19,43,53,.05) 68%), linear-gradient(0deg, rgba(9,28,34,.55), transparent 45%); }
 .projects-hero .section-label { color: #b5c7c4; }
 .projects-hero-content { max-width: min(75vw, 1220px); padding: clamp(88px, 11vw, 162px) clamp(24px, 9vw, 150px) 90px; margin-top: 8vh; }
-.projects-hero h1 { max-width: 1090px; margin: 0; font-size: clamp(66px, 9.2vw, 142px); line-height: .79; letter-spacing: -.09em; }
+.projects-hero h1 { max-width: 1090px; margin: 0; font-size: clamp(66px, 9.2vw, 142px); line-height: .79; letter-spacing: -.09em; white-space: pre-line; }
 .projects-hero h1 em { color: var(--sun); }
 .projects-hero-intro { max-width: 390px; margin: clamp(36px, 5vw, 70px) 0 0 min(9vw, 150px); font-size: clamp(17px, 1.5vw, 22px); line-height: 1.37; letter-spacing: -.025em; }
 
@@ -98,9 +98,9 @@
 .project-related { padding: clamp(87px, 11vw, 165px) clamp(24px, 9vw, 150px); background: #e9e6dd; }
 .project-related > div { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(24px, 4vw, 67px); }
 .project-related a { display: block; padding-bottom: 27px; border-bottom: 1px solid var(--line); }
-.project-related-image { overflow: hidden; margin-bottom: 25px; background: var(--ink); }
-.project-related img { display: block; width: 100%; aspect-ratio: 1.5; object-fit: cover; background: var(--ink); transition: transform .45s cubic-bezier(.22,1,.36,1); }
-.project-related a:hover img { transform: scale(.98); }
+.project-related-image { overflow: hidden; margin-bottom: 25px; background: var(--ink); transition: transform .45s cubic-bezier(.22,1,.36,1); }
+.project-related img { display: block; width: 100%; aspect-ratio: 1.5; object-fit: cover; background: var(--ink); }
+.project-related a:hover .project-related-image { transform: scale(.98); }
 .project-related span { color: #60797b; font: 500 9px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .09em; }
 .project-related h2 { margin: 13px 0 10px; font-size: clamp(37px, 4vw, 62px); line-height: .83; letter-spacing: -.08em; }
 .project-related p { max-width: 380px; margin: 0 0 20px; font-size: 17px; line-height: 1.35; }

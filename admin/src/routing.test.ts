@@ -22,6 +22,7 @@ describe("parseRoute", () => {
 
   it("seleziona il pannello del sito, con ripiego sull'identità", () => {
     expect(parseRoute("#/sito/home")).toEqual({ section: "site", editingId: "site", sitePanel: "home" });
+    expect(parseRoute("#/sito/progetti").sitePanel).toBe("projects");
     expect(parseRoute("#/sito/seo").sitePanel).toBe("seo");
     expect(parseRoute("#/sito/inventato").sitePanel).toBe("identity");
   });

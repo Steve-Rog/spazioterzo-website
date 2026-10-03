@@ -1,11 +1,13 @@
+import type { RichText } from "../../../shared/content-schema";
+
 export type TeamMember = {
   name: string;
   role: string;
   image: string;
   imagePosition?: string;
   imageCrop?: { x: number; y: number; width: number; height: number };
-  bio: string[];
-  quote: string;
+  bio: Array<RichText | string>;
+  quote: RichText | string;
   quoteAuthor?: string;
 };
 
