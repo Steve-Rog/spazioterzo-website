@@ -27,7 +27,7 @@ export function ImageStatement({ content }: { content: SiteSettingsContent }) {
     <motion.section
       ref={statementRef}
       className="image-statement"
-      aria-label="Persone in ascolto"
+      aria-label={content.home.imageStatement.imageAlt?.trim() || content.home.imageStatement.caption}
       animate={anima ? { clipPath: inVista ? "inset(0% 0% 0% 0%)" : "inset(16% 9% 16% 9%)" } : undefined}
       transition={durata(inVista, reduceMotion ? 0 : 1.15)}
     >

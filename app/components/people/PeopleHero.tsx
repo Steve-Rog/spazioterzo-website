@@ -140,7 +140,7 @@ export function PeopleHero({ teamMembers, content }: { teamMembers: TeamMember[]
             }}
             transition={{ duration: reduceMotion ? 0 : 0.48, ease: [0.22, 1, 0.36, 1] }}
           >
-            <img src={foto(member.image, 768)} srcSet={fotoSrcSet(member.image, 1024)} sizes="(max-width: 900px) 33vw, 25vw" alt={`Ritratto di ${member.name}`} style={portraitCropStyle(member)} />
+            <img src={foto(member.image, 768)} srcSet={fotoSrcSet(member.image, 1024)} sizes="(max-width: 900px) 33vw, 25vw" alt={member.imageAlt?.trim() || `Ritratto di ${member.name}`} style={portraitCropStyle(member)} />
             <span className="people-hero-portrait-caption">
               <strong>{member.name}</strong>
               <small>Apri il profilo ↗</small>

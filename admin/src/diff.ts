@@ -7,7 +7,7 @@ const labels: Record<string, string> = {
   themes: "Temi", cover: "Copertina", coverAlt: "Testo alternativo copertina", coverCrop: "Ritaglio hero", archiveCrop: "Ritaglio archivio", intro: "Introduzione", objective: "Intenzione", blocks: "Blocchi del racconto",
   outcomes: "Risultati", links: "Link", video: "Video", cta: "Invito all’azione", partners: "Partner", funders: "Finanziatori", visibilityNote: "Nota di visibilità",
   relatedSlugs: "Progetti correlati", seoTitle: "Titolo SEO", seoDescription: "Descrizione SEO",
-  name: "Nome", role: "Ruolo", image: "Ritratto", imageCrop: "Ritaglio del ritratto", bio: "Bio", quote: "Citazione", quoteAuthor: "Autore citazione",
+  name: "Nome", role: "Ruolo", image: "Ritratto", imageAlt: "Testo alternativo del ritratto", imageCrop: "Ritaglio del ritratto", bio: "Bio", quote: "Citazione", quoteAuthor: "Autore citazione",
   identity: "Identità e footer", home: "Home", seo: "SEO e condivisione",
 };
 

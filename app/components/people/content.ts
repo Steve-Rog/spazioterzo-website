@@ -4,6 +4,7 @@ export type TeamMember = {
   name: string;
   role: string;
   image: string;
+  imageAlt?: string;
   imagePosition?: string;
   imageCrop?: { x: number; y: number; width: number; height: number };
   bio: Array<RichText | string>;

@@ -34,6 +34,19 @@ describe("content schema", () => {
     expect(validateSiteSettings({ identity: { organizationName: "Spazio" } })).toBe(false);
   });
 
+  it("accepts editable alternative text for portraits and site images", () => {
+    const member = { name: "Nome", role: "Ruolo", image: "/ritratto.jpg", imageAlt: "Persona sorridente", bio: [asRichText("Bio")], quote: asRichText("Citazione") };
+    expect(validateTeamMember(member)).toBe(true);
+    expect(validateTeamMember({ ...member, imageAlt: "a".repeat(contentLimits.team.imageAlt + 1) })).toBe(false);
+
+    const site = JSON.parse(JSON.stringify(defaultSiteSettings));
+    site.seo.shareImageAlt = "Gruppo di persone";
+    site.home.imageStatement.imageAlt = "Persone durante un incontro";
+    expect(validateSiteSettings(site)).toBe(true);
+    site.seo.shareImageAlt = "a".repeat(contentLimits.site.imageAlt + 1);
+    expect(validateSiteSettings(site)).toBe(false);
+  });
+
   it("rejects unsafe links, invalid video IDs and images without alt text", () => {
     const base = { slug: "progetto", title: "Titolo", subtitle: "Sottotitolo", statusLabel: "In corso" as const, dateRange: "2026", location: "Catania", audience: "Persone", themes: ["Cura"], cover: "/cover.jpg", coverAlt: "Copertina", intro: asRichText("Intro"), objective: asRichText("Obiettivo"), blocks: [], outcomes: [], links: [], partners: [], funders: [], relatedSlugs: [] };
     expect(validateProject({ ...base, links: [{ label: "Malevolo", href: "javascript:alert(1)", kind: "website" }] })).toBe(false);

@@ -11,7 +11,7 @@ export async function loader() {
 
 export function meta({ loaderData }: { loaderData?: { site?: Awaited<ReturnType<typeof getPublicSite>> } }) {
   const name = loaderData?.site?.identity.organizationName ?? "Spazio Terzo";
-  return pageMeta({ title: withSiteSuffix("Le persone", loaderData?.site), description: siteDescription(loaderData?.site, `Le persone di ${name}: percorsi, pratiche e sguardi che danno vita all'associazione.`), image: loaderData?.site?.seo.shareImage });
+  return pageMeta({ title: withSiteSuffix("Le persone", loaderData?.site), description: siteDescription(loaderData?.site, `Le persone di ${name}: percorsi, pratiche e sguardi che danno vita all'associazione.`), image: loaderData?.site?.seo.shareImage, imageAlt: loaderData?.site?.seo.shareImageAlt });
 }
 
 export default function People() {

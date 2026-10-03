@@ -79,7 +79,7 @@ export function TeamProfileContent({ member, index, total, previous, next, onClo
             exit={reduceMotion ? undefined : { opacity: 0, clipPath: "inset(0 100% 0 0)", scale: .99 }}
             transition={{ duration: reduceMotion ? 0 : 0.55, ease: [0.77, 0, 0.18, 1] }}
           >
-            <img src={foto(member.image, 768)} srcSet={fotoSrcSet(member.image, 1024)} sizes="(max-width: 720px) 100vw, 40vw" alt={`Ritratto di ${member.name}`} style={portraitCropStyle(member)} />
+            <img src={foto(member.image, 768)} srcSet={fotoSrcSet(member.image, 1024)} sizes="(max-width: 720px) 100vw, 40vw" alt={member.imageAlt?.trim() || `Ritratto di ${member.name}`} style={portraitCropStyle(member)} />
             <figcaption>{String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}</figcaption>
           </motion.figure>
         </AnimatePresence>

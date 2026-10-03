@@ -70,7 +70,7 @@ export function MediaPicker({ label, description, value, onChange, required = fa
   }, []);
   useEffect(() => { if (opened) void load(); }, [opened, load]);
 
-  const select = (asset: MediaAsset) => { onChange({ url: asset.url, alt: value.alt || asset.alt, assetId: asset.id }); setOpened(false); };
+  const select = (asset: MediaAsset) => { onChange({ url: asset.url, alt: asset.alt, assetId: asset.id }); setOpened(false); };
   const upload = async (files: File[]) => {
     const file = files[0]; if (!file) return;
     if (!value.alt.trim()) { notifications.show({ color: "orange", message: "Compila il testo alternativo qui sopra prima di caricare l’immagine." }); return; }
@@ -99,7 +99,7 @@ export function MediaPicker({ label, description, value, onChange, required = fa
         <Dropzone onDrop={upload} onReject={() => notifications.show({ color: "red", message: "Sono ammessi JPEG, PNG e WebP fino a 10 MB." })} accept={[...ACCEPTED_MEDIA_TYPES]} maxSize={10 * 1024 * 1024} multiple={false} loading={uploading} className="media-dropzone">
           <Text ta="center" fw={600}>Trascina qui un’immagine oppure clicca per caricarla</Text><Text ta="center" c="dimmed" size="xs">JPEG, PNG o WebP · massimo 10 MB{altEditable ? " · compila prima il testo alternativo" : ""}</Text>
         </Dropzone>
-        {loading ? <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }} spacing="sm">{Array.from({ length: 8 }, (_, index) => <Skeleton key={index} height={130} />)}</SimpleGrid> : assets.length ? <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }} spacing="sm">{assets.map((asset) => <MediaTile key={asset.id} asset={asset} onSelect={() => select(asset)} onRenamed={(alt) => setAssets((current) => current.map((item) => item.id === asset.id ? { ...item, alt } : item))} onDeleted={() => setAssets((current) => current.filter((item) => item.id !== asset.id))} />)}</SimpleGrid> : <div className="empty-media">Nessuna immagine trovata. Carica la prima.</div>}
+        {loading ? <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }} spacing="sm">{Array.from({ length: 8 }, (_, index) => <Skeleton key={index} height={130} />)}</SimpleGrid> : assets.length ? <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }} spacing="sm">{assets.map((asset) => <MediaTile key={asset.id} asset={asset} onSelect={() => select(asset)} onRenamed={(alt) => { setAssets((current) => current.map((item) => item.id === asset.id ? { ...item, alt } : item)); if (value.assetId === asset.id) onChange({ ...value, alt }); }} onDeleted={() => setAssets((current) => current.filter((item) => item.id !== asset.id))} />)}</SimpleGrid> : <div className="empty-media">Nessuna immagine trovata. Carica la prima.</div>}
         {nextCursor && <Group justify="center"><Button variant="default" size="xs" onClick={() => void load(true)} loading={loading}>Carica altre immagini</Button></Group>}
       </Stack>
     </Modal>

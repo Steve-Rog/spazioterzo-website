@@ -1,6 +1,6 @@
 import type { SiteSettingsContent } from "../../shared/content-schema";
 
-type PageMetaInput = { title: string; description: string; image?: string };
+type PageMetaInput = { title: string; description: string; image?: string; imageAlt?: string };
 
 export function withSiteSuffix(title: string, site?: SiteSettingsContent) {
   const suffix = site?.seo.titleSuffix.trim() || site?.identity.organizationName.trim() || "Spazio Terzo";
@@ -22,7 +22,7 @@ export function siteDescription(site: SiteSettingsContent | undefined, fallback:
 }
 
 /** Metadati identici per ricerca e condivisioni: cambiare il CMS aggiorna tutte le pagine. */
-export function pageMeta({ title, description, image }: PageMetaInput) {
+export function pageMeta({ title, description, image, imageAlt }: PageMetaInput) {
   return [
     { title },
     { name: "description", content: description },
@@ -30,6 +30,10 @@ export function pageMeta({ title, description, image }: PageMetaInput) {
     { property: "og:locale", content: "it_IT" },
     { property: "og:title", content: title },
     { property: "og:description", content: description },
-    ...(image ? [{ property: "og:image", content: image }, { name: "twitter:card", content: "summary_large_image" }] : [{ name: "twitter:card", content: "summary" }]),
+    ...(image ? [
+      { property: "og:image", content: image },
+      ...(imageAlt?.trim() ? [{ property: "og:image:alt", content: imageAlt }, { name: "twitter:image:alt", content: imageAlt }] : []),
+      { name: "twitter:card", content: "summary_large_image" },
+    ] : [{ name: "twitter:card", content: "summary" }]),
   ];
 }

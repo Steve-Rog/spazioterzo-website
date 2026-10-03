@@ -4,8 +4,8 @@ export const MAX_MEDIA_BYTES = 10 * 1024 * 1024;
 export const ACCEPTED_MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 export const contentLimits = {
   project: { slug: 80, title: 72, subtitle: 180, dateRange: 80, location: 90, audience: 240, theme: 48, coverAlt: 180, intro: 420, objective: 600, paragraph: 1_200, quote: 320, quoteSource: 100, listTitle: 80, listItem: 220, imageAlt: 180, imageCaption: 180, statValue: 48, statLabel: 160, outcome: 240, outcomesHeading: 180, linkLabel: 90, videoAlt: 180, videoCaption: 180, ctaLabel: 64, partner: 90, visibilityNote: 360, seoTitle: 70, seoDescription: 160 },
-  team: { name: 72, role: 110, bioParagraph: 1_200, quote: 320, quoteAuthor: 80 },
-  site: { organizationName: 80, legalForm: 110, taxId: 64, footerTagline: 160, city: 80, address: 180, country: 80, phone: 60, mapUrl: 2_000, socialLabel: 40, titleSuffix: 70, description: 160, heroHeadline: 150, heroMeta: 80, ctaLabel: 64, associationHeading: 170, associationBody: 700, originEyebrow: 80, originPrelude: 220, originHeading: 180, originStatement: 700, originIdentity: 420, activitiesHeading: 160, activityTitle: 90, activityDescription: 320, territoryHeading: 170, territoryBody: 420, imageCaption: 180, verticalWord: 40, contactHeading: 150, contactBody: 320, emailLabel: 100, peopleHeadline: 180, peopleIntro: 320, projectsEyebrow: 80, projectsHeadline: 180, projectsIntro: 320 },
+  team: { name: 72, role: 110, imageAlt: 180, bioParagraph: 1_200, quote: 320, quoteAuthor: 80 },
+  site: { organizationName: 80, legalForm: 110, taxId: 64, footerTagline: 160, city: 80, address: 180, country: 80, phone: 60, mapUrl: 2_000, socialLabel: 40, titleSuffix: 70, description: 160, imageAlt: 180, heroHeadline: 150, heroMeta: 80, ctaLabel: 64, associationHeading: 170, associationBody: 700, originEyebrow: 80, originPrelude: 220, originHeading: 180, originStatement: 700, originIdentity: 420, activitiesHeading: 160, activityTitle: 90, activityDescription: 320, territoryHeading: 170, territoryBody: 420, imageCaption: 180, verticalWord: 40, contactHeading: 150, contactBody: 320, emailLabel: 100, peopleHeadline: 180, peopleIntro: 320, projectsEyebrow: 80, projectsHeadline: 180, projectsIntro: 320 },
 } as const;
 
 export type RichTextMark = "italic" | "highlight" | "link";
@@ -58,18 +58,18 @@ export function imageCropOrigin(crop: ImageCrop) {
   return { x: axis(crop.x, crop.width), y: axis(crop.y, crop.height) };
 }
 
-export type TeamMemberContent = { name: string; role: string; imageAssetId?: string; image: string; imagePosition?: string; imageCrop?: ImageCrop; bio: RichText[]; quote: RichText; quoteAuthor?: string };
+export type TeamMemberContent = { name: string; role: string; imageAssetId?: string; image: string; imageAlt?: string; imagePosition?: string; imageCrop?: ImageCrop; bio: RichText[]; quote: RichText; quoteAuthor?: string };
 export type Activity = { id: string; title: string; description: RichText };
 export type SiteSettingsContent = {
   identity: { organizationName: string; legalForm: string; taxId?: string; footerTagline?: string; city: string; address?: string; country: string; mapUrl?: string; email: string; phone?: string; phones?: string[]; logoLight?: string; logoDark?: string; favicon?: string; socialLinks: Array<{ label: string; href: string }> };
-  seo: { titleSuffix: string; defaultDescription: string; shareImage?: string };
+  seo: { titleSuffix: string; defaultDescription: string; shareImage?: string; shareImageAlt?: string };
   home: {
     hero: { headline: RichText; meta: string; ctaLabel: string; heroImage?: string };
     association: { heading: RichText; body: RichText; ctaLabel: string; ctaHref: string };
     origin: { eyebrow: string; prelude: RichText; heading: RichText; statement: RichText; identity: RichText };
     activities: { heading: RichText; items: Activity[] };
     territory: { heading: RichText; body: RichText; ctaLabel: string; ctaHref: string };
-    imageStatement: { image?: string; caption: string; verticalWord: string };
+    imageStatement: { image?: string; imageAlt?: string; caption: string; verticalWord: string };
     contact: { heading: RichText; body: RichText; emailLabel?: string };
   };
   people?: { hero: { heading: RichText; intro: RichText } };
@@ -154,7 +154,7 @@ function validateImageCrop(value: unknown): value is ImageCrop {
 
 export function validateTeamMember(value: unknown): value is TeamMemberContent {
   return isRecord(value) && string(value.name, contentLimits.team.name) && string(value.role, contentLimits.team.role) && (value.imageAssetId === undefined || safeId(value.imageAssetId)) && safeImageUrl(value.image)
-    && optionalString(value.imagePosition, 120) && (value.imageCrop === undefined || validateImageCrop(value.imageCrop)) && Array.isArray(value.bio) && value.bio.length <= 12 && value.bio.every((paragraph) => validateRichText(paragraph, contentLimits.team.bioParagraph))
+    && optionalString(value.imageAlt, contentLimits.team.imageAlt) && optionalString(value.imagePosition, 120) && (value.imageCrop === undefined || validateImageCrop(value.imageCrop)) && Array.isArray(value.bio) && value.bio.length <= 12 && value.bio.every((paragraph) => validateRichText(paragraph, contentLimits.team.bioParagraph))
     && validateRichText(value.quote, contentLimits.team.quote) && optionalString(value.quoteAuthor, contentLimits.team.quoteAuthor);
 }
 
@@ -163,7 +163,7 @@ export function validateSiteSettings(value: unknown): value is SiteSettingsConte
   const { identity, seo, home } = value;
   const validIdentity = string(identity.organizationName, contentLimits.site.organizationName) && string(identity.legalForm, contentLimits.site.legalForm) && optionalString(identity.taxId, contentLimits.site.taxId) && optionalString(identity.footerTagline, contentLimits.site.footerTagline) && string(identity.city, contentLimits.site.city) && optionalString(identity.address, contentLimits.site.address) && string(identity.country, contentLimits.site.country) && optionalString(identity.mapUrl, contentLimits.site.mapUrl) && (identity.mapUrl === undefined || safeUrl(identity.mapUrl)) && safeEmail(identity.email) && optionalString(identity.phone, contentLimits.site.phone) && (identity.phones === undefined || strings(identity.phones, 6, contentLimits.site.phone))
     && [identity.logoLight, identity.logoDark, identity.favicon].every((url) => url === undefined || safeImageUrl(url)) && Array.isArray(identity.socialLinks) && identity.socialLinks.length <= 12 && identity.socialLinks.every((link) => isRecord(link) && string(link.label, contentLimits.site.socialLabel) && safeUrl(link.href));
-  const validSeo = string(seo.titleSuffix, contentLimits.site.titleSuffix) && string(seo.defaultDescription, contentLimits.site.description) && (seo.shareImage === undefined || safeImageUrl(seo.shareImage));
+  const validSeo = string(seo.titleSuffix, contentLimits.site.titleSuffix) && string(seo.defaultDescription, contentLimits.site.description) && (seo.shareImage === undefined || safeImageUrl(seo.shareImage)) && optionalString(seo.shareImageAlt, contentLimits.site.imageAlt);
   const validProjects = value.projects === undefined || (isRecord(value.projects) && isRecord(value.projects.hero)
     && string(value.projects.hero.eyebrow, contentLimits.site.projectsEyebrow)
     && validateRichText(value.projects.hero.headline, contentLimits.site.projectsHeadline)
@@ -176,7 +176,7 @@ export function validateSiteSettings(value: unknown): value is SiteSettingsConte
     && isRecord(home.origin) && string(home.origin.eyebrow, contentLimits.site.originEyebrow) && validateRichText(home.origin.prelude, contentLimits.site.originPrelude) && validateRichText(home.origin.heading, contentLimits.site.originHeading) && validateRichText(home.origin.statement, contentLimits.site.originStatement) && validateRichText(home.origin.identity, contentLimits.site.originIdentity)
     && isRecord(home.activities) && validateRichText(home.activities.heading, contentLimits.site.activitiesHeading) && Array.isArray(home.activities.items) && home.activities.items.length <= MAX_HOME_ACTIVITIES && home.activities.items.every((item) => isRecord(item) && safeId(item.id) && string(item.title, contentLimits.site.activityTitle) && validateRichText(item.description, contentLimits.site.activityDescription))
     && isRecord(home.territory) && validateRichText(home.territory.heading, contentLimits.site.territoryHeading) && validateRichText(home.territory.body, contentLimits.site.territoryBody) && string(home.territory.ctaLabel, contentLimits.site.ctaLabel) && safeUrl(home.territory.ctaHref)
-    && isRecord(home.imageStatement) && (home.imageStatement.image === undefined || safeImageUrl(home.imageStatement.image)) && string(home.imageStatement.caption, contentLimits.site.imageCaption) && string(home.imageStatement.verticalWord, contentLimits.site.verticalWord)
+    && isRecord(home.imageStatement) && (home.imageStatement.image === undefined || safeImageUrl(home.imageStatement.image)) && optionalString(home.imageStatement.imageAlt, contentLimits.site.imageAlt) && string(home.imageStatement.caption, contentLimits.site.imageCaption) && string(home.imageStatement.verticalWord, contentLimits.site.verticalWord)
     && isRecord(home.contact) && validateRichText(home.contact.heading, contentLimits.site.contactHeading) && validateRichText(home.contact.body, contentLimits.site.contactBody) && optionalString(home.contact.emailLabel, contentLimits.site.emailLabel);
   return validIdentity && validSeo && validHome && validPeople && validProjects;
 }

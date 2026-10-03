@@ -14,6 +14,7 @@ export function meta({ loaderData }: { loaderData?: { site?: Awaited<ReturnType<
     title: homeTitle(site),
     description: siteDescription(site, "Spazio Terzo è un'associazione che mette in relazione psicologia, psicoterapia e territorio."),
     image: site?.seo.shareImage,
+    imageAlt: site?.seo.shareImageAlt,
   });
 }
 

@@ -9,13 +9,15 @@ describe("site metadata", () => {
   });
 
   it("keeps search and social metadata aligned", () => {
-    const meta = pageMeta({ title: "Titolo", description: "Descrizione", image: "https://media.spazioterzo.org/share.jpg" });
+    const meta = pageMeta({ title: "Titolo", description: "Descrizione", image: "https://media.spazioterzo.org/share.jpg", imageAlt: "Persone riunite in cerchio" });
     expect(meta).toEqual(expect.arrayContaining([
       { title: "Titolo" },
       { name: "description", content: "Descrizione" },
       { property: "og:title", content: "Titolo" },
       { property: "og:description", content: "Descrizione" },
       { property: "og:image", content: "https://media.spazioterzo.org/share.jpg" },
+      { property: "og:image:alt", content: "Persone riunite in cerchio" },
+      { name: "twitter:image:alt", content: "Persone riunite in cerchio" },
     ]));
   });
 
