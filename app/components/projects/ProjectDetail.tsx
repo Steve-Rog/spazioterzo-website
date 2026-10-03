@@ -88,7 +88,6 @@ export function ProjectDetail({ project, related = [] }: { project: Project; rel
           <p><span>Periodo</span>{project.dateRange}</p>
           <p><span>Luogo</span>{project.location}</p>
           <p><span>Per chi</span>{project.audience}</p>
-          <p><span>Area</span>{project.themes.join(", ")}</p>
         </Reveal>
       </section>
 

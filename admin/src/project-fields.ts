@@ -40,7 +40,7 @@ export const emptyImageBlocks = (project: ProjectContent) => project.blocks
   .filter(({ block }) => block.type === "image" && !filled(block.src))
   .map(({ position }) => position);
 
-/** Il primo tema compare nell'intestazione della pagina accanto allo stato, gli altri solo nella riga «Area». */
+/** Il primo tema compare sul sito; gli altri restano metadati editoriali del progetto. */
 export const mainTheme = (themes: string[]) => themes[0] ?? "";
 export const otherThemes = (themes: string[]) => themes.slice(1);
 export const composeThemes = (main: string, others: string[]) => [main.trim(), ...others].filter(Boolean);
