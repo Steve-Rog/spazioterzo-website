@@ -6,7 +6,7 @@ import type { EditorState } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
 import { plainText, type RichText } from "../../shared/content-schema";
-import { hasManyParagraphs, sameContent, toDocument, toRichText, truncate } from "./rich-text";
+import { sameContent, toDocument, toRichText, truncate } from "./rich-text";
 
 export function RichTextField({ label, hint, value, onChange, maxLength = 600 }: { label: string; hint?: string; value: RichText; onChange: (value: RichText) => void; maxLength?: number }) {
   const total = plainText(value).length;
@@ -14,37 +14,24 @@ export function RichTextField({ label, hint, value, onChange, maxLength = 600 }:
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: false, bulletList: false, orderedList: false, listItem: false, blockquote: false, codeBlock: false, code: false, horizontalRule: false, bold: false, strike: false, hardBreak: false, link: false }),
+      StarterKit.configure({ heading: false, bulletList: false, orderedList: false, listItem: false, blockquote: false, codeBlock: false, code: false, horizontalRule: false, bold: false, strike: false, link: false }),
       Link.configure({ openOnClick: false }),
       Highlight,
     ],
     content: toDocument(value),
     editorProps: {
       attributes: { "aria-label": label, class: "rich-input" },
-      // Un campo = un paragrafo: l'a capo creerebbe nodi che lo schema non sa rappresentare.
       handleKeyDown: (view, event) => {
-        if (event.key === "Enter") { event.preventDefault(); return true; }
         const typing = event.key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey;
-        return Boolean(typing && atLimit(view.state, maxLength));
-      },
-      handlePaste: (view, event) => {
-        const pasted = event.clipboardData?.getData("text/plain");
-        if (!pasted) return false;
-        const room = maxLength - view.state.doc.textContent.length + (view.state.selection.to - view.state.selection.from);
-        if (pasted.length <= room) return false;
-        event.preventDefault();
-        if (room > 0) view.dispatch(view.state.tr.insertText(pasted.slice(0, room)));
-        return true;
+        return Boolean((typing || event.key === "Enter") && atLimit(view.state, maxLength));
       },
     },
     onUpdate: ({ editor: instance }) => {
       const documento = instance.getJSON();
       let next = toRichText(documento);
-      const daRimettereInRiga = hasManyParagraphs(documento);
-      if (plainText(next).length > maxLength) next = truncate(next, maxLength);
-      // il campo è una riga sola: quello che si è incollato su più righe va ricomposto subito,
-      // altrimenti sullo schermo resta un testo che al salvataggio verrebbe unito
-      if (daRimettereInRiga || plainText(next).length >= maxLength) {
+      const oltreIlLimite = plainText(next).length > maxLength;
+      if (oltreIlLimite) next = truncate(next, maxLength);
+      if (oltreIlLimite) {
         instance.commands.setContent(toDocument(next), { emitUpdate: false });
       }
       emitted.current = next;
@@ -83,5 +70,5 @@ export function RichTextField({ label, hint, value, onChange, maxLength = 600 }:
 
 function atLimit(state: EditorState, maxLength: number) {
   const selected = state.selection.to - state.selection.from;
-  return state.doc.textContent.length - selected >= maxLength;
+  return plainText(toRichText(state.doc.toJSON())).length - selected >= maxLength;
 }

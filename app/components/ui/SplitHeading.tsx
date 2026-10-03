@@ -3,7 +3,7 @@ import { motion, useInView } from "framer-motion";
 import { durata, useEntrata } from "./use-entrata";
 import type { RichText as RichTextValue, RichTextMark } from "../../../shared/content-schema";
 
-type Parola = { testo: string; marks?: RichTextMark[]; href?: string };
+type Parola = { testo: string; marks?: RichTextMark[]; href?: string; aCapo?: boolean };
 
 const chiusa = { y: "115%", opacity: 0 };
 const aperta = { y: "0%", opacity: 1 };
@@ -16,10 +16,10 @@ const aperta = { y: "0%", opacity: 1 };
  */
 function inParole(value: RichTextValue): Parola[] {
   return value.flatMap((span) =>
-    span.text
-      .split(/(\s+)/)
+    span.text.replace(/\r\n?/g, "\n")
+      .split(/(\n|[^\S\n]+)/)
       .filter(Boolean)
-      .map((testo) => ({ testo, marks: span.marks, href: span.href })),
+      .map((testo) => ({ testo, marks: span.marks, href: span.href, aCapo: testo === "\n" })),
   );
 }
 
@@ -60,6 +60,7 @@ export function SplitHeading({ value, as = "h2", className, id, attesa = "inQuad
   return (
     <Tag ref={elemento} className={className} id={id}>
       {inParole(value).map((parola, posizione) => {
+        if (parola.aCapo) return <br key={posizione} />;
         if (!parola.testo.trim()) return <span key={posizione}> </span>;
         indice += 1;
         const ritardo = reduceMotion ? 0 : delay + indice * 0.055;
