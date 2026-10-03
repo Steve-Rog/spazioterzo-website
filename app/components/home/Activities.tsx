@@ -19,7 +19,7 @@ export function Activities({ content }: { content: SiteSettingsContent }) {
   return (
     <section className="services" id="percorsi">
       <div className="services-heading">
-        <Reveal><SectionLabel>02 — Le nostre attività</SectionLabel></Reveal>
+        <Reveal><SectionLabel>Cosa facciamo</SectionLabel></Reveal>
         <SplitHeading value={content.home.activities.heading} />
       </div>
       <div className="service-list" ref={elenco}>

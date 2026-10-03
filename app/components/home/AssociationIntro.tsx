@@ -8,7 +8,7 @@ import type { SiteSettingsContent } from "../../../shared/content-schema";
 export function AssociationIntro({ content }: { content: SiteSettingsContent }) {
   return (
     <section className="manifesto" id="chi-siamo">
-      <Reveal><SectionLabel>01 — L&apos;associazione</SectionLabel></Reveal>
+      <Reveal><SectionLabel>Associazione</SectionLabel></Reveal>
       <div className="manifesto-main">
         <SplitHeading value={content.home.association.heading} />
         <Reveal className="manifesto-aside" delay={0.18}>

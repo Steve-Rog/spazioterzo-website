@@ -10,7 +10,7 @@ export function Contact({ content }: { content: SiteSettingsContent }) {
     <section className="contact" id="contatti">
       <span className="contact-orbit" aria-hidden="true" />
       <div className="contact-heading">
-        <Reveal><SectionLabel>04 — Contatti</SectionLabel></Reveal>
+        <Reveal><SectionLabel>Contatti</SectionLabel></Reveal>
         <SplitHeading value={content.home.contact.heading} />
       </div>
       <Reveal className="contact-action" delay={0.1}>

@@ -93,12 +93,12 @@ function SiteIdentity({ value, update }: { value: SiteSettingsContent; update: (
 /** Ordine e nomi presi dalla home pubblica (app/components/home): il pannello si scorre come la pagina. */
 const homeSections: Array<{ key: keyof SiteSettingsContent["home"]; anchor: string; label: string; hint: string; shape: "hero" | "overview" | "story" | "outcomes" | "notes" | "cta" }> = [
   { key: "hero", anchor: "apertura", label: "Apertura", hint: "La prima schermata: immagine a tutto schermo, titolo grande e invito.", shape: "hero" },
-  { key: "association", anchor: "associazione", label: "01 — L’associazione", hint: "Il manifesto che apre la pagina, con il rimando alla pagina dell’associazione.", shape: "overview" },
+  { key: "association", anchor: "associazione", label: "Associazione", hint: "Il manifesto che apre la pagina, con il rimando alla pagina dell’associazione.", shape: "overview" },
   { key: "imageStatement", anchor: "immagine-manifesto", label: "Immagine manifesto", hint: "La fascia illustrata a tutta larghezza, con didascalia e parola verticale.", shape: "story" },
   { key: "origin", anchor: "perche-spazio-terzo", label: "Perché Spazio Terzo", hint: "La sezione scura che racconta il nome, su due colonne di testo.", shape: "story" },
-  { key: "activities", anchor: "attivita", label: "02 — Le nostre attività", hint: "L’elenco numerato delle attività, con titolo di sezione.", shape: "outcomes" },
-  { key: "territory", anchor: "territorio", label: "03 — Sul territorio", hint: "La sezione sul territorio, con invito finale.", shape: "notes" },
-  { key: "contact", anchor: "contatti", label: "04 — Contatti", hint: "La chiusura della pagina con l’invito a scrivere.", shape: "cta" },
+  { key: "activities", anchor: "attivita", label: "Cosa facciamo", hint: "L’elenco numerato delle attività, con titolo di sezione.", shape: "outcomes" },
+  { key: "territory", anchor: "territorio", label: "Sul territorio", hint: "La sezione sul territorio, con invito finale.", shape: "notes" },
+  { key: "contact", anchor: "contatti", label: "Contatti", hint: "La chiusura della pagina con l’invito a scrivere.", shape: "cta" },
 ];
 
 function HomeEditor({ value, update, initialAnchor, onSectionChange }: { value: SiteSettingsContent; update: (recipe: (draft: SiteSettingsContent) => void) => void; initialAnchor?: string; onSectionChange?: (anchor: string) => void }) {
