@@ -203,7 +203,7 @@ function SiteSeo({ value, update }: { value: SiteSettingsContent; update: (recip
     <TextInput label="Suffisso titolo SEO" description="Compare dopo il titolo di ogni pagina" maxLength={contentLimits.site.titleSuffix} value={value.seo.titleSuffix} onChange={(event) => update((draft) => { draft.seo.titleSuffix = event.currentTarget.value; })} />
     <Textarea label="Descrizione SEO" description="Consigliati 120-155 caratteri" maxLength={contentLimits.site.description} autosize minRows={3} value={value.seo.defaultDescription} onChange={(event) => update((draft) => { draft.seo.defaultDescription = event.currentTarget.value; })} />
     <FieldCounter length={value.seo.defaultDescription.length} max={contentLimits.site.description} />
-    <MediaPicker label="Immagine di condivisione" description="Usata sulle pagine generiche; i progetti usano questa immagine se presente, altrimenti la loro copertina." value={{ url: value.seo.shareImage ?? "", alt: "Immagine di condivisione" }} onChange={(next) => update((draft) => { draft.seo.shareImage = next.url || undefined; })} />
+    <MediaPicker label="Immagine di condivisione" description="Usata sulle pagine generiche; ogni progetto usa automaticamente la propria copertina." value={{ url: value.seo.shareImage ?? "", alt: "Immagine di condivisione" }} onChange={(next) => update((draft) => { draft.seo.shareImage = next.url || undefined; })} />
   </section>;
 }
 
