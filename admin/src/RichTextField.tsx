@@ -55,7 +55,7 @@ export function RichTextField({ label, hint, value, onChange, maxLength = 600 }:
       <RichTextEditor.Toolbar>
         <RichTextEditor.ControlsGroup>
           <RichTextEditor.Italic title="Corsivo" aria-label={`Corsivo in ${label}`} />
-          <RichTextEditor.Highlight title="Evidenziato" aria-label={`Evidenzia in ${label}`} />
+          <RichTextEditor.Highlight title="Colore accento" aria-label={`Cambia colore del testo in ${label}`} />
           <RichTextEditor.Link title="Inserisci link" aria-label={`Inserisci un link in ${label}`} />
           <RichTextEditor.Unlink title="Togli il link" aria-label={`Togli il link in ${label}`} />
         </RichTextEditor.ControlsGroup>
