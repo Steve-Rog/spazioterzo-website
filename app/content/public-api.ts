@@ -10,7 +10,7 @@ export { defaultSiteSettings } from "../../shared/default-site-settings";
 export function projectToLegacy(project: ProjectContent): Project {
   return {
     slug: project.slug, title: project.title, subtitle: project.subtitle, status: project.statusLabel, dateRange: project.dateRange,
-    location: project.location, audience: project.audience, themes: project.themes, cover: project.cover, coverAlt: project.coverAlt, coverCrop: project.coverCrop,
+    location: project.location, audience: project.audience, themes: project.themes, cover: project.cover, coverAlt: project.coverAlt, coverCrop: project.coverCrop, archiveCrop: project.archiveCrop,
     intro: project.intro, objective: project.objective,
     blocks: project.blocks.map((block) => {
       if (block.type === "paragraph") return { type: "paragraph" as const, text: block.text };

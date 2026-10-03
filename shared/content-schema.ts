@@ -32,7 +32,7 @@ export type ProjectVideo = { provider: "youtube" | "vimeo"; id: string; thumbnai
 
 export type ProjectContent = {
   slug: string; title: string; subtitle: string; statusLabel: "In corso" | "Concluso"; dateRange: string; location: string; audience: string; themes: string[];
-  coverAssetId?: string; cover: string; coverAlt: string; coverCrop?: ImageCrop; intro: RichText; objective: RichText; blocks: ProjectBlock[]; outcomesHeading?: RichText; outcomes: string[]; links: ProjectLink[];
+  coverAssetId?: string; cover: string; coverAlt: string; coverCrop?: ImageCrop; archiveCrop?: ImageCrop; intro: RichText; objective: RichText; blocks: ProjectBlock[]; outcomesHeading?: RichText; outcomes: string[]; links: ProjectLink[];
   video?: ProjectVideo; cta?: { label: string; href: string }; partners: string[]; funders: string[]; visibilityNote?: string; relatedSlugs: string[]; seoTitle?: string; seoDescription?: string;
 };
 
@@ -128,7 +128,7 @@ export function validateProject(value: unknown): value is ProjectContent {
   return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(value.slug)) && string(value.slug, contentLimits.project.slug)
     && string(value.title, contentLimits.project.title) && string(value.subtitle, contentLimits.project.subtitle) && (value.statusLabel === "In corso" || value.statusLabel === "Concluso")
     && string(value.dateRange, contentLimits.project.dateRange) && string(value.location, contentLimits.project.location) && string(value.audience, contentLimits.project.audience) && strings(value.themes, 20, contentLimits.project.theme)
-    && (value.coverAssetId === undefined || safeId(value.coverAssetId)) && safeImageUrl(value.cover) && string(value.coverAlt, contentLimits.project.coverAlt) && (value.coverCrop === undefined || validateImageCrop(value.coverCrop))
+    && (value.coverAssetId === undefined || safeId(value.coverAssetId)) && safeImageUrl(value.cover) && string(value.coverAlt, contentLimits.project.coverAlt) && (value.coverCrop === undefined || validateImageCrop(value.coverCrop)) && (value.archiveCrop === undefined || validateImageCrop(value.archiveCrop))
     && validateRichText(value.intro, contentLimits.project.intro) && validateRichText(value.objective, contentLimits.project.objective) && Array.isArray(value.blocks) && value.blocks.length <= 50 && value.blocks.every(validateBlock)
     && (value.outcomesHeading === undefined || validateRichText(value.outcomesHeading, contentLimits.project.outcomesHeading)) && strings(value.outcomes, 30, contentLimits.project.outcome) && Array.isArray(value.links) && value.links.length <= 20 && value.links.every((link) => isRecord(link) && string(link.label, contentLimits.project.linkLabel) && safeUrl(link.href) && ["instagram", "facebook", "website", "materials"].includes(String(link.kind)))
     && (value.video === undefined || validateVideo(value.video))

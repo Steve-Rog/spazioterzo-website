@@ -19,7 +19,7 @@ const fogliDelSito = Object.entries(moduliCss)
  * Serve l'iframe perché i fogli di stile pubblici agiscono su selettori globali (body, h1, a…)
  * che altrimenti riscriverebbero l'aspetto del back office.
  */
-export function PreviewFrame({ children, width = 1280, height = 820, className = "", focus }: { children: ReactNode; width?: number; height?: number; className?: string; focus?: string }) {
+export function PreviewFrame({ children, width = 1280, height = 800, className = "", focus }: { children: ReactNode; width?: number; height?: number; className?: string; focus?: string }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [documento, setDocumento] = useState<Document | null>(null);
 

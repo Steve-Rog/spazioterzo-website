@@ -9,3 +9,10 @@ export function imageCropStyle(crop?: ImageCrop): CSSProperties | undefined {
   const zoom = imageCropZoom(crop);
   return { objectPosition: `${focus.x}% ${focus.y}%`, transform: `scale(${zoom})`, transformOrigin: `${origin.x}% ${origin.y}%` };
 }
+
+/** Mantiene il soggetto scelto quando il contenitore ha un rapporto diverso dal crop originale. */
+export function imageCropFocusStyle(crop?: ImageCrop): CSSProperties | undefined {
+  if (!crop) return undefined;
+  const focus = imageCropFocus(crop);
+  return { objectPosition: `${focus.x}% ${focus.y}%` };
+}

@@ -36,6 +36,7 @@ export type Project = {
   cover: string;
   coverAlt: string;
   coverCrop?: { x: number; y: number; width: number; height: number };
+  archiveCrop?: { x: number; y: number; width: number; height: number };
   intro: FormattedText;
   objective: FormattedText;
   blocks: ProjectBlock[];
