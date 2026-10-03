@@ -22,6 +22,7 @@ describe("parseRoute", () => {
 
   it("seleziona il pannello del sito, con ripiego sull'identità", () => {
     expect(parseRoute("#/sito/home")).toEqual({ section: "site", editingId: "site", sitePanel: "home" });
+    expect(parseRoute("#/sito/persone").sitePanel).toBe("people");
     expect(parseRoute("#/sito/progetti").sitePanel).toBe("projects");
     expect(parseRoute("#/sito/seo").sitePanel).toBe("seo");
     expect(parseRoute("#/sito/inventato").sitePanel).toBe("identity");
@@ -61,6 +62,7 @@ describe("formatRoute", () => {
       { section: "projects", editingId: "id con spazio", sitePanel: "identity" },
       { section: "team", editingId: "new", sitePanel: "identity" },
       { section: "site", editingId: "site", sitePanel: "home" },
+      { section: "site", editingId: "site", sitePanel: "people" },
     ];
     for (const route of routes) expect(roundTrip(route)).toEqual(route);
   });

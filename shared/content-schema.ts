@@ -5,7 +5,7 @@ export const ACCEPTED_MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp"] as
 export const contentLimits = {
   project: { slug: 80, title: 72, subtitle: 180, dateRange: 80, location: 90, audience: 240, theme: 48, coverAlt: 180, intro: 420, objective: 600, paragraph: 1_200, quote: 320, quoteSource: 100, listTitle: 80, listItem: 220, imageAlt: 180, imageCaption: 180, statValue: 48, statLabel: 160, outcome: 240, outcomesHeading: 180, linkLabel: 90, videoAlt: 180, videoCaption: 180, ctaLabel: 64, partner: 90, visibilityNote: 360, seoTitle: 70, seoDescription: 160 },
   team: { name: 72, role: 110, bioParagraph: 1_200, quote: 320, quoteAuthor: 80 },
-  site: { organizationName: 80, legalForm: 110, taxId: 64, footerTagline: 160, city: 80, address: 180, country: 80, phone: 60, mapUrl: 2_000, socialLabel: 40, titleSuffix: 70, description: 160, heroHeadline: 150, heroMeta: 80, ctaLabel: 64, associationHeading: 170, associationBody: 700, originEyebrow: 80, originPrelude: 220, originHeading: 180, originStatement: 700, originIdentity: 420, activitiesHeading: 160, activityTitle: 90, activityDescription: 320, territoryHeading: 170, territoryBody: 420, imageCaption: 180, verticalWord: 40, contactHeading: 150, contactBody: 320, emailLabel: 100, projectsEyebrow: 80, projectsHeadline: 180, projectsIntro: 320 },
+  site: { organizationName: 80, legalForm: 110, taxId: 64, footerTagline: 160, city: 80, address: 180, country: 80, phone: 60, mapUrl: 2_000, socialLabel: 40, titleSuffix: 70, description: 160, heroHeadline: 150, heroMeta: 80, ctaLabel: 64, associationHeading: 170, associationBody: 700, originEyebrow: 80, originPrelude: 220, originHeading: 180, originStatement: 700, originIdentity: 420, activitiesHeading: 160, activityTitle: 90, activityDescription: 320, territoryHeading: 170, territoryBody: 420, imageCaption: 180, verticalWord: 40, contactHeading: 150, contactBody: 320, emailLabel: 100, peopleHeadline: 180, peopleIntro: 320, projectsEyebrow: 80, projectsHeadline: 180, projectsIntro: 320 },
 } as const;
 
 export type RichTextMark = "italic" | "highlight" | "link";
@@ -72,6 +72,7 @@ export type SiteSettingsContent = {
     imageStatement: { image?: string; caption: string; verticalWord: string };
     contact: { heading: RichText; body: RichText; emailLabel?: string };
   };
+  people?: { hero: { heading: RichText; intro: RichText } };
   projects?: { hero: { eyebrow: string; headline: RichText; intro: RichText } };
 };
 
@@ -167,6 +168,9 @@ export function validateSiteSettings(value: unknown): value is SiteSettingsConte
     && string(value.projects.hero.eyebrow, contentLimits.site.projectsEyebrow)
     && validateRichText(value.projects.hero.headline, contentLimits.site.projectsHeadline)
     && validateRichText(value.projects.hero.intro, contentLimits.site.projectsIntro));
+  const validPeople = value.people === undefined || (isRecord(value.people) && isRecord(value.people.hero)
+    && validateRichText(value.people.hero.heading, contentLimits.site.peopleHeadline)
+    && validateRichText(value.people.hero.intro, contentLimits.site.peopleIntro));
   const validHome = isRecord(home.hero) && validateRichText(home.hero.headline, contentLimits.site.heroHeadline) && string(home.hero.meta, contentLimits.site.heroMeta) && string(home.hero.ctaLabel, contentLimits.site.ctaLabel) && (home.hero.heroImage === undefined || safeImageUrl(home.hero.heroImage))
     && isRecord(home.association) && validateRichText(home.association.heading, contentLimits.site.associationHeading) && validateRichText(home.association.body, contentLimits.site.associationBody) && string(home.association.ctaLabel, contentLimits.site.ctaLabel) && safeUrl(home.association.ctaHref)
     && isRecord(home.origin) && string(home.origin.eyebrow, contentLimits.site.originEyebrow) && validateRichText(home.origin.prelude, contentLimits.site.originPrelude) && validateRichText(home.origin.heading, contentLimits.site.originHeading) && validateRichText(home.origin.statement, contentLimits.site.originStatement) && validateRichText(home.origin.identity, contentLimits.site.originIdentity)
@@ -174,7 +178,7 @@ export function validateSiteSettings(value: unknown): value is SiteSettingsConte
     && isRecord(home.territory) && validateRichText(home.territory.heading, contentLimits.site.territoryHeading) && validateRichText(home.territory.body, contentLimits.site.territoryBody) && string(home.territory.ctaLabel, contentLimits.site.ctaLabel) && safeUrl(home.territory.ctaHref)
     && isRecord(home.imageStatement) && (home.imageStatement.image === undefined || safeImageUrl(home.imageStatement.image)) && string(home.imageStatement.caption, contentLimits.site.imageCaption) && string(home.imageStatement.verticalWord, contentLimits.site.verticalWord)
     && isRecord(home.contact) && validateRichText(home.contact.heading, contentLimits.site.contactHeading) && validateRichText(home.contact.body, contentLimits.site.contactBody) && optionalString(home.contact.emailLabel, contentLimits.site.emailLabel);
-  return validIdentity && validSeo && validHome && validProjects;
+  return validIdentity && validSeo && validHome && validPeople && validProjects;
 }
 
 export function validateContent(type: EntityType, value: unknown): boolean {
@@ -209,6 +213,10 @@ export function publicationReadinessError(type: EntityType, value: unknown): str
   requiredText("Territorio — testo", home.territory.body);
   requiredText("Contatti — titolo", home.contact.heading);
   requiredText("Contatti — testo", home.contact.body);
+  if (site.people) {
+    requiredText("Persone — titolo hero", site.people.hero.heading);
+    requiredText("Persone — testo hero", site.people.hero.intro);
+  }
   if (site.projects) {
     requiredText("Progetti — titolo hero", site.projects.hero.headline);
     requiredText("Progetti — testo hero", site.projects.hero.intro);

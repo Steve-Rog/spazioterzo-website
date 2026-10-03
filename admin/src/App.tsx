@@ -45,6 +45,9 @@ export function App() {
   const isMobile = useMediaQuery("(max-width: 767px)");
   const isAdmin = user?.role === "admin";
   const activeTeam = team.filter((item) => item.state !== "archived");
+  const catalogoPersone = useMemo(() => activeTeam
+    .map((member) => member.draft ?? member.published)
+    .filter((contenuto): contenuto is TeamMemberContent => Boolean(contenuto)), [activeTeam]);
   /** I progetti attivi con il loro contenuto: alimentano sia la scelta dei correlati sia l'anteprima. */
   const catalogoProgetti = useMemo(() => projects
     .filter((project) => project.state !== "archived")
@@ -187,6 +190,7 @@ export function App() {
           {/* le pagine del sito sono sempre in vista: prima comparivano solo dopo aver aperto la sezione */}
           <NavLink label="Identità del sito" active={section === "site" && sitePanel === "identity"} onClick={() => navigateSite("identity")} />
           <NavLink label="Home" active={section === "site" && sitePanel === "home"} onClick={() => navigateSite("home")} />
+          <NavLink label="Pagina Persone" active={section === "site" && sitePanel === "people"} onClick={() => navigateSite("people")} />
           <NavLink label="Pagina Progetti" active={section === "site" && sitePanel === "projects"} onClick={() => navigateSite("projects")} />
           <NavLink label="SEO e condivisione" active={section === "site" && sitePanel === "seo"} onClick={() => navigateSite("seo")} />
         </>}
@@ -197,7 +201,7 @@ export function App() {
       {section !== "site" && !editing && <ArchiveView section={section} items={section === "projects" ? projects : team} isAdmin={Boolean(isAdmin)} teamFull={activeTeam.length >= 3} onNew={() => setEditingId("new")} onOpen={openEntity} onMove={(item, neighbour) => void move(section, item, neighbour)} onRestore={(id) => void restore(resourceFor(section), id)} onDuplicate={(item) => void duplicate(item as ContentEntity<ProjectContent>)} onPublish={(id) => void publish(resourceFor(section), id)} onArchive={(id) => void archive(resourceFor(section), id)} />}
       {section === "projects" && editing && <ProjectEditor onRestored={restored} key={`${editingId}-${versioneEditor}`} entity={currentProject} isAdmin={Boolean(isAdmin)} siteSeo={siteSeoDefaults} siteSettings={siteContent ?? defaultSiteSettings} relatedOptions={relatedOptions.filter((option) => option.value !== currentProject?.slug)} catalogo={catalogoProgetti} onBack={closeEditor} onSaved={saved} onPublish={publish} onArchive={archive} onDirtyChange={setDirty} />}
       {section === "team" && editing && <TeamEditor onRestored={restored} key={`${editingId}-${versioneEditor}`} entity={currentTeam} teamCount={activeTeam.length} teamIndex={Math.max(0, activeTeam.findIndex((item) => item.id === editingId))} onBack={closeEditor} onSaved={saved} onPublish={publish} onArchive={archive} onDirtyChange={setDirty} />}
-      {section === "site" && <SiteEditor onRestored={restored} key={`${site?.id ?? "site"}-${versioneEditor}`} entity={site ?? undefined} projects={catalogoProgetti} activePanel={sitePanel} anchor={initialRoute.anchor} onSaved={saved} onPublish={publish} onDirtyChange={setDirty} />}
+      {section === "site" && <SiteEditor onRestored={restored} key={`${site?.id ?? "site"}-${versioneEditor}`} entity={site ?? undefined} projects={catalogoProgetti} team={catalogoPersone} activePanel={sitePanel} anchor={initialRoute.anchor} onSaved={saved} onPublish={publish} onDirtyChange={setDirty} />}
     </main></AppShell.Main>
     <Drawer opened={accessOpen} onClose={() => setAccessOpen(false)} title="Accessi" position="right" size="lg"><UserManagement users={users} currentEmail={user.email} onChanged={async () => { await reload(); notifications.show({ color: "teal", message: "Accesso aggiornato." }); }} /></Drawer>
   </AppShell>;

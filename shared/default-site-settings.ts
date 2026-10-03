@@ -36,6 +36,12 @@ export const defaultSiteSettings: SiteSettingsContent = {
     imageStatement: { caption: "Ogni incontro può aprire una possibilità.", verticalWord: "ASCOLTO" },
     contact: { heading: [{ text: "Facciamo " }, { text: "spazio?", marks: ["italic"] }], body: asRichText("Raccontaci di cosa hai bisogno. Ti risponderemo con cura."), emailLabel: "info@spazioterzo.it" },
   },
+  people: {
+    hero: {
+      heading: [{ text: "Tre sguardi.\n" }, { text: "Uno spazio.", marks: ["italic"] }],
+      intro: asRichText("Tre persone, un lavoro costruito nella relazione."),
+    },
+  },
   projects: {
     hero: {
       eyebrow: "03 — Progetti",

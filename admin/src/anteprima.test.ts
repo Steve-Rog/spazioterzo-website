@@ -55,6 +55,7 @@ describe("patto fra sito e anteprima", () => {
     const anteprima = readFileSync(join(import.meta.dirname, "components", "PublicPreviews.tsx"), "utf8");
     expect(rottaRadice).toContain("<PublicPageShell site={site} currentPage={currentPage}>");
     expect(anteprima).toContain('<PublicPageShell site={site} currentPage="home">');
+    expect(anteprima).toContain('<PublicPageShell site={site} currentPage="people">');
     expect(anteprima).toContain('<PublicPageShell site={site} currentPage="projects">');
   });
 

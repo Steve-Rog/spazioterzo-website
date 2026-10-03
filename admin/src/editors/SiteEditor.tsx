@@ -3,7 +3,7 @@ import { ActionIcon, Button, Group, Stack, Text, TextInput, Textarea, Tooltip, U
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import { IconChevronRight, IconPlus, IconTrash } from "@tabler/icons-react";
-import { asRichText, contentLimits, MAX_HOME_ACTIVITIES, plainText, type ContentEntity, type ProjectContent, type SiteSettingsContent } from "../../../shared/content-schema";
+import { asRichText, contentLimits, MAX_HOME_ACTIVITIES, plainText, type ContentEntity, type ProjectContent, type SiteSettingsContent, type TeamMemberContent } from "../../../shared/content-schema";
 import { defaultSiteSettings } from "../../../shared/default-site-settings";
 import { adminApi, type AdminResource } from "../api";
 import { dropEmptyLines, dropEmptyPairs, incompletePair } from "../project-fields";
@@ -17,10 +17,11 @@ import { parseRoute, type SitePanel } from "../routing";
 import { EditorFrame } from "../components/EditorFrame";
 import { FieldCounter, SectionHeading } from "../components/FormParts";
 import { clone } from "../form";
-import { ProjectsPagePreview, SitePreview } from "../components/PublicPreviews";
+import { PeoplePagePreview, ProjectsPagePreview, SitePreview } from "../components/PublicPreviews";
 
-export function SiteEditor({ entity, projects, activePanel, anchor, onSaved, onPublish, onDirtyChange, onRestored }: { onRestored?: () => Promise<void>; entity?: ContentEntity<SiteSettingsContent>; projects: ProjectContent[]; activePanel: SitePanel; anchor?: string; onSaved: (entity: ContentEntity, message?: string) => Promise<void>; onPublish: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {
+export function SiteEditor({ entity, projects, team, activePanel, anchor, onSaved, onPublish, onDirtyChange, onRestored }: { onRestored?: () => Promise<void>; entity?: ContentEntity<SiteSettingsContent>; projects: ProjectContent[]; team: TeamMemberContent[]; activePanel: SitePanel; anchor?: string; onSaved: (entity: ContentEntity, message?: string) => Promise<void>; onPublish: (resource: AdminResource, id: string) => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {
   const initialValues = clone(entity?.draft ?? entity?.published ?? defaultSiteSettings);
+  initialValues.people ??= clone(defaultSiteSettings.people!);
   initialValues.projects ??= clone(defaultSiteSettings.projects!);
   const form = useForm<SiteSettingsContent>({ mode: "controlled", initialValues });
   const [saving, setSaving] = useState(false);
@@ -32,10 +33,23 @@ export function SiteEditor({ entity, projects, activePanel, anchor, onSaved, onP
     if (social) { notifications.show({ color: "orange", message: social }); return; }
     const contenuto = { ...values, identity: { ...values.identity, socialLinks: socialPuliti, phones: values.identity.phones ? dropEmptyLines(values.identity.phones) : undefined } };
     setSaving(true); try { const saved = await adminApi.save("site", entity?.id, contenuto, undefined, entity?.updatedAt); form.setValues(contenuto); form.resetDirty(contenuto); await onSaved(saved); } catch (error) { notifications.show({ color: "red", message: error instanceof Error ? error.message : "Bozza non salvata" }); } finally { setSaving(false); } });
-  const panelTitle = activePanel === "identity" ? "Identità del sito" : activePanel === "home" ? "Home" : activePanel === "projects" ? "Pagina Progetti" : "SEO e condivisione";
+  const panelTitle = activePanel === "identity" ? "Identità del sito" : activePanel === "home" ? "Home" : activePanel === "people" ? "Pagina Persone" : activePanel === "projects" ? "Pagina Progetti" : "SEO e condivisione";
   const previewFocus = activePanel === "home" ? selettoreHome(sezioneHome) : selettoreSito(activePanel);
-  const preview = activePanel === "projects" ? <ProjectsPagePreview site={form.values} projects={projects} /> : <SitePreview site={form.values} focus={previewFocus} />;
-  return <form onSubmit={save}><EditorFrame title={panelTitle} eyebrow="Sito" entity={entity} resource="site" onSave={() => save()} saving={saving} dirty={form.isDirty()} preview={preview} onPublish={onPublish} onDirtyChange={onDirtyChange} onRestored={onRestored}>{activePanel === "identity" ? <SiteIdentity value={form.values} update={update} /> : activePanel === "home" ? <HomeEditor value={form.values} update={update} initialAnchor={anchor} onSectionChange={setSezioneHome} /> : activePanel === "projects" ? <ProjectsSettings value={form.values} update={update} /> : <SiteSeo value={form.values} update={update} />}</EditorFrame></form>;
+  const preview = activePanel === "people" ? <PeoplePagePreview site={form.values} team={team} /> : activePanel === "projects" ? <ProjectsPagePreview site={form.values} projects={projects} /> : <SitePreview site={form.values} focus={previewFocus} />;
+  return <form onSubmit={save}><EditorFrame title={panelTitle} eyebrow="Sito" entity={entity} resource="site" onSave={() => save()} saving={saving} dirty={form.isDirty()} preview={preview} onPublish={onPublish} onDirtyChange={onDirtyChange} onRestored={onRestored}>{activePanel === "identity" ? <SiteIdentity value={form.values} update={update} /> : activePanel === "home" ? <HomeEditor value={form.values} update={update} initialAnchor={anchor} onSectionChange={setSezioneHome} /> : activePanel === "people" ? <PeopleSettings value={form.values} update={update} /> : activePanel === "projects" ? <ProjectsSettings value={form.values} update={update} /> : <SiteSeo value={form.values} update={update} />}</EditorFrame></form>;
+}
+
+function PeopleSettings({ value, update }: { value: SiteSettingsContent; update: (recipe: (draft: SiteSettingsContent) => void) => void }) {
+  const hero = value.people?.hero ?? defaultSiteSettings.people!.hero;
+  const edit = (recipe: (draft: NonNullable<SiteSettingsContent["people"]>["hero"]) => void) => update((draft) => {
+    draft.people ??= clone(defaultSiteSettings.people!);
+    recipe(draft.people.hero);
+  });
+  return <section className="form-section">
+    <SectionHeading title="Hero Persone" hint="L’apertura della pagina /persone, sopra il collage dei profili." shape="hero" />
+    <RichTextField label="Titolo" hint="Puoi andare a capo e usare corsivo o colore accento." maxLength={contentLimits.site.peopleHeadline} value={hero.heading} onChange={(heading) => edit((draft) => { draft.heading = heading; })} />
+    <RichTextField label="Sottotitolo" maxLength={contentLimits.site.peopleIntro} value={hero.intro} onChange={(intro) => edit((draft) => { draft.intro = intro; })} />
+  </section>;
 }
 
 function ProjectsSettings({ value, update }: { value: SiteSettingsContent; update: (recipe: (draft: SiteSettingsContent) => void) => void }) {

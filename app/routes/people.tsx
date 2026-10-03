@@ -15,10 +15,10 @@ export function meta({ loaderData }: { loaderData?: { site?: Awaited<ReturnType<
 }
 
 export default function People() {
-  const { teamMembers } = useLoaderData<typeof loader>();
+  const { teamMembers, site } = useLoaderData<typeof loader>();
   return (
     <main className="people-page">
-      <PeopleHero teamMembers={teamMembers} />
+      <PeopleHero teamMembers={teamMembers} content={site.people?.hero} />
     </main>
   );
 }

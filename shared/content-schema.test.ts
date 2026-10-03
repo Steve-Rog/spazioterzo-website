@@ -71,4 +71,17 @@ describe("content schema", () => {
     expect(publicationReadinessError("site", draft)).toContain("Perché Spazio Terzo — testo sinistro");
     expect(publicationReadinessError("site", defaultSiteSettings)).toBeNull();
   });
+
+  it("validates editable copy for the People hero while accepting older site payloads", () => {
+    const legacy = JSON.parse(JSON.stringify(defaultSiteSettings));
+    delete legacy.people;
+    expect(validateSiteSettings(legacy)).toBe(true);
+
+    const draft = JSON.parse(JSON.stringify(defaultSiteSettings));
+    draft.people.hero.heading = asRichText("");
+    expect(validateSiteSettings(draft)).toBe(true);
+    expect(publicationReadinessError("site", draft)).toContain("Persone — titolo hero");
+    draft.people.hero.heading = asRichText("a".repeat(contentLimits.site.peopleHeadline + 1));
+    expect(validateSiteSettings(draft)).toBe(false);
+  });
 });

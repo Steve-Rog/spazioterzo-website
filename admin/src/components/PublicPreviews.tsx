@@ -1,4 +1,5 @@
 import { HomePage } from "../../../app/components/home/HomePage";
+import { PeopleHero } from "../../../app/components/people/PeopleHero";
 import { TeamProfileContent } from "../../../app/components/people/TeamProfileModal";
 import { ProjectDetail } from "../../../app/components/projects/ProjectDetail";
 import { ProjectsArchive } from "../../../app/components/projects/ProjectsArchive";
@@ -21,6 +22,10 @@ export function TeamPreview({ member, height, index, total }: { member: TeamMemb
 
 export function SitePreview({ site, height, focus }: { site: SiteSettingsContent; height?: number; focus?: string }) {
   return <PreviewFrame height={height} focus={focus}><PublicPageShell site={site} currentPage="home"><HomePage site={site} /></PublicPageShell></PreviewFrame>;
+}
+
+export function PeoplePagePreview({ site, team, height }: { site: SiteSettingsContent; team: TeamMemberContent[]; height?: number }) {
+  return <PreviewFrame height={height} focus=".people-hero"><PublicPageShell site={site} currentPage="people"><main className="people-page"><PeopleHero teamMembers={team.map(teamToLegacy)} content={site.people?.hero} /></main></PublicPageShell></PreviewFrame>;
 }
 
 export function ProjectsPagePreview({ site, projects, height }: { site: SiteSettingsContent; projects: ProjectContent[]; height?: number }) {

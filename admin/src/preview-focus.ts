@@ -25,12 +25,13 @@ export const fuocoHome: Record<string, string> = {
 };
 
 /** Pannelli dell'identità → elementi condivisi dal layout pubblico. */
-export const fuocoSito: Record<"identity" | "projects" | "seo", string | undefined> = {
+export const fuocoSito: Record<"identity" | "people" | "projects" | "seo", string | undefined> = {
   identity: ".site-footer",
+  people: ".people-hero",
   projects: ".projects-hero",
   seo: undefined,
 };
 
 export const selettoreProgetto = (scheda: string | null) => (scheda ? fuocoProgetto[scheda] : undefined);
 export const selettoreHome = (sezione: string | null) => (sezione ? fuocoHome[sezione] : undefined);
-export const selettoreSito = (pannello: "identity" | "projects" | "seo") => fuocoSito[pannello];
+export const selettoreSito = (pannello: "identity" | "people" | "projects" | "seo") => fuocoSito[pannello];

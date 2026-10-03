@@ -6,16 +6,20 @@ import { TeamProfileModal } from "./TeamProfileModal";
 import { foto, fotoSrcSet } from "../ui/image-source";
 import { portraitCropStyle } from "./image-crop";
 import { useMotoRidotto } from "../ui/use-entrata";
+import { RichText } from "../ui/RichText";
+import type { RichText as RichTextValue, SiteSettingsContent } from "../../../shared/content-schema";
+
+const heroHeading = (lead: string): RichTextValue => [{ text: `${lead}\n` }, { text: "Uno spazio.", marks: ["italic"] }];
 
 function teamHeroCopy(count: number) {
-  if (count === 0) return { heading: "Le persone.", intro: "I profili del team saranno disponibili a breve." };
-  if (count === 1) return { heading: "Uno sguardo.", intro: "Una persona, un lavoro costruito nella relazione." };
-  if (count === 2) return { heading: "Due sguardi.", intro: "Due persone, un lavoro costruito nella relazione." };
-  if (count === 3) return { heading: "Tre sguardi.", intro: "Tre persone, un lavoro costruito nella relazione." };
-  return { heading: "Più sguardi.", intro: `${count} persone, un lavoro costruito nella relazione.` };
+  if (count === 0) return { heading: heroHeading("Le persone."), intro: "I profili del team saranno disponibili a breve." };
+  if (count === 1) return { heading: heroHeading("Uno sguardo."), intro: "Una persona, un lavoro costruito nella relazione." };
+  if (count === 2) return { heading: heroHeading("Due sguardi."), intro: "Due persone, un lavoro costruito nella relazione." };
+  if (count === 3) return { heading: heroHeading("Tre sguardi."), intro: "Tre persone, un lavoro costruito nella relazione." };
+  return { heading: heroHeading("Più sguardi."), intro: `${count} persone, un lavoro costruito nella relazione.` };
 }
 
-export function PeopleHero({ teamMembers }: { teamMembers: TeamMember[] }) {
+export function PeopleHero({ teamMembers, content }: { teamMembers: TeamMember[]; content?: NonNullable<SiteSettingsContent["people"]>["hero"] }) {
   const reduceMotion = useMotoRidotto();
   const isMobile = useMediaQuery("(max-width: 760px)");
   const canHover = useMediaQuery("(hover: hover) and (pointer: fine)");
@@ -24,7 +28,7 @@ export function PeopleHero({ teamMembers }: { teamMembers: TeamMember[] }) {
   const openingTimer = useRef<number | null>(null);
   const focusResetTimer = useRef<number | null>(null);
   const ignoreRestoredFocus = useRef(false);
-  const copy = teamHeroCopy(teamMembers.length);
+  const copy = content ?? teamHeroCopy(teamMembers.length);
 
   useEffect(() => () => {
     if (openingTimer.current !== null) window.clearTimeout(openingTimer.current);
@@ -98,8 +102,7 @@ export function PeopleHero({ teamMembers }: { teamMembers: TeamMember[] }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: reduceMotion ? 0 : 0.8, delay: reduceMotion ? 0 : 0.12, ease: [0.22, 1, 0.36, 1] }}
         >
-          {copy.heading}<br />
-          <em>Uno spazio.</em>
+          <RichText value={copy.heading} />
         </motion.h1>
         <motion.p
           className="people-hero-intro"
@@ -107,7 +110,7 @@ export function PeopleHero({ teamMembers }: { teamMembers: TeamMember[] }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: reduceMotion ? 0 : 0.7, delay: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
         >
-          {copy.intro}
+          <RichText value={copy.intro} />
         </motion.p>
       </div>
 

@@ -1,10 +1,10 @@
 export type Section = "projects" | "team" | "site";
-export type SitePanel = "identity" | "home" | "projects" | "seo";
+export type SitePanel = "identity" | "home" | "people" | "projects" | "seo";
 export type Route = { section: Section; editingId: string | "new" | null; sitePanel: SitePanel; anchor?: string };
 
 /** L'indirizzo è in italiano perché finisce nella barra del browser della redazione. */
 const sectionSlugs: Record<Section, string> = { projects: "progetti", team: "persone", site: "sito" };
-const panelSlugs: Record<SitePanel, string> = { identity: "identita", home: "home", projects: "progetti", seo: "seo" };
+const panelSlugs: Record<SitePanel, string> = { identity: "identita", home: "home", people: "persone", projects: "progetti", seo: "seo" };
 const sectionFromSlug = new Map(Object.entries(sectionSlugs).map(([section, slug]) => [slug, section as Section]));
 const panelFromSlug = new Map(Object.entries(panelSlugs).map(([panel, slug]) => [slug, panel as SitePanel]));
 
